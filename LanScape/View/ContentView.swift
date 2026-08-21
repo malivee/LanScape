@@ -10,13 +10,15 @@ import SwiftUI
 struct ContentView: View {
     var body: some View {
         ZStack {
-            LinearGradient(colors: [Color.background, .lightPurple], startPoint: .top, endPoint: .bottom)
+            Image("backgroundStart")
+                .resizable()
+                .aspectRatio(contentMode: .fill)
             
             VStack {
                 Image("Logo")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(width: 540)
+                    .frame(width: 328)
                     .padding(.bottom, 40)
                 
                 
@@ -26,10 +28,11 @@ struct ContentView: View {
                 } label: {
                     Text("Mulai")
                         .font(.largeTitle.bold())
-                        .frame(width: 650)
-                        .frame(height: 100)
+                        .frame(width: 450)
+                        .frame(height: 85)
                         .foregroundStyle(.white)
-                        .background(.blue)
+                        .background(.darkBlue)
+                        .glassEffect()
                         .clipShape(RoundedRectangle(cornerRadius: 50))
                         .padding(.bottom, 8)
                 }
@@ -40,10 +43,11 @@ struct ContentView: View {
                     Text("Gallery")
                         .font(.largeTitle.bold())
                         .frame(width: 450)
-                        .frame(height: 80)
-                        .foregroundStyle(.white)
-                        .background(.blue)
+                        .frame(height: 85)
+                        .foregroundStyle(.darkBlue)
                         .clipShape(RoundedRectangle(cornerRadius: 50))
+                        .background(.clear)
+                        .overlay(RoundedRectangle(cornerRadius: 50).stroke(.darkBlue, lineWidth: 5))
                 }
             }
         }
