@@ -152,7 +152,7 @@ struct MovementIntroTutorialView:
 
 
             // =================================================
-            // NEXT BUTTON
+            // TIMER / AUTO-ADVANCE BADGE
             // =================================================
 
             VStack {
@@ -171,39 +171,50 @@ struct MovementIntroTutorialView:
 
                     } label: {
 
-                        Text(
-                            tutorial
-                                .currentPage
-                                .buttonTitle
-                        )
-                        .font(
-                            .system(
-                                size:
-                                    18,
+                        HStack(spacing: 8) {
 
-                                weight:
-                                    .bold,
+                            Image(systemName: "timer")
+                                .font(.system(size: 16, weight: .bold))
 
-                                design:
-                                    .rounded
-                            )
-                        )
+                            Text("\(tutorial.currentPage.buttonTitle) (\(tutorial.timeRemaining)s)")
+                                .font(
+                                    .system(
+                                        size:
+                                            16,
+
+                                        weight:
+                                            .bold,
+
+                                        design:
+                                            .rounded
+                                    )
+                                )
+                        }
                         .foregroundColor(
-                            .black
+                            .white
                         )
                         .padding(
                             .horizontal,
-                            32
+                            24
                         )
                         .padding(
                             .vertical,
-                            14
+                            12
                         )
                         .background(
-                            Color.white
+                            Color.black.opacity(
+                                0.55
+                            )
                         )
                         .clipShape(
                             Capsule()
+                        )
+                        .overlay(
+                            Capsule()
+                                .stroke(
+                                    Color.white.opacity(0.35),
+                                    lineWidth: 1.5
+                                )
                         )
                         .shadow(
                             color:

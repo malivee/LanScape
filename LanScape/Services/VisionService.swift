@@ -19,7 +19,7 @@ final class VisionService:
         PoseModel()
 
     @Published var targetPose:
-        String = "1"
+        String = "2"
 
     @Published var prediction:
         String = "?"
@@ -77,7 +77,7 @@ final class VisionService:
         MLModel?
 
     private let confidenceThreshold:
-        Double = 0.70
+        Double = 0.65
 
     // MARK: - State
 
@@ -200,6 +200,22 @@ final class VisionService:
                     "Model not found"
             }
         }
+    }
+
+    // MARK: - Reset Matching State
+
+    func resetMatchingState() {
+        DispatchQueue.main.async { [weak self] in
+            self?.isMatching = false
+            self?.confidence = 0.0
+            self?.prediction = "?"
+        }
+    }
+
+    // MARK: - Dynamic Threshold
+
+    func effectiveThreshold(for target: String) -> Double {
+        return 0.50
     }
 
     // MARK: - Model Information
@@ -1196,6 +1212,10 @@ final class VisionService:
             let predictedConfidence =
                 best.value
 
+            // MARK: Dynamic Threshold (0.50 for 1 & 2; 0.65 for 3 & 4)
+
+            let activeThreshold = effectiveThreshold(for: targetPose)
+
             // MARK: Matching
 
             let matches =
@@ -1206,7 +1226,7 @@ final class VisionService:
                     .lowercased()
                 &&
                 predictedConfidence >=
-                    confidenceThreshold
+                    activeThreshold
 
             // MARK: Probability Debug
 
@@ -1291,7 +1311,7 @@ final class VisionService:
 
             print(
                 "THRESHOLD:",
-                confidenceThreshold
+                activeThreshold
             )
 
             print(

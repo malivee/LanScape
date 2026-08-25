@@ -50,8 +50,7 @@ struct TutorialPositionValidator {
         // ---------------------------------------------------------
 
         let points =
-            person
-                .filteredJointList
+            (person.jointList.isEmpty ? person.filteredJointList : person.jointList)
                 .map {
 
                     convert(
