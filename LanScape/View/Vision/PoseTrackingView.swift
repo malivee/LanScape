@@ -584,6 +584,8 @@ struct PoseTrackingView:
 
         visionService.targetPose =
             "\(currentStep.id)"
+
+        visionService.resetMatchingState()
     }
 
 
@@ -608,7 +610,6 @@ struct PoseTrackingView:
         if isMatching {
 
             guard
-                !isSuccessHolding,
                 stepAdvanceTask == nil
             else {
                 return
@@ -635,17 +636,20 @@ struct PoseTrackingView:
 
 
             // =============================================
-            // Hold for 1.2 seconds
+            // Hold for 1.0 second to confirm pose
             // =============================================
 
             stepAdvanceTask =
-                Task {
+                Task { @MainActor in
 
-                    try? await Task.sleep(
-                        nanoseconds:
-                            1_200_000_000
-                    )
-
+                    do {
+                        try await Task.sleep(
+                            nanoseconds:
+                                1_000_000_000
+                        )
+                    } catch {
+                        return
+                    }
 
                     guard
                         !Task.isCancelled
@@ -653,27 +657,18 @@ struct PoseTrackingView:
                         return
                     }
 
+                    if self.visionService.isMatching {
 
-                    await MainActor.run {
+                        self.advanceToNextMovement()
 
-                        guard
-                            visionService.isMatching
-                        else {
+                    } else {
 
-                            isSuccessHolding =
+                        withAnimation {
+                            self.isSuccessHolding =
                                 false
-
-                            stepAdvanceTask =
-                                nil
-
-                            return
                         }
 
-
-                        advanceToNextMovement()
-
-
-                        stepAdvanceTask =
+                        self.stepAdvanceTask =
                             nil
                     }
                 }
@@ -681,12 +676,16 @@ struct PoseTrackingView:
 
         } else {
 
-            if !isSuccessHolding {
+            // When match is lost, cancel pending advance immediately
+            stepAdvanceTask?.cancel()
+            stepAdvanceTask =
+                nil
 
-                stepAdvanceTask?.cancel()
-
-                stepAdvanceTask =
-                    nil
+            if isSuccessHolding {
+                withAnimation {
+                    isSuccessHolding =
+                        false
+                }
             }
         }
     }
@@ -697,6 +696,10 @@ struct PoseTrackingView:
     // =========================================================
 
     private func advanceToNextMovement() {
+
+        stepAdvanceTask?.cancel()
+        stepAdvanceTask =
+            nil
 
         if currentStepIndex + 1 < steps.count {
 
@@ -716,8 +719,6 @@ struct PoseTrackingView:
 
             // =============================================
             // Next movement starts immediately.
-            //
-            // Tutorial is ONLY shown for Move #1.
             // =============================================
 
             syncTargetPose()

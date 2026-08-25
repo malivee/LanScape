@@ -24,21 +24,21 @@ public struct PoseStep: Identifiable, Equatable {
 }
 
 extension PoseStep {
-    /// The default 4-step dance sequence matching DancePose2 Core ML classes (1, 2, 3, 4).
+    /// The default 4-step dance sequence matching DancePose2 Core ML classes in order: 2, 1, 3, 4.
     public static let sampleSequence: [PoseStep] = [
-        PoseStep(
-            id: 1,
-            title: "Gerakan 1",
-            descriptionText: "Angkat tangan dan ikuti pose tubuh bagian atas",
-            upImageName: "1up",
-            downImageName: "1down"
-        ),
         PoseStep(
             id: 2,
             title: "Gerakan 2",
             descriptionText: "Rentangkan tangan sesuai panduan gerakan",
             upImageName: "2up",
             downImageName: "2down"
+        ),
+        PoseStep(
+            id: 1,
+            title: "Gerakan 1",
+            descriptionText: "Angkat tangan dan ikuti pose tubuh bagian atas",
+            upImageName: "1up",
+            downImageName: "1down"
         ),
         PoseStep(
             id: 3,

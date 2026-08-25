@@ -49,10 +49,16 @@ final class MovementIntroTutorial:
     private(set) var currentPage:
         MovementIntroPage = .followMovement
 
-
     @Published
     private(set) var isShowing:
         Bool = false
+
+    @Published
+    private(set) var timeRemaining:
+        Int = 4
+
+    private var timerTask:
+        Task<Void, Never>?
 
 
     // =========================================================
@@ -64,6 +70,9 @@ final class MovementIntroTutorial:
         currentPage =
             .followMovement
 
+        timeRemaining =
+            4
+
         withAnimation(
             .easeInOut(
                 duration:
@@ -74,6 +83,42 @@ final class MovementIntroTutorial:
             isShowing =
                 true
         }
+
+        startTimer()
+    }
+
+
+    // =========================================================
+    // MARK: Timer (4 Detik)
+    // =========================================================
+
+    private func startTimer() {
+
+        timerTask?.cancel()
+        timerTask = nil
+        timeRemaining = 4
+
+        timerTask = Task { @MainActor [weak self] in
+
+            guard let self else { return }
+
+            for second in (1...4).reversed() {
+
+                self.timeRemaining = second
+
+                do {
+                    try await Task.sleep(
+                        nanoseconds: 1_000_000_000
+                    )
+                } catch {
+                    return
+                }
+
+                guard !Task.isCancelled else { return }
+            }
+
+            self.next()
+        }
     }
 
 
@@ -82,6 +127,9 @@ final class MovementIntroTutorial:
     // =========================================================
 
     func next() {
+
+        timerTask?.cancel()
+        timerTask = nil
 
         switch currentPage {
 
@@ -98,6 +146,8 @@ final class MovementIntroTutorial:
                     .moveCloser
             }
 
+            startTimer()
+
 
         case .moveCloser:
 
@@ -111,6 +161,9 @@ final class MovementIntroTutorial:
     // =========================================================
 
     func finish() {
+
+        timerTask?.cancel()
+        timerTask = nil
 
         withAnimation(
             .easeOut(
@@ -131,8 +184,14 @@ final class MovementIntroTutorial:
 
     func reset() {
 
+        timerTask?.cancel()
+        timerTask = nil
+
         currentPage =
             .followMovement
+
+        timeRemaining =
+            4
 
         isShowing =
             false

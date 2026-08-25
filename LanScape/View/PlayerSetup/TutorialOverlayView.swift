@@ -123,7 +123,7 @@ struct TutorialOverlayView: View {
             // STARTED
             // =================================================
 
-            if tutorial.hasStarted {
+            if tutorial.currentStep == .started {
 
                 startedView()
             }
@@ -332,7 +332,7 @@ struct TutorialOverlayView: View {
             .onChange(
                 of:
                     player1State
-            ) { newValue in
+            ) { _, newValue in
 
                 tutorial.updatePlayerStates(
                     player1:
@@ -345,7 +345,7 @@ struct TutorialOverlayView: View {
             .onChange(
                 of:
                     player2State
-            ) { newValue in
+            ) { _, newValue in
 
                 tutorial.updatePlayerStates(
                     player1:
@@ -697,7 +697,7 @@ struct TutorialOverlayView: View {
             .font(
                 .system(
                     size:
-                        60,
+                        90,
 
                     weight:
                         .black,
@@ -709,9 +709,25 @@ struct TutorialOverlayView: View {
             .foregroundColor(
                 .white
             )
+            .shadow(
+                color:
+                    .black.opacity(0.6),
+                radius:
+                    16,
+                x:
+                    0,
+                y:
+                    6
+            )
 
             Spacer()
         }
+        .transition(
+            .scale
+                .combined(
+                    with: .opacity
+                )
+        )
     }
 
     // MARK: - Coordinate Conversion

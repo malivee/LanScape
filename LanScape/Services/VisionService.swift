@@ -19,7 +19,7 @@ final class VisionService:
         PoseModel()
 
     @Published var targetPose:
-        String = "1"
+        String = "2"
 
     @Published var prediction:
         String = "?"
@@ -77,7 +77,7 @@ final class VisionService:
         MLModel?
 
     private let confidenceThreshold:
-        Double = 0.70
+        Double = 0.65
 
     // MARK: - State
 
@@ -199,6 +199,16 @@ final class VisionService:
                 self.debugStatus =
                     "Model not found"
             }
+        }
+    }
+
+    // MARK: - Reset Matching State
+
+    func resetMatchingState() {
+        DispatchQueue.main.async { [weak self] in
+            self?.isMatching = false
+            self?.confidence = 0.0
+            self?.prediction = "?"
         }
     }
 

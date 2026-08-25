@@ -159,8 +159,8 @@ final class TutorialController: ObservableObject {
     // MARK: Internal
     // =========================================================
 
-    private var readySince:
-        Date?
+    private var holdTask:
+        Task<Void, Never>?
 
     private var countdownTask:
         Task<Void, Never>?
@@ -171,7 +171,7 @@ final class TutorialController: ObservableObject {
     // =========================================================
 
     var requiredReadyDuration:
-        TimeInterval = 0.8
+        TimeInterval = 0.6
 
 
     // =========================================================
@@ -179,6 +179,9 @@ final class TutorialController: ObservableObject {
     // =========================================================
 
     func reset() {
+
+        holdTask?.cancel()
+        holdTask = nil
 
         countdownTask?.cancel()
         countdownTask = nil
@@ -197,9 +200,6 @@ final class TutorialController: ObservableObject {
 
         hasStarted =
             false
-
-        readySince =
-            nil
     }
 
 
@@ -242,65 +242,58 @@ final class TutorialController: ObservableObject {
 
 
         // =============================================
-        // One or both players are not ready
+        // Both players are correct
+        // → Start hold timer if not already running
         // =============================================
 
-        guard
-            bothCorrect
-        else {
+        if bothCorrect {
 
-            readySince =
+            if holdTask == nil {
+
+                holdTask =
+                    Task { @MainActor [weak self] in
+
+                        guard
+                            let self
+                        else {
+                            return
+                        }
+
+                        do {
+
+                            try await Task.sleep(
+                                nanoseconds:
+                                    UInt64(
+                                        self.requiredReadyDuration * 1_000_000_000
+                                    )
+                            )
+
+                        } catch {
+
+                            return
+                        }
+
+                        guard
+                            !Task.isCancelled,
+                            self.currentStep == .playerSetup
+                        else {
+                            return
+                        }
+
+                        self.holdTask =
+                            nil
+
+                        self.startCountdown()
+                    }
+            }
+
+        } else {
+
+            // One or both players left correct state
+            holdTask?.cancel()
+            holdTask =
                 nil
-
-            return
         }
-
-
-        // =============================================
-        // Start holding timer
-        // =============================================
-
-        if readySince == nil {
-
-            readySince =
-                Date()
-
-            return
-        }
-
-
-        guard
-            let readySince
-        else {
-            return
-        }
-
-
-        let duration =
-            Date()
-                .timeIntervalSince(
-                    readySince
-                )
-
-
-        guard
-            duration >=
-                requiredReadyDuration
-        else {
-            return
-        }
-
-
-        self.readySince =
-            nil
-
-
-        // =============================================
-        // Both players are ready
-        // → Start countdown
-        // =============================================
-
-        startCountdown()
     }
 
 
@@ -429,6 +422,24 @@ final class TutorialController: ObservableObject {
                 self.countdown =
                     0
 
+                do {
+
+                    try await Task.sleep(
+                        nanoseconds:
+                            1_000_000_000
+                    )
+
+                } catch {
+
+                    return
+                }
+
+                guard
+                    !Task.isCancelled
+                else {
+                    return
+                }
+
                 self.hasStarted =
                     true
 
@@ -449,14 +460,11 @@ final class TutorialController: ObservableObject {
             TutorialStep
     ) {
 
+        holdTask?.cancel()
+        holdTask = nil
+
         countdownTask?.cancel()
-
-        countdownTask =
-            nil
-
-        readySince =
-            nil
-
+        countdownTask = nil
 
         currentStep =
             step
@@ -513,13 +521,11 @@ final class TutorialController: ObservableObject {
 
     func debugStartCountdown() {
 
+        holdTask?.cancel()
+        holdTask = nil
+
         countdownTask?.cancel()
-
-        countdownTask =
-            nil
-
-        readySince =
-            nil
+        countdownTask = nil
 
         startCountdown()
     }
@@ -527,13 +533,11 @@ final class TutorialController: ObservableObject {
 
     func debugSkipToStarted() {
 
+        holdTask?.cancel()
+        holdTask = nil
+
         countdownTask?.cancel()
-
-        countdownTask =
-            nil
-
-        readySince =
-            nil
+        countdownTask = nil
 
         currentStep =
             .started
