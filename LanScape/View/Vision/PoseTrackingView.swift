@@ -4,11 +4,22 @@ import UIKit
 
 struct PoseTrackingView: View {
 
+    // =========================================================
+    // MARK: - Services
+    // =========================================================
+
     @StateObject
     private var visionService =
         VisionService()
 
+    @StateObject
+    private var tutorialController =
+        TutorialController()
+
+
+    // =========================================================
     // MARK: - Force Landscape
+    // =========================================================
 
     private func forceLandscape() {
 
@@ -20,7 +31,10 @@ struct PoseTrackingView: View {
         UIViewController.attemptRotationToDeviceOrientation()
     }
 
+
+    // =========================================================
     // MARK: - Coordinate Conversion
+    // =========================================================
 
     private func convertPoint(
         _ point: CGPoint,
@@ -46,11 +60,8 @@ struct PoseTrackingView: View {
 
         let scale: CGFloat
 
-        var offsetX:
-            CGFloat = 0
-
-        var offsetY:
-            CGFloat = 0
+        var offsetX: CGFloat = 0
+        var offsetY: CGFloat = 0
 
         // AVCaptureVideoPreviewLayer
         // uses resizeAspectFill.
@@ -68,7 +79,8 @@ struct PoseTrackingView: View {
             offsetY =
                 (
                     viewSize.height
-                    - renderedHeight
+                    -
+                    renderedHeight
                 ) / 2.0
 
         } else {
@@ -84,11 +96,14 @@ struct PoseTrackingView: View {
             offsetX =
                 (
                     viewSize.width
-                    - renderedWidth
+                    -
+                    renderedWidth
                 ) / 2.0
         }
 
-        // MARK: Front Camera Mirror
+        // =====================================================
+        // Front Camera Mirror
+        // =====================================================
 
         // Vision itself is NOT mirrored.
         //
@@ -120,15 +135,18 @@ struct PoseTrackingView: View {
         )
     }
 
+
+    // =========================================================
     // MARK: - Body
+    // =========================================================
 
     var body: some View {
 
         ZStack {
 
-            // =====================================================
+            // =================================================
             // CAMERA
-            // =====================================================
+            // =================================================
 
             CameraPreviewView(
                 session:
@@ -136,9 +154,10 @@ struct PoseTrackingView: View {
             )
             .ignoresSafeArea()
 
-            // =====================================================
-            // SKELETON OVERLAY
-            // =====================================================
+
+            // =================================================
+            // SKELETON OVERLAY + TUTORIAL OVERLAY
+            // =================================================
 
             GeometryReader { geometry in
 
@@ -150,6 +169,11 @@ struct PoseTrackingView: View {
                         .poseModel
                         .videoSize
 
+
+                // =================================================
+                // EXISTING SKELETON
+                // =================================================
+
                 ForEach(
                     visionService
                         .poseModel
@@ -160,6 +184,7 @@ struct PoseTrackingView: View {
                         visionService.isMatching
                         ? Color.green
                         : person.role.primaryColor
+
 
                     // =================================================
                     // SKELETON LINES
@@ -182,6 +207,7 @@ struct PoseTrackingView: View {
                                     person.joints[
                                         endJoint
                                     ]
+
                             else {
                                 continue
                             }
@@ -217,6 +243,7 @@ struct PoseTrackingView: View {
                     }
                     .stroke(
                         playerColor,
+
                         style:
                             StrokeStyle(
                                 lineWidth:
@@ -233,10 +260,13 @@ struct PoseTrackingView: View {
                     )
                     .shadow(
                         color:
-                            playerColor.opacity(0.8),
+                            playerColor.opacity(
+                                0.8
+                            ),
                         radius:
                             5
                     )
+
 
                     // =================================================
                     // JOINTS
@@ -260,19 +290,25 @@ struct PoseTrackingView: View {
                                 playerColor
                             )
                             .frame(
-                                width: 14,
-                                height: 14
+                                width:
+                                    14,
+
+                                height:
+                                    14
                             )
                             .overlay(
                                 Circle()
                                     .stroke(
                                         Color.white,
-                                        lineWidth: 2
+                                        lineWidth:
+                                            2
                                     )
                             )
                             .shadow(
                                 color:
-                                    playerColor.opacity(0.8),
+                                    playerColor.opacity(
+                                        0.8
+                                    ),
                                 radius:
                                     4
                             )
@@ -280,6 +316,7 @@ struct PoseTrackingView: View {
                                 screenPoint
                             )
                     }
+
 
                     // =================================================
                     // PLAYER LABEL
@@ -315,9 +352,14 @@ struct PoseTrackingView: View {
                         )
                         .font(
                             .system(
-                                size: 11,
-                                weight: .bold,
-                                design: .rounded
+                                size:
+                                    11,
+
+                                weight:
+                                    .bold,
+
+                                design:
+                                    .rounded
                             )
                         )
                         .foregroundColor(
@@ -345,13 +387,17 @@ struct PoseTrackingView: View {
                                     Color.white.opacity(
                                         0.7
                                     ),
-                                    lineWidth: 1
+                                    lineWidth:
+                                        1
                                 )
                         )
                         .shadow(
                             color:
-                                .black.opacity(0.3),
-                            radius: 3
+                                .black.opacity(
+                                    0.3
+                                ),
+                            radius:
+                                3
                         )
                         .position(
                             x:
@@ -365,8 +411,30 @@ struct PoseTrackingView: View {
                         )
                     }
                 }
+
+
+                // =================================================
+                // NEW TUTORIAL OVERLAY
+                // =================================================
+
+                TutorialOverlayView(
+                    tutorial:
+                        tutorialController,
+
+                    detectedPeople:
+                        visionService
+                            .poseModel
+                            .detectedPeople,
+
+                    videoSize:
+                        videoSize,
+
+                    viewSize:
+                        viewSize
+                )
             }
             .ignoresSafeArea()
+
 
             // =====================================================
             // HUD
@@ -375,11 +443,16 @@ struct PoseTrackingView: View {
             VStack {
 
                 HStack(
-                    alignment: .center,
-                    spacing: 12
+                    alignment:
+                        .center,
+
+                    spacing:
+                        12
                 ) {
 
+                    // =================================================
                     // P1
+                    // =================================================
 
                     playerPill(
                         title:
@@ -393,19 +466,28 @@ struct PoseTrackingView: View {
                                 .poseModel
                                 .detectedPeople
                                 .contains {
+
                                     $0.personIndex == 0
                                 }
                     )
 
+
                     Spacer()
 
+
+                    // =================================================
                     // Match Status
+                    // =================================================
 
                     matchStatusCard()
 
+
                     Spacer()
 
+
+                    // =================================================
                     // P2
+                    // =================================================
 
                     playerPill(
                         title:
@@ -419,6 +501,7 @@ struct PoseTrackingView: View {
                                 .poseModel
                                 .detectedPeople
                                 .contains {
+
                                     $0.personIndex == 1
                                 }
                     )
@@ -434,6 +517,7 @@ struct PoseTrackingView: View {
 
                 Spacer()
             }
+
 
             // =====================================================
             // DEBUG PANEL
@@ -461,7 +545,7 @@ struct PoseTrackingView: View {
         }
 
         // =========================================================
-        // LIFECYCLE
+        // MARK: - Lifecycle
         // =========================================================
 
         .onAppear {
@@ -477,7 +561,10 @@ struct PoseTrackingView: View {
         }
     }
 
+
+    // =========================================================
     // MARK: - Match Status
+    // =========================================================
 
     @ViewBuilder
     private func matchStatusCard()
@@ -485,10 +572,13 @@ struct PoseTrackingView: View {
 
         if visionService.isMatching {
 
+            // =====================================================
             // MATCH
+            // =====================================================
 
             HStack(
-                spacing: 8
+                spacing:
+                    8
             ) {
 
                 Image(
@@ -500,14 +590,20 @@ struct PoseTrackingView: View {
                 )
                 .font(
                     .system(
-                        size: 16,
-                        weight: .black
+                        size:
+                            16,
+
+                        weight:
+                            .black
                     )
                 )
 
                 VStack(
-                    alignment: .leading,
-                    spacing: 1
+                    alignment:
+                        .leading,
+
+                    spacing:
+                        1
                 ) {
 
                     Text(
@@ -515,9 +611,14 @@ struct PoseTrackingView: View {
                     )
                     .font(
                         .system(
-                            size: 11,
-                            weight: .black,
-                            design: .rounded
+                            size:
+                                11,
+
+                            weight:
+                                .black,
+
+                            design:
+                                .rounded
                         )
                     )
                     .foregroundColor(
@@ -529,13 +630,20 @@ struct PoseTrackingView: View {
                     )
                     .font(
                         .system(
-                            size: 10,
-                            weight: .semibold,
-                            design: .rounded
+                            size:
+                                10,
+
+                            weight:
+                                .semibold,
+
+                            design:
+                                .rounded
                         )
                     )
                     .foregroundColor(
-                        .white.opacity(0.9)
+                        .white.opacity(
+                            0.9
+                        )
                     )
                 }
             }
@@ -550,7 +658,9 @@ struct PoseTrackingView: View {
             .background(
                 Capsule()
                     .fill(
-                        Color.black.opacity(0.7)
+                        Color.black.opacity(
+                            0.7
+                        )
                     )
                     .background(
                         .ultraThinMaterial,
@@ -561,22 +671,31 @@ struct PoseTrackingView: View {
             .overlay(
                 Capsule()
                     .stroke(
-                        Color.green.opacity(0.8),
-                        lineWidth: 1.5
+                        Color.green.opacity(
+                            0.8
+                        ),
+                        lineWidth:
+                            1.5
                     )
             )
             .shadow(
                 color:
-                    Color.green.opacity(0.5),
-                radius: 6
+                    Color.green.opacity(
+                        0.5
+                    ),
+                radius:
+                    6
             )
 
         } else if visionService.prediction != "?" {
 
+            // =====================================================
             // NOT MATCHING
+            // =====================================================
 
             HStack(
-                spacing: 8
+                spacing:
+                    8
             ) {
 
                 Image(
@@ -588,14 +707,20 @@ struct PoseTrackingView: View {
                 )
                 .font(
                     .system(
-                        size: 16,
-                        weight: .bold
+                        size:
+                            16,
+
+                        weight:
+                            .bold
                     )
                 )
 
                 VStack(
-                    alignment: .leading,
-                    spacing: 1
+                    alignment:
+                        .leading,
+
+                    spacing:
+                        1
                 ) {
 
                     Text(
@@ -603,9 +728,14 @@ struct PoseTrackingView: View {
                     )
                     .font(
                         .system(
-                            size: 11,
-                            weight: .bold,
-                            design: .rounded
+                            size:
+                                11,
+
+                            weight:
+                                .bold,
+
+                            design:
+                                .rounded
                         )
                     )
                     .foregroundColor(
@@ -617,13 +747,20 @@ struct PoseTrackingView: View {
                     )
                     .font(
                         .system(
-                            size: 10,
-                            weight: .medium,
-                            design: .rounded
+                            size:
+                                10,
+
+                            weight:
+                                .medium,
+
+                            design:
+                                .rounded
                         )
                     )
                     .foregroundColor(
-                        .white.opacity(0.8)
+                        .white.opacity(
+                            0.8
+                        )
                     )
                 }
             }
@@ -638,7 +775,9 @@ struct PoseTrackingView: View {
             .background(
                 Capsule()
                     .fill(
-                        Color.black.opacity(0.6)
+                        Color.black.opacity(
+                            0.6
+                        )
                     )
                     .background(
                         .ultraThinMaterial,
@@ -649,26 +788,37 @@ struct PoseTrackingView: View {
             .overlay(
                 Capsule()
                     .stroke(
-                        Color.orange.opacity(0.6),
-                        lineWidth: 1
+                        Color.orange.opacity(
+                            0.6
+                        ),
+                        lineWidth:
+                            1
                     )
             )
 
         } else {
 
+            // =====================================================
             // STANDBY
+            // =====================================================
 
             HStack(
-                spacing: 6
+                spacing:
+                    6
             ) {
 
                 Circle()
                     .fill(
-                        Color.yellow.opacity(0.8)
+                        Color.yellow.opacity(
+                            0.8
+                        )
                     )
                     .frame(
-                        width: 7,
-                        height: 7
+                        width:
+                            7,
+
+                        height:
+                            7
                     )
 
                 Text(
@@ -676,13 +826,20 @@ struct PoseTrackingView: View {
                 )
                 .font(
                     .system(
-                        size: 11,
-                        weight: .bold,
-                        design: .rounded
+                        size:
+                            11,
+
+                        weight:
+                            .bold,
+
+                        design:
+                            .rounded
                     )
                 )
                 .foregroundColor(
-                    .white.opacity(0.9)
+                    .white.opacity(
+                        0.9
+                    )
                 )
             }
             .padding(
@@ -696,7 +853,9 @@ struct PoseTrackingView: View {
             .background(
                 Capsule()
                     .fill(
-                        Color.black.opacity(0.5)
+                        Color.black.opacity(
+                            0.5
+                        )
                     )
                     .background(
                         .ultraThinMaterial,
@@ -707,55 +866,83 @@ struct PoseTrackingView: View {
             .overlay(
                 Capsule()
                     .stroke(
-                        Color.white.opacity(0.15),
-                        lineWidth: 1
+                        Color.white.opacity(
+                            0.15
+                        ),
+                        lineWidth:
+                            1
                     )
             )
         }
     }
 
+
+    // =========================================================
     // MARK: - Player Pill
+    // =========================================================
 
     @ViewBuilder
     private func playerPill(
-        title: String,
-        color: Color,
-        isDetected: Bool
+        title:
+            String,
+
+        color:
+            Color,
+
+        isDetected:
+            Bool
     ) -> some View {
 
         HStack(
-            spacing: 6
+            spacing:
+                6
         ) {
 
             Circle()
                 .fill(
                     isDetected
                     ? color
-                    : Color.gray.opacity(0.5)
+                    : Color.gray.opacity(
+                        0.5
+                    )
                 )
                 .frame(
-                    width: 8,
-                    height: 8
+                    width:
+                        8,
+
+                    height:
+                        8
                 )
                 .shadow(
                     color:
                         isDetected
-                        ? color.opacity(0.9)
+                        ? color.opacity(
+                            0.9
+                        )
                         : .clear,
-                    radius: 4
+
+                    radius:
+                        4
                 )
 
-            Text(title)
-                .font(
-                    .system(
-                        size: 12,
-                        weight: .semibold,
-                        design: .rounded
-                    )
+            Text(
+                title
+            )
+            .font(
+                .system(
+                    size:
+                        12,
+
+                    weight:
+                        .semibold,
+
+                    design:
+                        .rounded
                 )
-                .foregroundColor(
-                    .white
-                )
+            )
+            .foregroundColor(
+                .white
+            )
 
             if isDetected {
 
@@ -765,8 +952,11 @@ struct PoseTrackingView: View {
                     )
                     .font(
                         .system(
-                            size: 10,
-                            weight: .black
+                            size:
+                                10,
+
+                            weight:
+                                .black
                         )
                     )
             }
@@ -782,7 +972,9 @@ struct PoseTrackingView: View {
         .background(
             Capsule()
                 .fill(
-                    Color.black.opacity(0.55)
+                    Color.black.opacity(
+                        0.55
+                    )
                 )
                 .background(
                     .ultraThinMaterial,
@@ -794,22 +986,33 @@ struct PoseTrackingView: View {
             Capsule()
                 .stroke(
                     isDetected
-                    ? color.opacity(0.6)
-                    : Color.white.opacity(0.15),
-                    lineWidth: 1
+                    ? color.opacity(
+                        0.6
+                    )
+                    : Color.white.opacity(
+                        0.15
+                    ),
+                    lineWidth:
+                        1
                 )
         )
     }
 
+
+    // =========================================================
     // MARK: - Debug Panel
+    // =========================================================
 
     @ViewBuilder
     private func debugPanel()
         -> some View {
 
         VStack(
-            alignment: .leading,
-            spacing: 4
+            alignment:
+                .leading,
+
+            spacing:
+                4
         ) {
 
             Text(
@@ -817,9 +1020,14 @@ struct PoseTrackingView: View {
             )
             .font(
                 .system(
-                    size: 10,
-                    weight: .black,
-                    design: .rounded
+                    size:
+                        10,
+
+                    weight:
+                        .black,
+
+                    design:
+                        .rounded
                 )
             )
             .foregroundColor(
@@ -852,30 +1060,44 @@ struct PoseTrackingView: View {
         }
         .font(
             .system(
-                size: 9,
-                weight: .medium,
-                design: .monospaced
+                size:
+                    9,
+
+                weight:
+                    .medium,
+
+                design:
+                    .monospaced
             )
         )
         .foregroundColor(
-            .white.opacity(0.85)
+            .white.opacity(
+                0.85
+            )
         )
         .padding(
             10
         )
         .background(
-            Color.black.opacity(0.65)
+            Color.black.opacity(
+                0.65
+            )
         )
         .clipShape(
             RoundedRectangle(
-                cornerRadius: 10
+                cornerRadius:
+                    10
             )
         )
     }
 }
 
+
+// =============================================================
 // MARK: - Preview
+// =============================================================
 
 #Preview {
+
     PoseTrackingView()
 }
