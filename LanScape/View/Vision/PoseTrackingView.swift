@@ -652,8 +652,13 @@ struct PoseTrackingView:
                     }
 
                     guard
-                        !Task.isCancelled
+                        !Task.isCancelled,
+                        self.visionService.isMatching
                     else {
+                        withAnimation {
+                            self.isSuccessHolding = false
+                        }
+                        self.stepAdvanceTask = nil
                         return
                     }
 

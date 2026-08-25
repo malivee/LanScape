@@ -215,12 +215,7 @@ final class VisionService:
     // MARK: - Dynamic Threshold
 
     func effectiveThreshold(for target: String) -> Double {
-        switch target.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
-        case "1", "2":
-            return 0.35
-        default:
-            return 0.50
-        }
+        return 0.50
     }
 
     // MARK: - Model Information
