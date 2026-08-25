@@ -57,7 +57,7 @@ final class VisionService:
     private var model: MLModel?
 
     private let confidenceThreshold:
-        Double = 0.35
+        Double = 0.70
 
     // MARK: - Init
 
@@ -66,7 +66,7 @@ final class VisionService:
         super.init()
 
         loadModel(
-            name: "DancePose1"
+            name: "DancePose2"
         )
 
         checkCameraPermission()
@@ -75,7 +75,7 @@ final class VisionService:
     // MARK: - Load Model
 
     func loadModel(
-        name: String = "DancePose1"
+        name: String
     ) {
 
         if let url =
