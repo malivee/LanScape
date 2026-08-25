@@ -28,14 +28,14 @@ extension PoseStep {
     public static let sampleSequence: [PoseStep] = [
         PoseStep(
             id: 2,
-            title: "Gerakan 2",
+            title: "Gerakan 1",
             descriptionText: "Rentangkan tangan sesuai panduan gerakan",
             upImageName: "2up",
             downImageName: "2down"
         ),
         PoseStep(
             id: 1,
-            title: "Gerakan 1",
+            title: "Gerakan 2",
             descriptionText: "Angkat tangan dan ikuti pose tubuh bagian atas",
             upImageName: "1up",
             downImageName: "1down"

@@ -212,6 +212,17 @@ final class VisionService:
         }
     }
 
+    // MARK: - Dynamic Threshold
+
+    func effectiveThreshold(for target: String) -> Double {
+        switch target.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
+        case "1", "2":
+            return 0.35
+        default:
+            return 0.50
+        }
+    }
+
     // MARK: - Model Information
 
     private func printModelInformation() {
@@ -1206,6 +1217,10 @@ final class VisionService:
             let predictedConfidence =
                 best.value
 
+            // MARK: Dynamic Threshold (0.50 for 1 & 2; 0.65 for 3 & 4)
+
+            let activeThreshold = effectiveThreshold(for: targetPose)
+
             // MARK: Matching
 
             let matches =
@@ -1216,7 +1231,7 @@ final class VisionService:
                     .lowercased()
                 &&
                 predictedConfidence >=
-                    confidenceThreshold
+                    activeThreshold
 
             // MARK: Probability Debug
 
@@ -1301,7 +1316,7 @@ final class VisionService:
 
             print(
                 "THRESHOLD:",
-                confidenceThreshold
+                activeThreshold
             )
 
             print(

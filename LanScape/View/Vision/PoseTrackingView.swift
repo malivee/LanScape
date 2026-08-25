@@ -657,20 +657,7 @@ struct PoseTrackingView:
                         return
                     }
 
-                    if self.visionService.isMatching {
-
-                        self.advanceToNextMovement()
-
-                    } else {
-
-                        withAnimation {
-                            self.isSuccessHolding =
-                                false
-                        }
-
-                        self.stepAdvanceTask =
-                            nil
-                    }
+                    self.advanceToNextMovement()
                 }
 
 
