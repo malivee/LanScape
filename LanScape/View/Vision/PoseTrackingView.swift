@@ -783,19 +783,38 @@ struct PoseTrackingView:
     private func forceLandscape() {
 
         UIDevice.current.setValue(
-            UIInterfaceOrientation
-                .landscapeRight
-                .rawValue,
-
-            forKey:
-                "orientation"
+            UIInterfaceOrientation.landscapeRight.rawValue,
+            forKey: "orientation"
         )
 
+        if let windowScene =
+            UIApplication.shared.connectedScenes
+                .compactMap({ $0 as? UIWindowScene })
+                .first {
+
+            if #available(iOS 16.0, *) {
+
+                let preferences =
+                    UIWindowScene.GeometryPreferences.iOS(
+                        interfaceOrientations:
+                            .landscapeRight
+                    )
+
+                windowScene.requestGeometryUpdate(
+                    preferences
+                ) { error in
+
+                    print(
+                        "Landscape rotation error:",
+                        error.localizedDescription
+                    )
+                }
+            }
+        }
 
         UIViewController
             .attemptRotationToDeviceOrientation()
     }
-
 
     // =========================================================
     // MARK: - DEBUG
