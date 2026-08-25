@@ -2,91 +2,55 @@
 //  TutorialStep.swift
 //  LanScape
 //
-//  Created by Muhammad Alief Rahman Fardillah on 25/08/26.
-//
 
 import Foundation
 import SwiftUI
 import Vision
 import Combine
 
-
 // MARK: - Tutorial Step
 
 enum TutorialStep: Int, CaseIterable {
 
-    case playerSetup1 = 0
-    case playerStance1
-    case playerStance2
-    case playerStance3
-    case playerStance4
-    case countdown1
-    case countdown2
+    case playerSetup = 0
+
     case countdown3
+    case countdown2
+    case countdown1
+
     case started
-
-
-    // MARK: - Title
 
     var title: String {
 
         switch self {
 
-        case .playerSetup1:
-            return "Player Setup #1"
-
-        case .playerStance1:
-            return "Player Stance #1"
-
-        case .playerStance2:
-            return "Player Stance #2"
-
-        case .playerStance3:
-            return "Player Stance #3"
-
-        case .playerStance4:
-            return "Player Stance #4"
-
-        case .countdown1:
-            return "Countdown #1"
-
-        case .countdown2:
-            return "Countdown #2"
+        case .playerSetup:
+            return "Player Setup"
 
         case .countdown3:
             return "Countdown #3"
 
+        case .countdown2:
+            return "Countdown #2"
+
+        case .countdown1:
+            return "Countdown #1"
+
         case .started:
-            return "Mulai!"
+            return "Mulai"
         }
     }
-
-
-    // MARK: - Instruction
 
     var instruction: String {
 
         switch self {
 
-        case .playerSetup1:
+        case .playerSetup:
             return "Posisikan tubuh di masing-masing area."
 
-        case .playerStance1:
-            return "Perhatikan gerakan pertama."
-
-        case .playerStance2:
-            return "Pertahankan posisi kalian."
-
-        case .playerStance3:
-            return "Perhatikan gerakan berikutnya."
-
-        case .playerStance4:
-            return "Pertahankan posisi kalian."
-
-        case .countdown1,
+        case .countdown3,
              .countdown2,
-             .countdown3:
-
+             .countdown1:
             return "Bersiap..."
 
         case .started:
@@ -94,26 +58,17 @@ enum TutorialStep: Int, CaseIterable {
         }
     }
 
-
-    // MARK: - Position Validation
-
     var requiresPositionValidation: Bool {
 
         switch self {
 
-        case .playerSetup1,
-             .playerStance1,
-             .playerStance2,
-             .playerStance3,
-             .playerStance4:
-
+        case .playerSetup:
             return true
 
-        case .countdown1,
+        case .countdown3,
              .countdown2,
-             .countdown3,
+             .countdown1,
              .started:
-
             return false
         }
     }
@@ -127,7 +82,6 @@ enum TutorialRectangleState {
     case waiting
     case incorrect
     case correct
-
 
     var color: Color {
 
@@ -162,12 +116,17 @@ struct TutorialPlayerZone {
 final class TutorialController: ObservableObject {
 
     // =========================================================
-    // MARK: - Published State
+    // MARK: Current Step
     // =========================================================
 
     @Published
     private(set) var currentStep:
-        TutorialStep = .playerSetup1
+        TutorialStep = .playerSetup
+
+
+    // =========================================================
+    // MARK: Rectangle States
+    // =========================================================
 
     @Published
     private(set) var player1State:
@@ -177,9 +136,19 @@ final class TutorialController: ObservableObject {
     private(set) var player2State:
         TutorialRectangleState = .waiting
 
+
+    // =========================================================
+    // MARK: Countdown
+    // =========================================================
+
     @Published
     private(set) var countdown:
         Int = 3
+
+
+    // =========================================================
+    // MARK: Started
+    // =========================================================
 
     @Published
     private(set) var hasStarted:
@@ -187,44 +156,35 @@ final class TutorialController: ObservableObject {
 
 
     // =========================================================
-    // MARK: - Internal State
+    // MARK: Internal
     // =========================================================
 
     private var readySince:
         Date?
-
-    private var transitionWorkItem:
-        DispatchWorkItem?
 
     private var countdownTask:
         Task<Void, Never>?
 
 
     // =========================================================
-    // MARK: - Configuration
+    // MARK: Configuration
     // =========================================================
-
-    /// Both players must remain correctly positioned
-    /// for this amount of time before advancing.
 
     var requiredReadyDuration:
         TimeInterval = 0.8
 
 
     // =========================================================
-    // MARK: - Reset
+    // MARK: Reset
     // =========================================================
 
     func reset() {
-
-        transitionWorkItem?.cancel()
-        transitionWorkItem = nil
 
         countdownTask?.cancel()
         countdownTask = nil
 
         currentStep =
-            .playerSetup1
+            .playerSetup
 
         player1State =
             .waiting
@@ -244,7 +204,7 @@ final class TutorialController: ObservableObject {
 
 
     // =========================================================
-    // MARK: - Update Player States
+    // MARK: Update Player States
     // =========================================================
 
     func updatePlayerStates(
@@ -261,7 +221,6 @@ final class TutorialController: ObservableObject {
             return
         }
 
-        // Update UI states.
 
         player1State =
             player1
@@ -270,26 +229,25 @@ final class TutorialController: ObservableObject {
             player2
 
 
-        // Current step must require validation.
-
         guard
-            currentStep.requiresPositionValidation
+            currentStep == .playerSetup
         else {
             return
         }
 
-
-        // Both players must be correct.
 
         let bothCorrect =
             player1 == .correct &&
             player2 == .correct
 
 
-        // If either player isn't correct,
-        // reset the stability timer.
+        // =============================================
+        // One or both players are not ready
+        // =============================================
 
-        if !bothCorrect {
+        guard
+            bothCorrect
+        else {
 
             readySince =
                 nil
@@ -298,7 +256,9 @@ final class TutorialController: ObservableObject {
         }
 
 
-        // Start stability timer.
+        // =============================================
+        // Start holding timer
+        // =============================================
 
         if readySince == nil {
 
@@ -331,93 +291,21 @@ final class TutorialController: ObservableObject {
         }
 
 
-        // Both players stayed correct
-        // long enough.
-
         self.readySince =
             nil
 
-        advance()
+
+        // =============================================
+        // Both players are ready
+        // → Start countdown
+        // =============================================
+
+        startCountdown()
     }
 
 
     // =========================================================
-    // MARK: - Advance
-    // =========================================================
-
-    private func advance() {
-
-        guard
-            !hasStarted
-        else {
-            return
-        }
-
-
-        switch currentStep {
-
-        case .playerSetup1:
-
-            moveTo(
-                .playerStance1
-            )
-
-
-        case .playerStance1:
-
-            moveTo(
-                .playerStance2
-            )
-
-
-        case .playerStance2:
-
-            moveTo(
-                .playerStance3
-            )
-
-
-        case .playerStance3:
-
-            moveTo(
-                .playerStance4
-            )
-
-
-        case .playerStance4:
-
-            startCountdown()
-
-
-        case .countdown1,
-             .countdown2,
-             .countdown3,
-             .started:
-
-            break
-        }
-    }
-
-
-    // =========================================================
-    // MARK: - Move To
-    // =========================================================
-
-    private func moveTo(
-        _ step:
-            TutorialStep
-    ) {
-
-        currentStep =
-            step
-
-        readySince =
-            nil
-    }
-
-
-    // =========================================================
-    // MARK: - Countdown
+    // MARK: Countdown
     // =========================================================
 
     private func startCountdown() {
@@ -428,10 +316,8 @@ final class TutorialController: ObservableObject {
             nil
 
 
-        // Start at 3.
-
         currentStep =
-            .countdown1
+            .countdown3
 
         countdown =
             3
@@ -447,9 +333,9 @@ final class TutorialController: ObservableObject {
                 }
 
 
-                // =========================================
-                // 3 → 2
-                // =========================================
+                // =============================================
+                // 3
+                // =============================================
 
                 do {
 
@@ -478,9 +364,9 @@ final class TutorialController: ObservableObject {
                     2
 
 
-                // =========================================
-                // 2 → 1
-                // =========================================
+                // =============================================
+                // 2
+                // =============================================
 
                 do {
 
@@ -503,15 +389,15 @@ final class TutorialController: ObservableObject {
 
 
                 self.currentStep =
-                    .countdown3
+                    .countdown1
 
                 self.countdown =
                     1
 
 
-                // =========================================
-                // 1 → STARTED
-                // =========================================
+                // =============================================
+                // 1
+                // =============================================
 
                 do {
 
@@ -532,6 +418,10 @@ final class TutorialController: ObservableObject {
                     return
                 }
 
+
+                // =============================================
+                // MULAI
+                // =============================================
 
                 self.currentStep =
                     .started
@@ -549,143 +439,107 @@ final class TutorialController: ObservableObject {
 
 
     // =========================================================
-    // MARK: - DEBUG
+    // MARK: DEBUG
     // =========================================================
 
     #if DEBUG
 
-    /// Manually advances exactly ONE tutorial step.
-    ///
-    /// This is only for testing.
-    ///
-    /// Example:
-    ///
-    /// Player Setup
-    ///      ↓ tap
-    /// Stance 1
-    ///      ↓ tap
-    /// Stance 2
-    ///      ↓ tap
-    /// Stance 3
-    ///      ↓ tap
-    /// Stance 4
-    ///      ↓ tap
-    /// Countdown
-    ///      ↓
-    /// Started
-    func debugNextStep() {
-
-        guard
-            !hasStarted
-        else {
-            return
-        }
-
-
-        // Stop any running countdown.
+    func debugSetStep(
+        _ step:
+            TutorialStep
+    ) {
 
         countdownTask?.cancel()
+
         countdownTask =
             nil
 
-
-        switch currentStep {
-
-        case .playerSetup1:
-
-            currentStep =
-                .playerStance1
+        readySince =
+            nil
 
 
-        case .playerStance1:
-
-            currentStep =
-                .playerStance2
+        currentStep =
+            step
 
 
-        case .playerStance2:
+        switch step {
 
-            currentStep =
-                .playerStance3
-
-
-        case .playerStance3:
-
-            currentStep =
-                .playerStance4
-
-
-        case .playerStance4:
-
-            startCountdown()
-
-
-        case .countdown1:
-
-            currentStep =
-                .countdown2
+        case .playerSetup:
 
             countdown =
-                2
+                3
 
-
-        case .countdown2:
-
-            currentStep =
-                .countdown3
-
-            countdown =
-                1
+            hasStarted =
+                false
 
 
         case .countdown3:
 
-            currentStep =
-                .started
+            countdown =
+                3
+
+            hasStarted =
+                false
+
+
+        case .countdown2:
+
+            countdown =
+                2
+
+            hasStarted =
+                false
+
+
+        case .countdown1:
+
+            countdown =
+                1
+
+            hasStarted =
+                false
+
+
+        case .started:
 
             countdown =
                 0
 
             hasStarted =
                 true
-
-
-        case .started:
-
-            break
         }
     }
 
 
-    /// Immediately skips the entire tutorial.
-    ///
-    /// Useful for testing the Core ML
-    /// movement sequence directly.
-
-    func skipToStarted() {
+    func debugStartCountdown() {
 
         countdownTask?.cancel()
-        countdownTask =
-            nil
 
-        transitionWorkItem?.cancel()
-        transitionWorkItem =
+        countdownTask =
             nil
 
         readySince =
             nil
 
-        player1State =
-            .correct
+        startCountdown()
+    }
 
-        player2State =
-            .correct
 
-        countdown =
-            0
+    func debugSkipToStarted() {
+
+        countdownTask?.cancel()
+
+        countdownTask =
+            nil
+
+        readySince =
+            nil
 
         currentStep =
             .started
+
+        countdown =
+            0
 
         hasStarted =
             true

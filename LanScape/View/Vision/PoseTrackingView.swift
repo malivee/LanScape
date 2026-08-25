@@ -1,24 +1,13 @@
-import SwiftUI
+//
+//  PoseTrackingView.swift
+//  LanScape
+//
 
-/// Main screen:
-///
-/// Tutorial:
-/// Player Setup
-/// → Stance 1
-/// → Stance 2
-/// → Stance 3
-/// → Stance 4
-/// → Countdown
-/// → Started
-///
-/// Then:
-///
-/// Core ML:
-/// Pose 1
-/// → Pose 2
-/// → Pose 3
-/// → Pose 4
-struct PoseTrackingView: View {
+import SwiftUI
+import UIKit
+
+struct PoseTrackingView:
+    View {
 
     // =========================================================
     // MARK: - Services
@@ -28,37 +17,54 @@ struct PoseTrackingView: View {
     private var visionService =
         VisionService()
 
+
     @StateObject
     private var tutorialController =
         TutorialController()
+
+
+    @StateObject
+    private var movementIntroTutorial =
+        MovementIntroTutorial()
+
+
+    // =========================================================
+    // MARK: - Environment
+    // =========================================================
 
     @Environment(\.dismiss)
     private var dismiss
 
 
     // =========================================================
-    // MARK: - Core ML Movement Sequence
+    // MARK: - Movement
     // =========================================================
 
     @State
     private var currentStepIndex:
         Int = 0
 
+
     @State
     private var isSuccessHolding:
         Bool = false
+
 
     @State
     private var isCompleted:
         Bool = false
 
+
     @State
     private var stepAdvanceTask:
-        Task<Void, Never>? = nil
+        Task<Void, Never>? =
+            nil
+
 
     private let steps:
         [PoseStep] =
         PoseStep.sampleSequence
+
 
     private var currentStep:
         PoseStep {
@@ -73,17 +79,20 @@ struct PoseTrackingView: View {
 
 
     // =========================================================
-    // MARK: - Matching
+    // MARK: - Effective Match
     // =========================================================
 
     private var isEffectiveMatching:
         Bool {
 
         guard
-            tutorialController.hasStarted
+            tutorialController.hasStarted,
+            !movementIntroTutorial.isShowing
         else {
+
             return false
         }
+
 
         return
             visionService.isMatching
@@ -93,10 +102,11 @@ struct PoseTrackingView: View {
 
 
     // =========================================================
-    // MARK: - Body
+    // MARK: BODY
     // =========================================================
 
-    var body: some View {
+    var body:
+        some View {
 
         ZStack {
 
@@ -116,6 +126,7 @@ struct PoseTrackingView: View {
             // =================================================
 
             PoseSkeletonOverlayView(
+
                 detectedPeople:
                     visionService
                         .poseModel
@@ -133,21 +144,52 @@ struct PoseTrackingView: View {
 
 
             // =================================================
-            // TUTORIAL OR MOVEMENT
+            // GAME FLOW
             // =================================================
 
             if !tutorialController.hasStarted {
+
+                // ---------------------------------------------
+                // PLAYER SETUP / COUNTDOWN
+                // ---------------------------------------------
 
                 tutorialPhase
 
             } else {
 
-                movementPhase
+                // ---------------------------------------------
+                // AFTER "MULAI"
+                // ---------------------------------------------
+
+                if movementIntroTutorial.isShowing {
+
+                    // -----------------------------------------
+                    // MOVE #1 TUTORIAL
+                    // -----------------------------------------
+
+                    MovementIntroTutorialView(
+
+                        tutorial:
+                            movementIntroTutorial,
+
+                        step:
+                            currentStep
+                    )
+                    .ignoresSafeArea()
+
+                } else {
+
+                    // -----------------------------------------
+                    // ACTUAL MOVEMENT
+                    // -----------------------------------------
+
+                    movementPhase
+                }
             }
 
 
             // =================================================
-            // DEBUG CONTROLS
+            // DEBUG
             // =================================================
 
             testControlsOverlay
@@ -170,22 +212,27 @@ struct PoseTrackingView: View {
                 )
                 .transition(
                     .opacity
-                    .combined(
-                        with: .scale
-                    )
+                        .combined(
+                            with: .scale
+                        )
                 )
             }
         }
 
 
         // =====================================================
-        // LIFECYCLE
+        // APPEAR
         // =====================================================
 
         .onAppear {
 
             handleAppear()
         }
+
+
+        // =====================================================
+        // DISAPPEAR
+        // =====================================================
 
         .onDisappear {
 
@@ -194,7 +241,7 @@ struct PoseTrackingView: View {
 
 
         // =====================================================
-        // TUTORIAL FINISHED
+        // MULAI → FIRST MOVEMENT TUTORIAL
         // =====================================================
 
         .onChange(
@@ -208,7 +255,33 @@ struct PoseTrackingView: View {
                 return
             }
 
-            startMovementSequence()
+
+            beginMovementSequence()
+        }
+
+
+        // =====================================================
+        // MOVEMENT INTRO FINISHED
+        // =====================================================
+
+        .onChange(
+            of:
+                movementIntroTutorial.isShowing
+        ) { _, showing in
+
+            guard
+                !showing,
+                tutorialController.hasStarted
+            else {
+                return
+            }
+
+
+            // =============================================
+            // Now the actual first movement begins.
+            // =============================================
+
+            syncTargetPose()
         }
 
 
@@ -221,14 +294,13 @@ struct PoseTrackingView: View {
                 visionService.isMatching
         ) { _, isMatching in
 
-            // Do not process Core ML movement
-            // matching during tutorial.
-
             guard
-                tutorialController.hasStarted
+                tutorialController.hasStarted,
+                !movementIntroTutorial.isShowing
             else {
                 return
             }
+
 
             handleMatchEvaluation(
                 isMatching:
@@ -281,17 +353,17 @@ struct PoseTrackingView: View {
 
         ZStack {
 
-            // ---------------------------------------------
-            // Divider
-            // ---------------------------------------------
+            // =================================================
+            // CENTER DIVIDER
+            // =================================================
 
             CenterDividerLineView()
                 .ignoresSafeArea()
 
 
-            // ---------------------------------------------
-            // Movement Guide
-            // ---------------------------------------------
+            // =================================================
+            // EXISTING MOVEMENT GUIDE
+            // =================================================
 
             PoseGuideOverlayView(
 
@@ -304,9 +376,9 @@ struct PoseTrackingView: View {
             .ignoresSafeArea()
 
 
-            // ---------------------------------------------
-            // HUD
-            // ---------------------------------------------
+            // =================================================
+            // HEADER / HUD
+            // =================================================
 
             VStack(
                 spacing:
@@ -389,18 +461,35 @@ struct PoseTrackingView: View {
 
 
     // =========================================================
-    // MARK: - Lifecycle
+    // MARK: - Appear
     // =========================================================
 
     private func handleAppear() {
 
+        // ---------------------------------------------
+        // Force landscape
+        // ---------------------------------------------
+
         forceLandscape()
 
-        // Reset tutorial.
+
+        // ---------------------------------------------
+        // Reset tutorial
+        // ---------------------------------------------
 
         tutorialController.reset()
 
-        // Reset Core ML sequence.
+
+        // ---------------------------------------------
+        // Reset movement tutorial
+        // ---------------------------------------------
+
+        movementIntroTutorial.reset()
+
+
+        // ---------------------------------------------
+        // Reset movement
+        // ---------------------------------------------
 
         currentStepIndex =
             0
@@ -411,20 +500,32 @@ struct PoseTrackingView: View {
         isCompleted =
             false
 
+
         stepAdvanceTask?.cancel()
 
         stepAdvanceTask =
             nil
 
-        // Do not start Core ML target
-        // until tutorial finishes.
+
+        // ---------------------------------------------
+        // Don't validate a movement yet.
+        // ---------------------------------------------
 
         visionService.targetPose =
             ""
 
+
+        // ---------------------------------------------
+        // Start camera
+        // ---------------------------------------------
+
         visionService.startSession()
     }
 
+
+    // =========================================================
+    // MARK: - Disappear
+    // =========================================================
 
     private func handleDisappear() {
 
@@ -438,10 +539,10 @@ struct PoseTrackingView: View {
 
 
     // =========================================================
-    // MARK: - Start Core ML Sequence
+    // MARK: - Begin Movement Sequence
     // =========================================================
 
-    private func startMovementSequence() {
+    private func beginMovementSequence() {
 
         currentStepIndex =
             0
@@ -452,17 +553,31 @@ struct PoseTrackingView: View {
         isCompleted =
             false
 
+
         stepAdvanceTask?.cancel()
 
         stepAdvanceTask =
             nil
 
-        syncTargetPose()
+
+        // =====================================================
+        // IMPORTANT
+        //
+        // The first movement starts with the tutorial.
+        //
+        // We DON'T set targetPose yet.
+        // =====================================================
+
+        visionService.targetPose =
+            ""
+
+
+        movementIntroTutorial.start()
     }
 
 
     // =========================================================
-    // MARK: - Target Pose
+    // MARK: - Sync Target
     // =========================================================
 
     private func syncTargetPose() {
@@ -483,15 +598,12 @@ struct PoseTrackingView: View {
 
         guard
             tutorialController.hasStarted,
+            !movementIntroTutorial.isShowing,
             !isCompleted
         else {
             return
         }
 
-
-        // =====================================================
-        // MATCH
-        // =====================================================
 
         if isMatching {
 
@@ -502,6 +614,10 @@ struct PoseTrackingView: View {
                 return
             }
 
+
+            // =============================================
+            // Visual success
+            // =============================================
 
             withAnimation(
                 .spring(
@@ -518,7 +634,9 @@ struct PoseTrackingView: View {
             }
 
 
-            // Hold for 1.2 seconds.
+            // =============================================
+            // Hold for 1.2 seconds
+            // =============================================
 
             stepAdvanceTask =
                 Task {
@@ -552,17 +670,14 @@ struct PoseTrackingView: View {
                         }
 
 
-                        advanceToNextStep()
+                        advanceToNextMovement()
+
 
                         stepAdvanceTask =
                             nil
                     }
                 }
 
-
-        // =====================================================
-        // NOT MATCHED
-        // =====================================================
 
         } else {
 
@@ -578,10 +693,10 @@ struct PoseTrackingView: View {
 
 
     // =========================================================
-    // MARK: - Next Movement
+    // MARK: - Advance Movement
     // =========================================================
 
-    private func advanceToNextStep() {
+    private func advanceToNextMovement() {
 
         if currentStepIndex + 1 < steps.count {
 
@@ -598,6 +713,12 @@ struct PoseTrackingView: View {
                     false
             }
 
+
+            // =============================================
+            // Next movement starts immediately.
+            //
+            // Tutorial is ONLY shown for Move #1.
+            // =============================================
 
             syncTargetPose()
 
@@ -634,6 +755,7 @@ struct PoseTrackingView: View {
         stepAdvanceTask =
             nil
 
+
         currentStepIndex =
             0
 
@@ -643,7 +765,11 @@ struct PoseTrackingView: View {
         isCompleted =
             false
 
+
         tutorialController.reset()
+
+        movementIntroTutorial.reset()
+
 
         visionService.targetPose =
             ""
@@ -665,116 +791,288 @@ struct PoseTrackingView: View {
                 "orientation"
         )
 
+
         UIViewController
             .attemptRotationToDeviceOrientation()
     }
 
 
     // =========================================================
-    // MARK: - DEBUG MENU
+    // MARK: - DEBUG
     // =========================================================
 
-    @ViewBuilder
+    #if DEBUG
+
     private var testControlsOverlay:
         some View {
-
-        #if DEBUG
 
         VStack {
 
             Spacer()
 
+
             HStack {
+
+                Spacer()
+
 
                 Menu {
 
                     // =========================================
-                    // NEXT TUTORIAL STEP
+                    // PLAYER SETUP
                     // =========================================
 
-                    if !tutorialController.hasStarted {
+                    Button(
+                        "1. Player Setup"
+                    ) {
 
-                        Button(
-                            "Next Tutorial Step"
-                        ) {
+                        resetDebugState()
 
-                            tutorialController
-                                .debugNextStep()
-                        }
-
-
-                        // =====================================
-                        // SKIP ENTIRE TUTORIAL
-                        // =====================================
-
-                        Button(
-                            "Skip to Started"
-                        ) {
-
-                            tutorialController
-                                .skipToStarted()
-                        }
-
-
-                        Divider()
-
-
-                        // =====================================
-                        // RESET
-                        // =====================================
-
-                        Button(
-                            "Reset Tutorial"
-                        ) {
-
-                            tutorialController
-                                .reset()
-
-                            visionService
-                                .targetPose =
-                                ""
-                        }
-
-                    } else {
-
-                        // =====================================
-                        // SIMULATE MATCH
-                        // =====================================
-
-                        Button(
-                            "Simulasikan Cocok"
-                        ) {
-
-                            handleMatchEvaluation(
-                                isMatching:
-                                    true
+                        tutorialController
+                            .debugSetStep(
+                                .playerSetup
                             )
-                        }
+                    }
 
 
-                        Divider()
+                    // =========================================
+                    // COUNTDOWN 3
+                    // =========================================
+
+                    Button(
+                        "2. Countdown 3"
+                    ) {
+
+                        movementIntroTutorial.finish()
+
+                        tutorialController
+                            .debugSetStep(
+                                .countdown3
+                            )
+                    }
 
 
-                        // =====================================
-                        // JUMP TO MOVEMENT
-                        // =====================================
+                    // =========================================
+                    // COUNTDOWN 2
+                    // =========================================
 
-                        ForEach(
-                            0..<steps.count,
-                            id:
-                                \.self
-                        ) { index in
+                    Button(
+                        "3. Countdown 2"
+                    ) {
 
-                            Button(
-                                "Lompat ke \(steps[index].title)"
-                            ) {
+                        movementIntroTutorial.finish()
 
-                                jumpToMovement(
-                                    index:
-                                        index
-                                )
-                            }
-                        }
+                        tutorialController
+                            .debugSetStep(
+                                .countdown2
+                            )
+                    }
+
+
+                    // =========================================
+                    // COUNTDOWN 1
+                    // =========================================
+
+                    Button(
+                        "4. Countdown 1"
+                    ) {
+
+                        movementIntroTutorial.finish()
+
+                        tutorialController
+                            .debugSetStep(
+                                .countdown1
+                            )
+                    }
+
+
+                    // =========================================
+                    // MULAI
+                    // =========================================
+
+                    Button(
+                        "5. Mulai"
+                    ) {
+
+                        movementIntroTutorial.finish()
+
+                        tutorialController
+                            .debugSkipToStarted()
+
+                        beginMovementSequence()
+                    }
+
+
+                    // =========================================
+                    // MOVE #1 TUTORIAL PAGE 1
+                    // =========================================
+
+                    Button(
+                        "6. Move #1 Tutorial 1"
+                    ) {
+
+                        resetDebugMovement()
+
+                        tutorialController
+                            .debugSkipToStarted()
+
+                        movementIntroTutorial.start()
+                    }
+
+
+                    // =========================================
+                    // MOVE #1 TUTORIAL PAGE 2
+                    // =========================================
+
+                    Button(
+                        "7. Move #1 Tutorial 2"
+                    ) {
+
+                        resetDebugMovement()
+
+                        tutorialController
+                            .debugSkipToStarted()
+
+                        movementIntroTutorial.start()
+
+                        movementIntroTutorial.next()
+                    }
+
+
+                    // =========================================
+                    // MOVE #1 ACTUAL
+                    // =========================================
+
+                    Button(
+                        "8. Move #1 Actual"
+                    ) {
+
+                        resetDebugMovement()
+
+                        tutorialController
+                            .debugSkipToStarted()
+
+                        movementIntroTutorial.finish()
+
+                        currentStepIndex =
+                            0
+
+                        syncTargetPose()
+                    }
+
+
+                    // =========================================
+                    // MOVE #2
+                    // =========================================
+
+                    Button(
+                        "9. Move #2"
+                    ) {
+
+                        resetDebugMovement()
+
+                        tutorialController
+                            .debugSkipToStarted()
+
+                        movementIntroTutorial.finish()
+
+                        currentStepIndex =
+                            min(
+                                1,
+                                steps.count - 1
+                            )
+
+                        syncTargetPose()
+                    }
+
+
+                    // =========================================
+                    // MOVE #3
+                    // =========================================
+
+                    Button(
+                        "10. Move #3"
+                    ) {
+
+                        resetDebugMovement()
+
+                        tutorialController
+                            .debugSkipToStarted()
+
+                        movementIntroTutorial.finish()
+
+                        currentStepIndex =
+                            min(
+                                2,
+                                steps.count - 1
+                            )
+
+                        syncTargetPose()
+                    }
+
+
+                    // =========================================
+                    // MOVE #4
+                    // =========================================
+
+                    Button(
+                        "11. Move #4"
+                    ) {
+
+                        resetDebugMovement()
+
+                        tutorialController
+                            .debugSkipToStarted()
+
+                        movementIntroTutorial.finish()
+
+                        currentStepIndex =
+                            min(
+                                3,
+                                steps.count - 1
+                            )
+
+                        syncTargetPose()
+                    }
+
+
+                    // =========================================
+                    // MOVE #5
+                    // =========================================
+
+                    Button(
+                        "12. Move #5"
+                    ) {
+
+                        resetDebugMovement()
+
+                        tutorialController
+                            .debugSkipToStarted()
+
+                        movementIntroTutorial.finish()
+
+                        currentStepIndex =
+                            min(
+                                4,
+                                steps.count - 1
+                            )
+
+                        syncTargetPose()
+                    }
+
+
+                    Divider()
+
+
+                    // =========================================
+                    // RESET
+                    // =========================================
+
+                    Button(
+                        "Reset Everything"
+                    ) {
+
+                        resetEverything()
                     }
 
                 } label: {
@@ -789,20 +1087,10 @@ struct PoseTrackingView: View {
                                 "ladybug"
                         )
 
-                        if tutorialController.hasStarted {
 
-                            Text(
-                                "Target: \(currentStep.title)"
-                            )
-
-                        } else {
-
-                            Text(
-                                tutorialController
-                                    .currentStep
-                                    .title
-                            )
-                        }
+                        Text(
+                            debugPhaseName
+                        )
                     }
                     .font(
                         .system(
@@ -821,48 +1109,39 @@ struct PoseTrackingView: View {
                     )
                     .padding(
                         .horizontal,
-                        10
+                        12
                     )
                     .padding(
                         .vertical,
-                        6
+                        7
                     )
                     .background(
                         Color.black.opacity(
-                            0.65
+                            0.75
                         )
                     )
                     .clipShape(
                         Capsule()
                     )
                 }
-
-                Spacer()
+                .padding(
+                    .trailing,
+                    20
+                )
+                .padding(
+                    .bottom,
+                    20
+                )
             }
-            .padding(
-                .leading,
-                20
-            )
-            .padding(
-                .bottom,
-                20
-            )
         }
-
-        #endif
     }
 
 
     // =========================================================
-    // MARK: - DEBUG Movement Jump
+    // MARK: - Debug Reset
     // =========================================================
 
-    #if DEBUG
-
-    private func jumpToMovement(
-        index:
-            Int
-    ) {
+    private func resetDebugState() {
 
         stepAdvanceTask?.cancel()
 
@@ -870,7 +1149,7 @@ struct PoseTrackingView: View {
             nil
 
         currentStepIndex =
-            index
+            0
 
         isSuccessHolding =
             false
@@ -878,7 +1157,93 @@ struct PoseTrackingView: View {
         isCompleted =
             false
 
-        syncTargetPose()
+        movementIntroTutorial.reset()
+
+        visionService.targetPose =
+            ""
+    }
+
+
+    private func resetDebugMovement() {
+
+        stepAdvanceTask?.cancel()
+
+        stepAdvanceTask =
+            nil
+
+        currentStepIndex =
+            0
+
+        isSuccessHolding =
+            false
+
+        isCompleted =
+            false
+    }
+
+
+    private func resetEverything() {
+
+        stepAdvanceTask?.cancel()
+
+        stepAdvanceTask =
+            nil
+
+        currentStepIndex =
+            0
+
+        isSuccessHolding =
+            false
+
+        isCompleted =
+            false
+
+        tutorialController.reset()
+
+        movementIntroTutorial.reset()
+
+        visionService.targetPose =
+            ""
+    }
+
+
+    // =========================================================
+    // MARK: - Debug Name
+    // =========================================================
+
+    private var debugPhaseName:
+        String {
+
+        if movementIntroTutorial.isShowing {
+
+            switch movementIntroTutorial.currentPage {
+
+            case .followMovement:
+                return "Move #1 Tutorial 1"
+
+            case .moveCloser:
+                return "Move #1 Tutorial 2"
+            }
+        }
+
+
+        if tutorialController.hasStarted {
+
+            return "Move #\(currentStepIndex + 1)"
+        }
+
+
+        return tutorialController
+            .currentStep
+            .title
+    }
+
+    #else
+
+    private var testControlsOverlay:
+        some View {
+
+        EmptyView()
     }
 
     #endif
@@ -889,7 +1254,9 @@ struct PoseTrackingView: View {
 // MARK: - Preview
 // =============================================================
 
-#Preview("Pose Tracking View") {
+#Preview(
+    "Pose Tracking View"
+) {
 
     PoseTrackingView()
         .previewInterfaceOrientation(
