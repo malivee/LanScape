@@ -624,6 +624,9 @@ final class VisionService:
 
             var rawPeople: [
                 (
+                    observation:
+                        VNHumanBodyPoseObservation,
+
                     joints:
                         [
                             VNHumanBodyPoseObservation
@@ -668,20 +671,6 @@ final class VisionService:
                     point
                 ) in recognizedPoints
                     where point.confidence > 0.1 {
-
-                    // Vision:
-                    //
-                    // origin = bottom-left
-                    //
-                    // App:
-                    //
-                    // origin = top-left
-                    //
-                    // Do NOT mirror X here.
-                    //
-                    // Core ML must receive the same
-                    // coordinate convention used
-                    // during training.
 
                     let mappedPoint =
                         CGPoint(
@@ -771,6 +760,9 @@ final class VisionService:
 
                 rawPeople.append(
                     (
+                        observation:
+                            observation,
+
                         joints:
                             jointDict,
 
@@ -780,17 +772,6 @@ final class VisionService:
                         avgX:
                             avgX
                     )
-                )
-            }
-
-            // MARK: Predict
-
-            if let firstObservation =
-                observations.first {
-
-                predict(
-                    observation:
-                        firstObservation
                 )
             }
 
@@ -806,6 +787,15 @@ final class VisionService:
 
             rawPeople.sort {
                 $0.avgX > $1.avgX
+            }
+
+            // MARK: Predict (Target Player 1)
+
+            if let player1 = rawPeople.first {
+                predict(
+                    observation:
+                        player1.observation
+                )
             }
 
             var people:

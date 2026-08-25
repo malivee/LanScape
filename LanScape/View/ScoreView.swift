@@ -40,7 +40,7 @@ struct ScoreView: View {
                 
                 
                 HStack (spacing: 40){
-                    MusicCardView(
+                    MusicCarouselCard(
                         music: music,
                         isSelected: false
                     )

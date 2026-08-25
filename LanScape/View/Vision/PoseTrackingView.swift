@@ -1,7 +1,31 @@
 import SwiftUI
-import Vision
-import UIKit
 
+/// Main screen for:
+/// 1. Player positioning tutorial
+/// 2. Countdown
+/// 3. Core ML movement sequence validation
+///
+/// Flow:
+///
+/// Player Setup
+///      ↓
+/// Both players inside rectangles
+///      ↓
+/// Stance 1
+///      ↓
+/// Stance 2
+///      ↓
+/// Stance 3
+///      ↓
+/// Stance 4
+///      ↓
+/// Countdown 3 → 2 → 1
+///      ↓
+/// STARTED
+///      ↓
+/// Core ML Pose 1 → 2 → 3 → 4
+///      ↓
+/// Completed
 struct PoseTrackingView: View {
 
     // =========================================================
@@ -16,123 +40,65 @@ struct PoseTrackingView: View {
     private var tutorialController =
         TutorialController()
 
+    @Environment(\.dismiss)
+    private var dismiss
+
 
     // =========================================================
-    // MARK: - Force Landscape
+    // MARK: - Core ML Movement Sequence
     // =========================================================
 
-    private func forceLandscape() {
+    @State
+    private var currentStepIndex:
+        Int = 0
 
-        UIDevice.current.setValue(
-            UIInterfaceOrientation.landscapeRight.rawValue,
-            forKey: "orientation"
-        )
+    @State
+    private var isSuccessHolding:
+        Bool = false
 
-        UIViewController.attemptRotationToDeviceOrientation()
+    @State
+    private var isCompleted:
+        Bool = false
+
+    @State
+    private var stepAdvanceTask:
+        Task<Void, Never>? = nil
+
+    private let steps:
+        [PoseStep] =
+        PoseStep.sampleSequence
+
+    private var currentStep:
+        PoseStep {
+
+        steps[
+            min(
+                currentStepIndex,
+                steps.count - 1
+            )
+        ]
     }
 
 
     // =========================================================
-    // MARK: - Coordinate Conversion
+    // MARK: - Effective Matching
     // =========================================================
 
-    private func convertPoint(
-        _ point: CGPoint,
-        viewSize: CGSize,
-        videoSize: CGSize
-    ) -> CGPoint {
+    /// Core ML matching is only relevant after
+    /// the tutorial has finished.
+    private var isEffectiveMatching:
+        Bool {
 
-        let videoWidth: CGFloat =
-            videoSize.width > 0
-            ? videoSize.width
-            : 1920
-
-        let videoHeight: CGFloat =
-            videoSize.height > 0
-            ? videoSize.height
-            : 1080
-
-        let videoAspect =
-            videoWidth / videoHeight
-
-        let viewAspect =
-            viewSize.width / viewSize.height
-
-        let scale: CGFloat
-
-        var offsetX: CGFloat = 0
-        var offsetY: CGFloat = 0
-
-        // AVCaptureVideoPreviewLayer
-        // uses resizeAspectFill.
-
-        if viewAspect > videoAspect {
-
-            scale =
-                viewSize.width /
-                videoWidth
-
-            let renderedHeight =
-                videoHeight *
-                scale
-
-            offsetY =
-                (
-                    viewSize.height
-                    -
-                    renderedHeight
-                ) / 2.0
-
-        } else {
-
-            scale =
-                viewSize.height /
-                videoHeight
-
-            let renderedWidth =
-                videoWidth *
-                scale
-
-            offsetX =
-                (
-                    viewSize.width
-                    -
-                    renderedWidth
-                ) / 2.0
+        guard
+            tutorialController.hasStarted
+        else {
+            return false
         }
 
-        // =====================================================
-        // Front Camera Mirror
-        // =====================================================
-
-        // Vision itself is NOT mirrored.
-        //
-        // The preview IS mirrored.
-        //
-        // Therefore mirror only the X coordinate
-        // when drawing the overlay.
-
-        let mirroredX =
-            1.0 - point.x
-
-        let x =
-            mirroredX *
-            videoWidth *
-            scale
-            +
-            offsetX
-
-        let y =
-            point.y *
-            videoHeight *
-            scale
-            +
-            offsetY
-
-        return CGPoint(
-            x: x,
-            y: y
-        )
+        return
+            visionService.isMatching
+            ||
+            isSuccessHolding
     }
 
 
@@ -145,7 +111,7 @@ struct PoseTrackingView: View {
         ZStack {
 
             // =================================================
-            // CAMERA
+            // 1. CAMERA
             // =================================================
 
             CameraPreviewView(
@@ -156,580 +122,739 @@ struct PoseTrackingView: View {
 
 
             // =================================================
-            // SKELETON OVERLAY + TUTORIAL OVERLAY
+            // 2. SKELETON
             // =================================================
 
-            GeometryReader { geometry in
-
-                let viewSize =
-                    geometry.size
-
-                let videoSize =
+            PoseSkeletonOverlayView(
+                detectedPeople:
                     visionService
                         .poseModel
-                        .videoSize
+                        .detectedPeople,
 
-
-                // =================================================
-                // EXISTING SKELETON
-                // =================================================
-
-                ForEach(
+                videoSize:
                     visionService
                         .poseModel
-                        .detectedPeople
-                ) { person in
+                        .videoSize,
 
-                    let playerColor =
-                        visionService.isMatching
-                        ? Color.green
-                        : person.role.primaryColor
-
-
-                    // =================================================
-                    // SKELETON LINES
-                    // =================================================
-
-                    Path { path in
-
-                        for (
-                            startJoint,
-                            endJoint
-                        ) in person.activeConnections {
-
-                            guard
-                                let startNorm =
-                                    person.joints[
-                                        startJoint
-                                    ],
-
-                                let endNorm =
-                                    person.joints[
-                                        endJoint
-                                    ]
-
-                            else {
-                                continue
-                            }
-
-                            let startPoint =
-                                convertPoint(
-                                    startNorm,
-                                    viewSize:
-                                        viewSize,
-                                    videoSize:
-                                        videoSize
-                                )
-
-                            let endPoint =
-                                convertPoint(
-                                    endNorm,
-                                    viewSize:
-                                        viewSize,
-                                    videoSize:
-                                        videoSize
-                                )
-
-                            path.move(
-                                to:
-                                    startPoint
-                            )
-
-                            path.addLine(
-                                to:
-                                    endPoint
-                            )
-                        }
-                    }
-                    .stroke(
-                        playerColor,
-
-                        style:
-                            StrokeStyle(
-                                lineWidth:
-                                    visionService.isMatching
-                                    ? 6
-                                    : 4,
-
-                                lineCap:
-                                    .round,
-
-                                lineJoin:
-                                    .round
-                            )
-                    )
-                    .shadow(
-                        color:
-                            playerColor.opacity(
-                                0.8
-                            ),
-                        radius:
-                            5
-                    )
-
-
-                    // =================================================
-                    // JOINTS
-                    // =================================================
-
-                    ForEach(
-                        person.filteredJointList
-                    ) { joint in
-
-                        let screenPoint =
-                            convertPoint(
-                                joint.location,
-                                viewSize:
-                                    viewSize,
-                                videoSize:
-                                    videoSize
-                            )
-
-                        Circle()
-                            .fill(
-                                playerColor
-                            )
-                            .frame(
-                                width:
-                                    14,
-
-                                height:
-                                    14
-                            )
-                            .overlay(
-                                Circle()
-                                    .stroke(
-                                        Color.white,
-                                        lineWidth:
-                                            2
-                                    )
-                            )
-                            .shadow(
-                                color:
-                                    playerColor.opacity(
-                                        0.8
-                                    ),
-                                radius:
-                                    4
-                            )
-                            .position(
-                                screenPoint
-                            )
-                    }
-
-
-                    // =================================================
-                    // PLAYER LABEL
-                    // =================================================
-
-                    if let anchorNorm =
-                        person.role == .upperBody
-                        ? (
-                            person.joints[.neck]
-                            ??
-                            person.joints[.nose]
-                        )
-                        : (
-                            person.joints[.root]
-                            ??
-                            person.joints[.leftHip]
-                        )
-                    {
-
-                        let anchorPoint =
-                            convertPoint(
-                                anchorNorm,
-                                viewSize:
-                                    viewSize,
-                                videoSize:
-                                    videoSize
-                            )
-
-                        Text(
-                            person.role == .upperBody
-                            ? "P1: UPPER"
-                            : "P2: LOWER"
-                        )
-                        .font(
-                            .system(
-                                size:
-                                    11,
-
-                                weight:
-                                    .bold,
-
-                                design:
-                                    .rounded
-                            )
-                        )
-                        .foregroundColor(
-                            .white
-                        )
-                        .padding(
-                            .horizontal,
-                            7
-                        )
-                        .padding(
-                            .vertical,
-                            3
-                        )
-                        .background(
-                            playerColor.opacity(
-                                0.85
-                            )
-                        )
-                        .clipShape(
-                            Capsule()
-                        )
-                        .overlay(
-                            Capsule()
-                                .stroke(
-                                    Color.white.opacity(
-                                        0.7
-                                    ),
-                                    lineWidth:
-                                        1
-                                )
-                        )
-                        .shadow(
-                            color:
-                                .black.opacity(
-                                    0.3
-                                ),
-                            radius:
-                                3
-                        )
-                        .position(
-                            x:
-                                anchorPoint.x,
-
-                            y:
-                                max(
-                                    anchorPoint.y - 30,
-                                    25
-                                )
-                        )
-                    }
-                }
-
-
-                // =================================================
-                // NEW TUTORIAL OVERLAY
-                // =================================================
-
-                TutorialOverlayView(
-                    tutorial:
-                        tutorialController,
-
-                    detectedPeople:
-                        visionService
-                            .poseModel
-                            .detectedPeople,
-
-                    videoSize:
-                        videoSize,
-
-                    viewSize:
-                        viewSize
-                )
-            }
+                isMatching:
+                    isEffectiveMatching
+            )
             .ignoresSafeArea()
 
 
-            // =====================================================
-            // HUD
-            // =====================================================
+            // =================================================
+            // 3. TUTORIAL / MOVEMENT PHASE
+            // =================================================
 
-            VStack {
+            if !tutorialController.hasStarted {
 
-                HStack(
-                    alignment:
-                        .center,
+                tutorialPhase
 
-                    spacing:
-                        12
-                ) {
+            } else {
 
-                    // =================================================
-                    // P1
-                    // =================================================
-
-                    playerPill(
-                        title:
-                            "P1: Upper Body",
-
-                        color:
-                            .cyan,
-
-                        isDetected:
-                            visionService
-                                .poseModel
-                                .detectedPeople
-                                .contains {
-
-                                    $0.personIndex == 0
-                                }
-                    )
-
-
-                    Spacer()
-
-
-                    // =================================================
-                    // Match Status
-                    // =================================================
-
-                    matchStatusCard()
-
-
-                    Spacer()
-
-
-                    // =================================================
-                    // P2
-                    // =================================================
-
-                    playerPill(
-                        title:
-                            "P2: Lower Body",
-
-                        color:
-                            .green,
-
-                        isDetected:
-                            visionService
-                                .poseModel
-                                .detectedPeople
-                                .contains {
-
-                                    $0.personIndex == 1
-                                }
-                    )
-                }
-                .padding(
-                    .horizontal,
-                    20
-                )
-                .padding(
-                    .top,
-                    12
-                )
-
-                Spacer()
+                movementPhase
             }
 
 
-            // =====================================================
-            // DEBUG PANEL
-            // =====================================================
+            // =================================================
+            // 4. TEST / DEBUG CONTROLS
+            // =================================================
 
-            VStack {
+            testControlsOverlay
 
-                Spacer()
 
-                HStack {
+            // =================================================
+            // 5. COMPLETION MODAL
+            // =================================================
 
-                    debugPanel()
+            if isCompleted {
 
-                    Spacer()
-                }
-                .padding(
-                    .leading,
-                    16
+                PoseCompletionModalView(
+
+                    onRestart:
+                        restartSequence,
+
+                    onDismiss: {
+                        dismiss()
+                    }
                 )
-                .padding(
-                    .bottom,
-                    16
+                .transition(
+                    .opacity
+                    .combined(
+                        with: .scale
+                    )
                 )
             }
         }
 
-        // =========================================================
-        // MARK: - Lifecycle
-        // =========================================================
+        // =====================================================
+        // MARK: Lifecycle
+        // =====================================================
 
         .onAppear {
 
-            forceLandscape()
-
-            visionService.startSession()
+            handleAppear()
         }
 
         .onDisappear {
 
-            visionService.stopSession()
+            handleDisappear()
+        }
+
+
+        // =====================================================
+        // MARK: Tutorial Completion
+        // =====================================================
+
+        .onChange(
+            of:
+                tutorialController.hasStarted
+        ) { _, hasStarted in
+
+            guard
+                hasStarted
+            else {
+                return
+            }
+
+            startMovementSequence()
+        }
+
+
+        // =====================================================
+        // MARK: Core ML Match
+        // =====================================================
+
+        .onChange(
+            of:
+                visionService.isMatching
+        ) { _, isMatching in
+
+            // Do not let Core ML advance
+            // during tutorial/setup.
+
+            guard
+                tutorialController.hasStarted
+            else {
+                return
+            }
+
+            handleMatchEvaluation(
+                isMatching:
+                    isMatching
+            )
         }
     }
 
 
     // =========================================================
-    // MARK: - Match Status
+    // MARK: - Tutorial Phase
     // =========================================================
 
     @ViewBuilder
-    private func matchStatusCard()
-        -> some View {
+    private var tutorialPhase:
+        some View {
 
-        if visionService.isMatching {
+        GeometryReader { geometry in
 
-            // =====================================================
-            // MATCH
-            // =====================================================
+            TutorialOverlayView(
 
-            HStack(
-                spacing:
-                    8
+                tutorial:
+                    tutorialController,
+
+                detectedPeople:
+                    visionService
+                        .poseModel
+                        .detectedPeople,
+
+                videoSize:
+                    visionService
+                        .poseModel
+                        .videoSize,
+
+                viewSize:
+                    geometry.size
+            )
+        }
+        .ignoresSafeArea()
+    }
+
+
+    // =========================================================
+    // MARK: - Movement Phase
+    // =========================================================
+
+    @ViewBuilder
+    private var movementPhase:
+        some View {
+
+        ZStack {
+
+            // =================================================
+            // CENTER DIVIDER
+            // =================================================
+
+            CenterDividerLineView()
+                .ignoresSafeArea()
+
+
+            // =================================================
+            // MOVEMENT GUIDE
+            // =================================================
+
+            PoseGuideOverlayView(
+
+                step:
+                    currentStep,
+
+                isMatching:
+                    isEffectiveMatching
+            )
+            .ignoresSafeArea()
+
+
+            // =================================================
+            // HUD
+            // =================================================
+
+            VStack(
+                spacing: 0
             ) {
 
-                Image(
-                    systemName:
-                        "checkmark.circle.fill"
+                // ---------------------------------------------
+                // Session Header
+                // ---------------------------------------------
+
+                PoseSessionHeaderView(
+
+                    currentStepIndex:
+                        currentStepIndex,
+
+                    totalSteps:
+                        steps.count,
+
+                    onPause: {
+                        dismiss()
+                    }
                 )
-                .foregroundColor(
-                    .green
+
+
+                // ---------------------------------------------
+                // Status HUD
+                // ---------------------------------------------
+
+                PoseStatusHudView(
+
+                    isP1Detected:
+                        visionService
+                            .poseModel
+                            .detectedPeople
+                            .contains {
+                                $0.personIndex == 0
+                            },
+
+                    isP2Detected:
+                        visionService
+                            .poseModel
+                            .detectedPeople
+                            .contains {
+                                $0.personIndex == 1
+                            },
+
+                    isMatching:
+                        isEffectiveMatching,
+
+                    prediction:
+                        visionService
+                            .prediction,
+
+                    targetPose:
+                        visionService
+                            .targetPose,
+
+                    confidence:
+                        visionService
+                            .confidence
                 )
-                .font(
-                    .system(
-                        size:
-                            16,
-
-                        weight:
-                            .black
-                    )
+                .padding(
+                    .top,
+                    8
                 )
 
-                VStack(
-                    alignment:
-                        .leading,
 
-                    spacing:
-                        1
-                ) {
+                Spacer()
 
-                    Text(
-                        "BENAR / MATCH!"
-                    )
-                    .font(
-                        .system(
-                            size:
-                                11,
 
-                            weight:
-                                .black,
+                // ---------------------------------------------
+                // Instruction
+                // ---------------------------------------------
 
-                            design:
-                                .rounded
-                        )
-                    )
-                    .foregroundColor(
-                        .green
-                    )
+                InstructionBannerView(
 
-                    Text(
-                        "Pose: \(visionService.prediction) (\(Int(visionService.confidence * 100))%)"
-                    )
-                    .font(
-                        .system(
-                            size:
-                                10,
+                    text:
+                        isEffectiveMatching
+                        ? "Bagus! Gerakan Cocok!"
+                        : "Ikuti gerakannya",
 
-                            weight:
-                                .semibold,
-
-                            design:
-                                .rounded
-                        )
-                    )
-                    .foregroundColor(
-                        .white.opacity(
-                            0.9
-                        )
-                    )
-                }
+                    isSuccess:
+                        isEffectiveMatching
+                )
+                .padding(
+                    .bottom,
+                    290
+                )
             }
-            .padding(
-                .horizontal,
-                14
-            )
-            .padding(
-                .vertical,
-                6
-            )
-            .background(
-                Capsule()
-                    .fill(
-                        Color.black.opacity(
-                            0.7
-                        )
-                    )
-                    .background(
-                        .ultraThinMaterial,
-                        in:
-                            Capsule()
-                    )
-            )
-            .overlay(
-                Capsule()
-                    .stroke(
-                        Color.green.opacity(
-                            0.8
-                        ),
-                        lineWidth:
-                            1.5
-                    )
-            )
-            .shadow(
-                color:
-                    Color.green.opacity(
-                        0.5
-                    ),
-                radius:
-                    6
-            )
+        }
+    }
 
-        } else if visionService.prediction != "?" {
 
-            // =====================================================
-            // NOT MATCHING
-            // =====================================================
+    // =========================================================
+    // MARK: - Lifecycle
+    // =========================================================
 
-            HStack(
-                spacing:
-                    8
+    private func handleAppear() {
+
+        forceLandscape()
+
+        // Reset tutorial.
+
+        tutorialController.reset()
+
+        // Reset movement sequence.
+
+        currentStepIndex =
+            0
+
+        isSuccessHolding =
+            false
+
+        isCompleted =
+            false
+
+        stepAdvanceTask?.cancel()
+
+        stepAdvanceTask =
+            nil
+
+        // IMPORTANT:
+        //
+        // Do NOT call syncTargetPose()
+        // here.
+        //
+        // Core ML movement validation
+        // begins only after tutorial finishes.
+
+        visionService.startSession()
+    }
+
+
+    private func handleDisappear() {
+
+        stepAdvanceTask?.cancel()
+
+        stepAdvanceTask =
+            nil
+
+        visionService.stopSession()
+    }
+
+
+    // =========================================================
+    // MARK: - Start Movement Sequence
+    // =========================================================
+
+    private func startMovementSequence() {
+
+        guard
+            tutorialController.hasStarted
+        else {
+            return
+        }
+
+        currentStepIndex =
+            0
+
+        isSuccessHolding =
+            false
+
+        isCompleted =
+            false
+
+        stepAdvanceTask?.cancel()
+
+        stepAdvanceTask =
+            nil
+
+        // Tell Core ML which movement to detect.
+
+        syncTargetPose()
+    }
+
+
+    // =========================================================
+    // MARK: - Sync Core ML Target
+    // =========================================================
+
+    private func syncTargetPose() {
+
+        visionService.targetPose =
+            "\(currentStep.id)"
+    }
+
+
+    // =========================================================
+    // MARK: - Core ML Match Evaluation
+    // =========================================================
+
+    private func handleMatchEvaluation(
+        isMatching:
+            Bool
+    ) {
+
+        guard
+            tutorialController.hasStarted,
+            !isCompleted
+        else {
+            return
+        }
+
+
+        // =====================================================
+        // MATCHED
+        // =====================================================
+
+        if isMatching {
+
+            guard
+                !isSuccessHolding,
+                stepAdvanceTask == nil
+            else {
+                return
+            }
+
+
+            // ---------------------------------------------
+            // Visual success state
+            // ---------------------------------------------
+
+            withAnimation(
+                .spring(
+                    response:
+                        0.5,
+
+                    dampingFraction:
+                        0.75
+                )
             ) {
 
-                Image(
-                    systemName:
-                        "xmark.circle.fill"
-                )
-                .foregroundColor(
-                    .orange
-                )
-                .font(
-                    .system(
-                        size:
-                            16,
+                isSuccessHolding =
+                    true
+            }
 
-                        weight:
-                            .bold
+
+            // ---------------------------------------------
+            // Require stable match for 1.2 seconds
+            // ---------------------------------------------
+
+            stepAdvanceTask =
+                Task {
+
+                    try? await Task.sleep(
+                        nanoseconds:
+                            1_200_000_000
                     )
+
+
+                    guard
+                        !Task.isCancelled
+                    else {
+                        return
+                    }
+
+
+                    await MainActor.run {
+
+                        // Make sure the pose is
+                        // still matching when
+                        // the hold completes.
+
+                        guard
+                            visionService.isMatching
+                        else {
+
+                            isSuccessHolding =
+                                false
+
+                            stepAdvanceTask =
+                                nil
+
+                            return
+                        }
+
+
+                        advanceToNextStep()
+
+                        stepAdvanceTask =
+                            nil
+                    }
+                }
+
+
+        // =====================================================
+        // NOT MATCHED
+        // =====================================================
+
+        } else {
+
+            // Pose broke before the
+            // 1.2 second hold finished.
+
+            if !isSuccessHolding {
+
+                stepAdvanceTask?.cancel()
+
+                stepAdvanceTask =
+                    nil
+            }
+        }
+    }
+
+
+    // =========================================================
+    // MARK: - Advance Movement
+    // =========================================================
+
+    private func advanceToNextStep() {
+
+        guard
+            tutorialController.hasStarted
+        else {
+            return
+        }
+
+
+        if currentStepIndex + 1 < steps.count {
+
+            withAnimation(
+                .easeInOut(
+                    duration:
+                        0.35
                 )
+            ) {
 
-                VStack(
-                    alignment:
-                        .leading,
+                currentStepIndex += 1
 
-                    spacing:
-                        1
-                ) {
+                isSuccessHolding =
+                    false
+            }
 
-                    Text(
-                        "BEDA / TIDAK COCOK"
-                    )
+
+            // Tell Core ML about the
+            // next movement.
+
+            syncTargetPose()
+
+
+        } else {
+
+            // =============================================
+            // ALL MOVEMENTS COMPLETE
+            // =============================================
+
+            withAnimation(
+                .spring(
+                    response:
+                        0.5,
+
+                    dampingFraction:
+                        0.8
+                )
+            ) {
+
+                isCompleted =
+                    true
+
+                isSuccessHolding =
+                    false
+            }
+        }
+    }
+
+
+    // =========================================================
+    // MARK: - Restart
+    // =========================================================
+
+    private func restartSequence() {
+
+        // Cancel movement timer.
+
+        stepAdvanceTask?.cancel()
+
+        stepAdvanceTask =
+            nil
+
+
+        // Reset movement.
+
+        currentStepIndex =
+            0
+
+        isSuccessHolding =
+            false
+
+        isCompleted =
+            false
+
+
+        // Reset tutorial.
+
+        tutorialController.reset()
+
+
+        // Remove the Core ML target
+        // until tutorial is complete.
+
+        visionService.targetPose =
+            ""
+    }
+
+
+    // =========================================================
+    // MARK: - Force Landscape
+    // =========================================================
+
+    private func forceLandscape() {
+
+        UIDevice.current.setValue(
+            UIInterfaceOrientation
+                .landscapeRight
+                .rawValue,
+
+            forKey:
+                "orientation"
+        )
+
+        UIViewController
+            .attemptRotationToDeviceOrientation()
+    }
+
+
+    // =========================================================
+    // MARK: - Test Controls
+    // =========================================================
+
+    @ViewBuilder
+    private var testControlsOverlay:
+        some View {
+
+        VStack {
+
+            Spacer()
+
+            HStack {
+
+                Menu {
+
+                    // =========================================
+                    // Tutorial Test
+                    // =========================================
+
+                    if !tutorialController.hasStarted {
+
+                        Button(
+                            "Reset Tutorial"
+                        ) {
+
+                            tutorialController.reset()
+                        }
+
+                    } else {
+
+                        // =====================================
+                        // Core ML Test
+                        // =====================================
+
+                        Button(
+                            "Simulasikan Cocok (Next Step)"
+                        ) {
+
+                            handleMatchEvaluation(
+                                isMatching:
+                                    true
+                            )
+                        }
+
+                        Divider()
+
+
+                        // =====================================
+                        // Jump to Movement
+                        // =====================================
+
+                        ForEach(
+                            0..<steps.count,
+                            id:
+                                \.self
+                        ) { index in
+
+                            Button(
+                                "Lompat ke \(steps[index].title)"
+                            ) {
+
+                                stepAdvanceTask?.cancel()
+
+                                stepAdvanceTask =
+                                    nil
+
+                                withAnimation {
+
+                                    currentStepIndex =
+                                        index
+
+                                    isSuccessHolding =
+                                        false
+
+                                    isCompleted =
+                                        false
+                                }
+
+                                syncTargetPose()
+                            }
+                        }
+                    }
+
+                } label: {
+
+                    HStack(
+                        spacing:
+                            6
+                    ) {
+
+                        Image(
+                            systemName:
+                                "slider.horizontal.3"
+                        )
+
+                        if tutorialController.hasStarted {
+
+                            Text(
+                                "Target: \(currentStep.title) (\(currentStep.id))"
+                            )
+
+                        } else {
+
+                            Text(
+                                tutorialController
+                                    .currentStep
+                                    .title
+                            )
+                        }
+                    }
                     .font(
                         .system(
                             size:
-                                11,
+                                12,
 
                             weight:
                                 .bold,
@@ -739,356 +864,39 @@ struct PoseTrackingView: View {
                         )
                     )
                     .foregroundColor(
-                        .orange
-                    )
-
-                    Text(
-                        "Deteksi: \(visionService.prediction) (Target: \(visionService.targetPose))"
-                    )
-                    .font(
-                        .system(
-                            size:
-                                10,
-
-                            weight:
-                                .medium,
-
-                            design:
-                                .rounded
-                        )
-                    )
-                    .foregroundColor(
                         .white.opacity(
-                            0.8
+                            0.85
                         )
+                    )
+                    .padding(
+                        .horizontal,
+                        10
+                    )
+                    .padding(
+                        .vertical,
+                        6
+                    )
+                    .background(
+                        Color.black.opacity(
+                            0.6
+                        )
+                    )
+                    .clipShape(
+                        Capsule()
                     )
                 }
+
+                Spacer()
             }
             .padding(
-                .horizontal,
-                14
-            )
-            .padding(
-                .vertical,
-                6
-            )
-            .background(
-                Capsule()
-                    .fill(
-                        Color.black.opacity(
-                            0.6
-                        )
-                    )
-                    .background(
-                        .ultraThinMaterial,
-                        in:
-                            Capsule()
-                    )
-            )
-            .overlay(
-                Capsule()
-                    .stroke(
-                        Color.orange.opacity(
-                            0.6
-                        ),
-                        lineWidth:
-                            1
-                    )
-            )
-
-        } else {
-
-            // =====================================================
-            // STANDBY
-            // =====================================================
-
-            HStack(
-                spacing:
-                    6
-            ) {
-
-                Circle()
-                    .fill(
-                        Color.yellow.opacity(
-                            0.8
-                        )
-                    )
-                    .frame(
-                        width:
-                            7,
-
-                        height:
-                            7
-                    )
-
-                Text(
-                    "Target: \(visionService.targetPose)"
-                )
-                .font(
-                    .system(
-                        size:
-                            11,
-
-                        weight:
-                            .bold,
-
-                        design:
-                            .rounded
-                    )
-                )
-                .foregroundColor(
-                    .white.opacity(
-                        0.9
-                    )
-                )
-            }
-            .padding(
-                .horizontal,
-                12
-            )
-            .padding(
-                .vertical,
-                6
-            )
-            .background(
-                Capsule()
-                    .fill(
-                        Color.black.opacity(
-                            0.5
-                        )
-                    )
-                    .background(
-                        .ultraThinMaterial,
-                        in:
-                            Capsule()
-                    )
-            )
-            .overlay(
-                Capsule()
-                    .stroke(
-                        Color.white.opacity(
-                            0.15
-                        ),
-                        lineWidth:
-                            1
-                    )
-            )
-        }
-    }
-
-
-    // =========================================================
-    // MARK: - Player Pill
-    // =========================================================
-
-    @ViewBuilder
-    private func playerPill(
-        title:
-            String,
-
-        color:
-            Color,
-
-        isDetected:
-            Bool
-    ) -> some View {
-
-        HStack(
-            spacing:
-                6
-        ) {
-
-            Circle()
-                .fill(
-                    isDetected
-                    ? color
-                    : Color.gray.opacity(
-                        0.5
-                    )
-                )
-                .frame(
-                    width:
-                        8,
-
-                    height:
-                        8
-                )
-                .shadow(
-                    color:
-                        isDetected
-                        ? color.opacity(
-                            0.9
-                        )
-                        : .clear,
-
-                    radius:
-                        4
-                )
-
-            Text(
-                title
-            )
-            .font(
-                .system(
-                    size:
-                        12,
-
-                    weight:
-                        .semibold,
-
-                    design:
-                        .rounded
-                )
-            )
-            .foregroundColor(
-                .white
-            )
-
-            if isDetected {
-
-                Text("•")
-                    .foregroundColor(
-                        color
-                    )
-                    .font(
-                        .system(
-                            size:
-                                10,
-
-                            weight:
-                                .black
-                        )
-                    )
-            }
-        }
-        .padding(
-            .horizontal,
-            10
-        )
-        .padding(
-            .vertical,
-            6
-        )
-        .background(
-            Capsule()
-                .fill(
-                    Color.black.opacity(
-                        0.55
-                    )
-                )
-                .background(
-                    .ultraThinMaterial,
-                    in:
-                        Capsule()
-                )
-        )
-        .overlay(
-            Capsule()
-                .stroke(
-                    isDetected
-                    ? color.opacity(
-                        0.6
-                    )
-                    : Color.white.opacity(
-                        0.15
-                    ),
-                    lineWidth:
-                        1
-                )
-        )
-    }
-
-
-    // =========================================================
-    // MARK: - Debug Panel
-    // =========================================================
-
-    @ViewBuilder
-    private func debugPanel()
-        -> some View {
-
-        VStack(
-            alignment:
                 .leading,
-
-            spacing:
-                4
-        ) {
-
-            Text(
-                "DEBUG"
+                20
             )
-            .font(
-                .system(
-                    size:
-                        10,
-
-                    weight:
-                        .black,
-
-                    design:
-                        .rounded
-                )
-            )
-            .foregroundColor(
-                .white
-            )
-
-            Text(
-                "Status: \(visionService.debugStatus)"
-            )
-
-            Text(
-                "Input: \(visionService.debugInputCount)"
-            )
-
-            Text(
-                "Raw: \(visionService.debugRawLabel)"
-            )
-
-            Text(
-                "Best: \(visionService.debugBestProbability)"
-            )
-
-            Text(
-                "Confidence: \(String(format: "%.2f%%", visionService.confidence * 100))"
-            )
-
-            Text(
-                "Target: \(visionService.targetPose)"
+            .padding(
+                .bottom,
+                20
             )
         }
-        .font(
-            .system(
-                size:
-                    9,
-
-                weight:
-                    .medium,
-
-                design:
-                    .monospaced
-            )
-        )
-        .foregroundColor(
-            .white.opacity(
-                0.85
-            )
-        )
-        .padding(
-            10
-        )
-        .background(
-            Color.black.opacity(
-                0.65
-            )
-        )
-        .clipShape(
-            RoundedRectangle(
-                cornerRadius:
-                    10
-            )
-        )
     }
 }
 
@@ -1097,7 +905,10 @@ struct PoseTrackingView: View {
 // MARK: - Preview
 // =============================================================
 
-#Preview {
+#Preview("Pose Tracking View") {
 
     PoseTrackingView()
+        .previewInterfaceOrientation(
+            .landscapeRight
+        )
 }
