@@ -1,31 +1,23 @@
 import SwiftUI
 
-/// Main screen for:
-/// 1. Player positioning tutorial
-/// 2. Countdown
-/// 3. Core ML movement sequence validation
+/// Main screen:
 ///
-/// Flow:
-///
+/// Tutorial:
 /// Player Setup
-///      ↓
-/// Both players inside rectangles
-///      ↓
-/// Stance 1
-///      ↓
-/// Stance 2
-///      ↓
-/// Stance 3
-///      ↓
-/// Stance 4
-///      ↓
-/// Countdown 3 → 2 → 1
-///      ↓
-/// STARTED
-///      ↓
-/// Core ML Pose 1 → 2 → 3 → 4
-///      ↓
-/// Completed
+/// → Stance 1
+/// → Stance 2
+/// → Stance 3
+/// → Stance 4
+/// → Countdown
+/// → Started
+///
+/// Then:
+///
+/// Core ML:
+/// Pose 1
+/// → Pose 2
+/// → Pose 3
+/// → Pose 4
 struct PoseTrackingView: View {
 
     // =========================================================
@@ -81,11 +73,9 @@ struct PoseTrackingView: View {
 
 
     // =========================================================
-    // MARK: - Effective Matching
+    // MARK: - Matching
     // =========================================================
 
-    /// Core ML matching is only relevant after
-    /// the tutorial has finished.
     private var isEffectiveMatching:
         Bool {
 
@@ -111,7 +101,7 @@ struct PoseTrackingView: View {
         ZStack {
 
             // =================================================
-            // 1. CAMERA
+            // CAMERA
             // =================================================
 
             CameraPreviewView(
@@ -122,7 +112,7 @@ struct PoseTrackingView: View {
 
 
             // =================================================
-            // 2. SKELETON
+            // SKELETON
             // =================================================
 
             PoseSkeletonOverlayView(
@@ -143,7 +133,7 @@ struct PoseTrackingView: View {
 
 
             // =================================================
-            // 3. TUTORIAL / MOVEMENT PHASE
+            // TUTORIAL OR MOVEMENT
             // =================================================
 
             if !tutorialController.hasStarted {
@@ -157,14 +147,14 @@ struct PoseTrackingView: View {
 
 
             // =================================================
-            // 4. TEST / DEBUG CONTROLS
+            // DEBUG CONTROLS
             // =================================================
 
             testControlsOverlay
 
 
             // =================================================
-            // 5. COMPLETION MODAL
+            // COMPLETED
             // =================================================
 
             if isCompleted {
@@ -187,8 +177,9 @@ struct PoseTrackingView: View {
             }
         }
 
+
         // =====================================================
-        // MARK: Lifecycle
+        // LIFECYCLE
         // =====================================================
 
         .onAppear {
@@ -203,16 +194,16 @@ struct PoseTrackingView: View {
 
 
         // =====================================================
-        // MARK: Tutorial Completion
+        // TUTORIAL FINISHED
         // =====================================================
 
         .onChange(
             of:
                 tutorialController.hasStarted
-        ) { _, hasStarted in
+        ) { _, started in
 
             guard
-                hasStarted
+                started
             else {
                 return
             }
@@ -222,7 +213,7 @@ struct PoseTrackingView: View {
 
 
         // =====================================================
-        // MARK: Core ML Match
+        // CORE ML MATCH
         // =====================================================
 
         .onChange(
@@ -230,8 +221,8 @@ struct PoseTrackingView: View {
                 visionService.isMatching
         ) { _, isMatching in
 
-            // Do not let Core ML advance
-            // during tutorial/setup.
+            // Do not process Core ML movement
+            // matching during tutorial.
 
             guard
                 tutorialController.hasStarted
@@ -290,17 +281,17 @@ struct PoseTrackingView: View {
 
         ZStack {
 
-            // =================================================
-            // CENTER DIVIDER
-            // =================================================
+            // ---------------------------------------------
+            // Divider
+            // ---------------------------------------------
 
             CenterDividerLineView()
                 .ignoresSafeArea()
 
 
-            // =================================================
-            // MOVEMENT GUIDE
-            // =================================================
+            // ---------------------------------------------
+            // Movement Guide
+            // ---------------------------------------------
 
             PoseGuideOverlayView(
 
@@ -313,17 +304,14 @@ struct PoseTrackingView: View {
             .ignoresSafeArea()
 
 
-            // =================================================
+            // ---------------------------------------------
             // HUD
-            // =================================================
+            // ---------------------------------------------
 
             VStack(
-                spacing: 0
+                spacing:
+                    0
             ) {
-
-                // ---------------------------------------------
-                // Session Header
-                // ---------------------------------------------
 
                 PoseSessionHeaderView(
 
@@ -338,10 +326,6 @@ struct PoseTrackingView: View {
                     }
                 )
 
-
-                // ---------------------------------------------
-                // Status HUD
-                // ---------------------------------------------
 
                 PoseStatusHudView(
 
@@ -385,10 +369,6 @@ struct PoseTrackingView: View {
                 Spacer()
 
 
-                // ---------------------------------------------
-                // Instruction
-                // ---------------------------------------------
-
                 InstructionBannerView(
 
                     text:
@@ -420,7 +400,7 @@ struct PoseTrackingView: View {
 
         tutorialController.reset()
 
-        // Reset movement sequence.
+        // Reset Core ML sequence.
 
         currentStepIndex =
             0
@@ -436,13 +416,11 @@ struct PoseTrackingView: View {
         stepAdvanceTask =
             nil
 
-        // IMPORTANT:
-        //
-        // Do NOT call syncTargetPose()
-        // here.
-        //
-        // Core ML movement validation
-        // begins only after tutorial finishes.
+        // Do not start Core ML target
+        // until tutorial finishes.
+
+        visionService.targetPose =
+            ""
 
         visionService.startSession()
     }
@@ -460,16 +438,10 @@ struct PoseTrackingView: View {
 
 
     // =========================================================
-    // MARK: - Start Movement Sequence
+    // MARK: - Start Core ML Sequence
     // =========================================================
 
     private func startMovementSequence() {
-
-        guard
-            tutorialController.hasStarted
-        else {
-            return
-        }
 
         currentStepIndex =
             0
@@ -485,14 +457,12 @@ struct PoseTrackingView: View {
         stepAdvanceTask =
             nil
 
-        // Tell Core ML which movement to detect.
-
         syncTargetPose()
     }
 
 
     // =========================================================
-    // MARK: - Sync Core ML Target
+    // MARK: - Target Pose
     // =========================================================
 
     private func syncTargetPose() {
@@ -503,7 +473,7 @@ struct PoseTrackingView: View {
 
 
     // =========================================================
-    // MARK: - Core ML Match Evaluation
+    // MARK: - Match Evaluation
     // =========================================================
 
     private func handleMatchEvaluation(
@@ -520,7 +490,7 @@ struct PoseTrackingView: View {
 
 
         // =====================================================
-        // MATCHED
+        // MATCH
         // =====================================================
 
         if isMatching {
@@ -532,10 +502,6 @@ struct PoseTrackingView: View {
                 return
             }
 
-
-            // ---------------------------------------------
-            // Visual success state
-            // ---------------------------------------------
 
             withAnimation(
                 .spring(
@@ -552,9 +518,7 @@ struct PoseTrackingView: View {
             }
 
 
-            // ---------------------------------------------
-            // Require stable match for 1.2 seconds
-            // ---------------------------------------------
+            // Hold for 1.2 seconds.
 
             stepAdvanceTask =
                 Task {
@@ -573,10 +537,6 @@ struct PoseTrackingView: View {
 
 
                     await MainActor.run {
-
-                        // Make sure the pose is
-                        // still matching when
-                        // the hold completes.
 
                         guard
                             visionService.isMatching
@@ -606,9 +566,6 @@ struct PoseTrackingView: View {
 
         } else {
 
-            // Pose broke before the
-            // 1.2 second hold finished.
-
             if !isSuccessHolding {
 
                 stepAdvanceTask?.cancel()
@@ -621,17 +578,10 @@ struct PoseTrackingView: View {
 
 
     // =========================================================
-    // MARK: - Advance Movement
+    // MARK: - Next Movement
     // =========================================================
 
     private func advanceToNextStep() {
-
-        guard
-            tutorialController.hasStarted
-        else {
-            return
-        }
-
 
         if currentStepIndex + 1 < steps.count {
 
@@ -649,17 +599,9 @@ struct PoseTrackingView: View {
             }
 
 
-            // Tell Core ML about the
-            // next movement.
-
             syncTargetPose()
 
-
         } else {
-
-            // =============================================
-            // ALL MOVEMENTS COMPLETE
-            // =============================================
 
             withAnimation(
                 .spring(
@@ -687,15 +629,10 @@ struct PoseTrackingView: View {
 
     private func restartSequence() {
 
-        // Cancel movement timer.
-
         stepAdvanceTask?.cancel()
 
         stepAdvanceTask =
             nil
-
-
-        // Reset movement.
 
         currentStepIndex =
             0
@@ -706,14 +643,7 @@ struct PoseTrackingView: View {
         isCompleted =
             false
 
-
-        // Reset tutorial.
-
         tutorialController.reset()
-
-
-        // Remove the Core ML target
-        // until tutorial is complete.
 
         visionService.targetPose =
             ""
@@ -721,7 +651,7 @@ struct PoseTrackingView: View {
 
 
     // =========================================================
-    // MARK: - Force Landscape
+    // MARK: - Landscape
     // =========================================================
 
     private func forceLandscape() {
@@ -741,12 +671,14 @@ struct PoseTrackingView: View {
 
 
     // =========================================================
-    // MARK: - Test Controls
+    // MARK: - DEBUG MENU
     // =========================================================
 
     @ViewBuilder
     private var testControlsOverlay:
         some View {
+
+        #if DEBUG
 
         VStack {
 
@@ -757,26 +689,60 @@ struct PoseTrackingView: View {
                 Menu {
 
                     // =========================================
-                    // Tutorial Test
+                    // NEXT TUTORIAL STEP
                     // =========================================
 
                     if !tutorialController.hasStarted {
 
                         Button(
+                            "Next Tutorial Step"
+                        ) {
+
+                            tutorialController
+                                .debugNextStep()
+                        }
+
+
+                        // =====================================
+                        // SKIP ENTIRE TUTORIAL
+                        // =====================================
+
+                        Button(
+                            "Skip to Started"
+                        ) {
+
+                            tutorialController
+                                .skipToStarted()
+                        }
+
+
+                        Divider()
+
+
+                        // =====================================
+                        // RESET
+                        // =====================================
+
+                        Button(
                             "Reset Tutorial"
                         ) {
 
-                            tutorialController.reset()
+                            tutorialController
+                                .reset()
+
+                            visionService
+                                .targetPose =
+                                ""
                         }
 
                     } else {
 
                         // =====================================
-                        // Core ML Test
+                        // SIMULATE MATCH
                         // =====================================
 
                         Button(
-                            "Simulasikan Cocok (Next Step)"
+                            "Simulasikan Cocok"
                         ) {
 
                             handleMatchEvaluation(
@@ -785,11 +751,12 @@ struct PoseTrackingView: View {
                             )
                         }
 
+
                         Divider()
 
 
                         // =====================================
-                        // Jump to Movement
+                        // JUMP TO MOVEMENT
                         // =====================================
 
                         ForEach(
@@ -802,24 +769,10 @@ struct PoseTrackingView: View {
                                 "Lompat ke \(steps[index].title)"
                             ) {
 
-                                stepAdvanceTask?.cancel()
-
-                                stepAdvanceTask =
-                                    nil
-
-                                withAnimation {
-
-                                    currentStepIndex =
+                                jumpToMovement(
+                                    index:
                                         index
-
-                                    isSuccessHolding =
-                                        false
-
-                                    isCompleted =
-                                        false
-                                }
-
-                                syncTargetPose()
+                                )
                             }
                         }
                     }
@@ -833,13 +786,13 @@ struct PoseTrackingView: View {
 
                         Image(
                             systemName:
-                                "slider.horizontal.3"
+                                "ladybug"
                         )
 
                         if tutorialController.hasStarted {
 
                             Text(
-                                "Target: \(currentStep.title) (\(currentStep.id))"
+                                "Target: \(currentStep.title)"
                             )
 
                         } else {
@@ -864,9 +817,7 @@ struct PoseTrackingView: View {
                         )
                     )
                     .foregroundColor(
-                        .white.opacity(
-                            0.85
-                        )
+                        .white
                     )
                     .padding(
                         .horizontal,
@@ -878,7 +829,7 @@ struct PoseTrackingView: View {
                     )
                     .background(
                         Color.black.opacity(
-                            0.6
+                            0.65
                         )
                     )
                     .clipShape(
@@ -897,7 +848,40 @@ struct PoseTrackingView: View {
                 20
             )
         }
+
+        #endif
     }
+
+
+    // =========================================================
+    // MARK: - DEBUG Movement Jump
+    // =========================================================
+
+    #if DEBUG
+
+    private func jumpToMovement(
+        index:
+            Int
+    ) {
+
+        stepAdvanceTask?.cancel()
+
+        stepAdvanceTask =
+            nil
+
+        currentStepIndex =
+            index
+
+        isSuccessHolding =
+            false
+
+        isCompleted =
+            false
+
+        syncTargetPose()
+    }
+
+    #endif
 }
 
 
