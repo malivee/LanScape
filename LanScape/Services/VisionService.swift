@@ -6,6 +6,8 @@ import ImageIO
 import UIKit
 import CoreML
 
+// MARK: - Vision Service
+
 final class VisionService:
     NSObject,
     ObservableObject,
@@ -13,31 +15,42 @@ final class VisionService:
 
     // MARK: - Published State
 
-    @Published var poseModel = PoseModel()
+    @Published var poseModel =
+        PoseModel()
 
-    @Published var targetPose: String = "1"
+    @Published var targetPose:
+        String = "1"
 
-    @Published var prediction: String = "?"
+    @Published var prediction:
+        String = "?"
 
-    @Published var confidence: Double = 0.0
+    @Published var confidence:
+        Double = 0.0
 
-    @Published var isMatching: Bool = false
+    @Published var isMatching:
+        Bool = false
 
     // MARK: - Debug State
 
-    @Published var debugRawLabel: String = ""
+    @Published var debugRawLabel:
+        String = ""
 
-    @Published var debugProbabilities: String = ""
+    @Published var debugProbabilities:
+        String = ""
 
-    @Published var debugBestProbability: String = ""
+    @Published var debugBestProbability:
+        String = ""
 
-    @Published var debugInputCount: String = ""
+    @Published var debugInputCount:
+        String = ""
 
-    @Published var debugStatus: String = "Waiting"
+    @Published var debugStatus:
+        String = "Waiting"
 
     // MARK: - Camera
 
-    let captureSession = AVCaptureSession()
+    let captureSession =
+        AVCaptureSession()
 
     private let videoOutput =
         AVCaptureVideoDataOutput()
@@ -47,17 +60,29 @@ final class VisionService:
             label: "cameraSessionQueue"
         )
 
+    private let videoBufferQueue =
+        DispatchQueue(
+            label: "videoBufferQueue",
+            qos: .userInteractive
+        )
+
     // MARK: - Vision
 
-    nonisolated private let bodyPoseRequest =
+    private let bodyPoseRequest =
         VNDetectHumanBodyPoseRequest()
 
     // MARK: - Core ML
 
-    private var model: MLModel?
+    private var model:
+        MLModel?
 
     private let confidenceThreshold:
         Double = 0.70
+
+    // MARK: - State
+
+    private var isConfigured =
+        false
 
     // MARK: - Init
 
@@ -99,6 +124,7 @@ final class VisionService:
                 printModelInformation()
 
                 DispatchQueue.main.async {
+
                     self.debugStatus =
                         "Model loaded"
                 }
@@ -111,6 +137,7 @@ final class VisionService:
                 )
 
                 DispatchQueue.main.async {
+
                     self.debugStatus =
                         "Model load error"
                 }
@@ -142,6 +169,7 @@ final class VisionService:
                 printModelInformation()
 
                 DispatchQueue.main.async {
+
                     self.debugStatus =
                         "Model compiled"
                 }
@@ -154,6 +182,7 @@ final class VisionService:
                 )
 
                 DispatchQueue.main.async {
+
                     self.debugStatus =
                         "Model compile error"
                 }
@@ -166,6 +195,7 @@ final class VisionService:
             )
 
             DispatchQueue.main.async {
+
                 self.debugStatus =
                     "Model not found"
             }
@@ -243,16 +273,18 @@ final class VisionService:
 
         sessionQueue.async { [weak self] in
 
-            guard
-                let self,
-                !self.captureSession.isRunning
-            else {
+            guard let self else {
+                return
+            }
+
+            guard !self.captureSession.isRunning else {
                 return
             }
 
             self.captureSession.startRunning()
 
             DispatchQueue.main.async {
+
                 self.debugStatus =
                     "Camera running"
             }
@@ -265,16 +297,18 @@ final class VisionService:
 
         sessionQueue.async { [weak self] in
 
-            guard
-                let self,
-                self.captureSession.isRunning
-            else {
+            guard let self else {
+                return
+            }
+
+            guard self.captureSession.isRunning else {
                 return
             }
 
             self.captureSession.stopRunning()
 
             DispatchQueue.main.async {
+
                 self.debugStatus =
                     "Camera stopped"
             }
@@ -311,6 +345,7 @@ final class VisionService:
             )
 
             DispatchQueue.main.async {
+
                 self.debugStatus =
                     "Camera permission denied"
             }
@@ -322,6 +357,7 @@ final class VisionService:
             )
 
             DispatchQueue.main.async {
+
                 self.debugStatus =
                     "Camera restricted"
             }
@@ -342,7 +378,15 @@ final class VisionService:
                 return
             }
 
+            // Prevent configuring twice.
+
+            guard !self.isConfigured else {
+                return
+            }
+
             self.captureSession.beginConfiguration()
+
+            // MARK: Session Preset
 
             if self.captureSession.canSetSessionPreset(
                 .hd1920x1080
@@ -357,14 +401,23 @@ final class VisionService:
                     .high
             }
 
-            // BACK CAMERA
+            // MARK: Remove Existing Inputs
+
+            for input in self.captureSession.inputs {
+
+                self.captureSession.removeInput(
+                    input
+                )
+            }
+
+            // MARK: FRONT CAMERA
 
             guard
                 let videoDevice =
                     AVCaptureDevice.default(
                         .builtInWideAngleCamera,
                         for: .video,
-                        position: .back
+                        position: .front
                     ),
 
                 let videoInput =
@@ -375,10 +428,11 @@ final class VisionService:
                 self.captureSession.canAddInput(
                     videoInput
                 )
+
             else {
 
                 print(
-                    "❌ Could not configure back camera"
+                    "❌ Could not configure FRONT camera"
                 )
 
                 self.captureSession.commitConfiguration()
@@ -390,9 +444,24 @@ final class VisionService:
                 videoInput
             )
 
-            if self.captureSession.canAddOutput(
+            // MARK: Video Output
+
+            if !self.captureSession.outputs.contains(
                 self.videoOutput
             ) {
+
+                guard self.captureSession.canAddOutput(
+                    self.videoOutput
+                ) else {
+
+                    print(
+                        "❌ Could not add video output"
+                    )
+
+                    self.captureSession.commitConfiguration()
+
+                    return
+                }
 
                 self.captureSession.addOutput(
                     self.videoOutput
@@ -405,23 +474,60 @@ final class VisionService:
                 self.videoOutput
                     .setSampleBufferDelegate(
                         self,
-                        queue:
-                            DispatchQueue(
-                                label:
-                                    "videoBufferQueue",
-                                qos:
-                                    .userInteractive
-                            )
+                        queue: self.videoBufferQueue
                     )
             }
 
+            // MARK: Video Output Orientation
+
+            if let connection =
+                self.videoOutput.connection(
+                    with: .video
+                ) {
+
+                if connection.isVideoOrientationSupported {
+
+                    connection.videoOrientation =
+                        .landscapeRight
+                }
+
+                // IMPORTANT:
+                //
+                // Vision must receive the
+                // NON-MIRRORED image.
+                //
+                // Only the preview is mirrored.
+
+                if connection.isVideoMirroringSupported {
+
+                    connection.automaticallyAdjustsVideoMirroring =
+                        false
+
+                    connection.isVideoMirrored =
+                        false
+                }
+            }
+
             self.captureSession.commitConfiguration()
+
+            self.isConfigured = true
+
+            print("")
+            print("==============================")
+            print("CAMERA CONFIGURED")
+            print("==============================")
+            print("Camera: FRONT")
+            print("Orientation: LANDSCAPE RIGHT")
+            print("Vision Mirrored: NO")
+            print("Preview Mirrored: YES")
+            print("==============================")
+            print("")
 
             self.startSession()
         }
     }
 
-    // MARK: - Orientation
+    // MARK: - Vision Orientation
 
     private func currentOrientationAndSize()
         -> (
@@ -429,90 +535,21 @@ final class VisionService:
             CGSize
         ) {
 
-        let interfaceOrientation:
-            UIInterfaceOrientation
+        // The application is forced to landscape.
+        //
+        // AVCaptureVideoDataOutput receives
+        // landscapeRight.
+        //
+        // The pixel buffer itself is therefore
+        // interpreted as a landscape image.
 
-        if let windowScene =
-            UIApplication.shared
-                .connectedScenes
-                .compactMap({
-                    $0 as? UIWindowScene
-                })
-                .first(
-                    where: {
-                        $0.activationState ==
-                            .foregroundActive
-                    }
-                )
-            ??
-            UIApplication.shared
-                .connectedScenes
-                .compactMap({
-                    $0 as? UIWindowScene
-                })
-                .first {
-
-            interfaceOrientation =
-                windowScene.interfaceOrientation
-
-        } else {
-
-            interfaceOrientation =
-                .portrait
-        }
-
-        switch interfaceOrientation {
-
-        case .landscapeLeft:
-
-            return (
-                .up,
-                CGSize(
-                    width: 1920,
-                    height: 1080
-                )
+        return (
+            .up,
+            CGSize(
+                width: 1920,
+                height: 1080
             )
-
-        case .landscapeRight:
-
-            return (
-                .down,
-                CGSize(
-                    width: 1920,
-                    height: 1080
-                )
-            )
-
-        case .portraitUpsideDown:
-
-            return (
-                .left,
-                CGSize(
-                    width: 1080,
-                    height: 1920
-                )
-            )
-
-        case .portrait:
-
-            return (
-                .right,
-                CGSize(
-                    width: 1080,
-                    height: 1920
-                )
-            )
-
-        default:
-
-            return (
-                .right,
-                CGSize(
-                    width: 1080,
-                    height: 1920
-                )
-            )
-        }
+        )
     }
 
     // MARK: - Capture Output
@@ -540,17 +577,17 @@ final class VisionService:
 
         let handler =
             VNImageRequestHandler(
-                cvPixelBuffer:
-                    pixelBuffer,
-                orientation:
-                    orientation,
+                cvPixelBuffer: pixelBuffer,
+                orientation: orientation,
                 options: [:]
             )
 
         do {
 
             try handler.perform(
-                [bodyPoseRequest]
+                [
+                    bodyPoseRequest
+                ]
             )
 
             guard
@@ -564,8 +601,7 @@ final class VisionService:
                     self?.poseModel =
                         PoseModel(
                             detectedPeople: [],
-                            videoSize:
-                                videoSize
+                            videoSize: videoSize
                         )
 
                     self?.prediction =
@@ -610,10 +646,11 @@ final class VisionService:
                         .all
                     )
 
-                var jointDict: [
-                    VNHumanBodyPoseObservation
-                        .JointName: CGPoint
-                ] = [:]
+                var jointDict:
+                    [
+                        VNHumanBodyPoseObservation
+                            .JointName: CGPoint
+                    ] = [:]
 
                 var jointList:
                     [JointPoint] = []
@@ -624,19 +661,32 @@ final class VisionService:
                 var countX:
                     CGFloat = 0
 
+                // MARK: Convert Vision Points
+
                 for (
                     jointName,
                     point
                 ) in recognizedPoints
-                where point.confidence > 0.1 {
+                    where point.confidence > 0.1 {
+
+                    // Vision:
+                    //
+                    // origin = bottom-left
+                    //
+                    // App:
+                    //
+                    // origin = top-left
+                    //
+                    // Do NOT mirror X here.
+                    //
+                    // Core ML must receive the same
+                    // coordinate convention used
+                    // during training.
 
                     let mappedPoint =
                         CGPoint(
-                            x:
-                                point.location.x,
-                            y:
-                                1.0 -
-                                point.location.y
+                            x: point.location.x,
+                            y: 1.0 - point.location.y
                         )
 
                     jointDict[
@@ -646,12 +696,9 @@ final class VisionService:
 
                     jointList.append(
                         JointPoint(
-                            name:
-                                jointName,
-                            location:
-                                mappedPoint,
-                            confidence:
-                                point.confidence
+                            name: jointName,
+                            location: mappedPoint,
+                            confidence: point.confidence
                         )
                     )
 
@@ -661,50 +708,58 @@ final class VisionService:
                     countX += 1
                 }
 
-                if jointDict[.root] == nil,
+                // MARK: Root
 
-                   let leftHip =
-                    jointDict[.leftHip],
+                if
+                    jointDict[.root] == nil,
 
-                   let rightHip =
-                    jointDict[.rightHip] {
+                    let leftHip =
+                        jointDict[.leftHip],
+
+                    let rightHip =
+                        jointDict[.rightHip]
+                {
 
                     jointDict[.root] =
                         CGPoint(
                             x:
                                 (
-                                    leftHip.x +
-                                    rightHip.x
+                                    leftHip.x
+                                    + rightHip.x
                                 ) / 2.0,
 
                             y:
                                 (
-                                    leftHip.y +
-                                    rightHip.y
+                                    leftHip.y
+                                    + rightHip.y
                                 ) / 2.0
                         )
                 }
 
-                if jointDict[.neck] == nil,
+                // MARK: Neck
 
-                   let leftShoulder =
-                    jointDict[.leftShoulder],
+                if
+                    jointDict[.neck] == nil,
 
-                   let rightShoulder =
-                    jointDict[.rightShoulder] {
+                    let leftShoulder =
+                        jointDict[.leftShoulder],
+
+                    let rightShoulder =
+                        jointDict[.rightShoulder]
+                {
 
                     jointDict[.neck] =
                         CGPoint(
                             x:
                                 (
-                                    leftShoulder.x +
-                                    rightShoulder.x
+                                    leftShoulder.x
+                                    + rightShoulder.x
                                 ) / 2.0,
 
                             y:
                                 (
-                                    leftShoulder.y +
-                                    rightShoulder.y
+                                    leftShoulder.y
+                                    + rightShoulder.y
                                 ) / 2.0
                         )
                 }
@@ -739,9 +794,18 @@ final class VisionService:
                 )
             }
 
+            // MARK: Person Ordering
+
+            // The camera preview is mirrored.
+            //
+            // Vision is NOT mirrored.
+            //
+            // Therefore reverse X ordering so
+            // personIndex matches what the user
+            // sees on screen.
+
             rawPeople.sort {
-                $0.avgX <
-                    $1.avgX
+                $0.avgX > $1.avgX
             }
 
             var people:
@@ -766,6 +830,8 @@ final class VisionService:
                 )
             }
 
+            // MARK: Publish Pose
+
             DispatchQueue.main.async { [weak self] in
 
                 self?.poseModel =
@@ -786,6 +852,7 @@ final class VisionService:
             )
 
             DispatchQueue.main.async { [weak self] in
+
                 self?.debugStatus =
                     "Vision error"
             }
@@ -805,9 +872,8 @@ final class VisionService:
             VNHumanBodyPoseObservation
                 .JointName
 
-        let jointMap: [
-            String: Joint
-        ] = [
+        let jointMap:
+            [String: Joint] = [
 
             "head_joint":
                 .nose,
@@ -861,9 +927,8 @@ final class VisionService:
                 .rightAnkle
         ]
 
-        var features: [
-            String: MLFeatureValue
-        ] = [:]
+        var features:
+            [String: MLFeatureValue] = [:]
 
         guard let model else {
             return features
@@ -874,26 +939,24 @@ final class VisionService:
                 .modelDescription
                 .inputDescriptionsByName
 
+        // MARK: Dynamic Model Inputs
+
         for featureName
             in inputs.keys {
 
             let prefix =
                 "VNRecognizedPointKey(_rawValue: "
 
-            guard
-                featureName.hasPrefix(
-                    prefix
-                )
-            else {
+            guard featureName.hasPrefix(
+                prefix
+            ) else {
                 continue
             }
 
-            guard
-                let prefixRange =
-                    featureName.range(
-                        of:
-                            prefix
-                    )
+            guard let prefixRange =
+                featureName.range(
+                    of: prefix
+                )
             else {
                 continue
             }
@@ -903,11 +966,10 @@ final class VisionService:
                     prefixRange.upperBound...
                 ]
 
-            guard
-                let closing =
-                    remainder.firstIndex(
-                        of: ")"
-                    )
+            guard let closing =
+                remainder.firstIndex(
+                    of: ")"
+                )
             else {
                 continue
             }
@@ -919,20 +981,23 @@ final class VisionService:
                     ]
                 )
 
-            guard
-                let joint =
-                    jointMap[jointName]
+            guard let joint =
+                jointMap[jointName]
             else {
                 continue
             }
 
-            let value: Double
+            let value:
+                Double
 
-            if let point =
-                try? observation.recognizedPoint(
-                    joint
-                ),
-               point.confidence > 0.1 {
+            if
+                let point =
+                    try? observation.recognizedPoint(
+                        joint
+                    ),
+
+                point.confidence > 0.1
+            {
 
                 if featureName.hasSuffix(
                     "_x"
@@ -959,15 +1024,15 @@ final class VisionService:
 
             } else {
 
-                value = 0.0
+                value =
+                    0.0
             }
 
             features[
                 featureName
             ] =
                 MLFeatureValue(
-                    double:
-                        value
+                    double: value
                 )
         }
 
@@ -984,6 +1049,7 @@ final class VisionService:
         guard let model else {
 
             DispatchQueue.main.async {
+
                 self.debugStatus =
                     "Model unavailable"
             }
@@ -1012,8 +1078,7 @@ final class VisionService:
                 "\(actualCount) / \(expectedCount)"
         }
 
-        guard
-            actualCount ==
+        guard actualCount ==
                 expectedCount
         else {
 
@@ -1085,17 +1150,12 @@ final class VisionService:
                 return
             }
 
-            // dictionaryValue is already:
-            // [AnyHashable: NSNumber]
-
             let dictionary =
                 probabilityFeature
                     .dictionaryValue
 
             var probabilities:
-                [
-                    String: Double
-                ] = [:]
+                [String: Double] = [:]
 
             for (
                 key,
@@ -1120,8 +1180,7 @@ final class VisionService:
                 let best =
                     probabilities.max(
                         by: {
-                            $0.value <
-                                $1.value
+                            $0.value < $1.value
                         }
                     )
             else {
@@ -1152,23 +1211,24 @@ final class VisionService:
             let matches =
                 predictedLabel
                     .lowercased()
-                    ==
+                ==
                 targetPose
                     .lowercased()
                 &&
                 predictedConfidence >=
                     confidenceThreshold
 
-            // MARK: Debug String
+            // MARK: Probability Debug
 
             let probabilityText =
                 probabilities
                     .sorted {
-                        $0.key <
-                            $1.key
+                        $0.key < $1.key
                     }
                     .map {
-                        "\($0.key): " +
+
+                        "\($0.key): "
+                        +
                         String(
                             format:
                                 "%.4f",
