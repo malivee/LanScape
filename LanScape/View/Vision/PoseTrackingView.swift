@@ -14,12 +14,10 @@ struct PoseTrackingView: View {
     // =========================================================
 
     @StateObject
-    private var visionService =
-        VisionService()
+    private var visionService = VisionService()
 
     @StateObject
-    private var tutorialController =
-        TutorialController()
+    private var tutorialController = TutorialController()
 
 
     // =========================================================
@@ -35,19 +33,15 @@ struct PoseTrackingView: View {
     // =========================================================
 
     @State
-    private var hitboxResults:
-        [HitboxResult] = []
+    private var hitboxResults: [HitboxResult] = []
 
     @State
-    private var isMovementSuccessful =
-        false
+    private var isMovementSuccessful = false
 
     @State
-    private var movementNumber =
-        1
+    private var movementNumber = 1
 
-    private let totalMovements =
-        5
+    private let totalMovements = 5
 
 
     // =========================================================
@@ -56,122 +50,137 @@ struct PoseTrackingView: View {
 
     var body: some View {
 
-        ZStack {
+        GeometryReader { geometry in
 
-            // =================================================
-            // CAMERA
-            // =================================================
+            ZStack {
 
-            CameraPreviewView(
+                // =================================================
+                // CAMERA
+                // =================================================
 
-                session:
-                    visionService
-                    .captureSession,
+                CameraPreviewView(
+                    session: visionService.captureSession,
+                    onOrientationChanged: { orientation in
 
-                onOrientationChanged: {
-                    orientation in
-
-                    visionService
-                        .updateVideoOrientation(
+                        visionService.updateVideoOrientation(
                             orientation
                         )
+                    }
+                )
+                .frame(
+                    width: geometry.size.width,
+                    height: geometry.size.height
+                )
+                .clipped()
+                .ignoresSafeArea()
+
+
+                // =================================================
+                // VISION JOINT OVERLAY
+                // =================================================
+
+                PoseSkeletonOverlayView(
+                    detectedPeople:
+                        visionService
+                            .poseModel
+                            .detectedPeople,
+
+                    videoSize:
+                        visionService
+                            .poseModel
+                            .videoSize
+                )
+                .frame(
+                    width: geometry.size.width,
+                    height: geometry.size.height
+                )
+                .clipped()
+                .ignoresSafeArea()
+
+
+                // =================================================
+                // GAME FLOW
+                // =================================================
+
+                if !tutorialController.hasStarted {
+
+                    tutorialPhase
+
+                } else {
+
+                    gameplayPhase
                 }
-            )
-            .ignoresSafeArea()
 
 
-            // =================================================
-            // VISION JOINT OVERLAY
-            // =================================================
+                // =================================================
+                // DEBUG CONTROLS
+                // =================================================
 
-            PoseSkeletonOverlayView(
-
-                detectedPeople:
-                    visionService
-                    .poseModel
-                    .detectedPeople,
-
-                videoSize:
-                    visionService
-                    .poseModel
-                    .videoSize
-            )
-            .ignoresSafeArea()
-
-
-            // =================================================
-            // GAME FLOW
-            // =================================================
-
-            if !tutorialController.hasStarted {
-
-                tutorialPhase
-
-            } else {
-
-                gameplayPhase
+                testControlsOverlay
             }
+            .frame(
+                width: geometry.size.width,
+                height: geometry.size.height
+            )
+            .ignoresSafeArea()
 
+            // =====================================================
+            // IMPORTANT:
+            //
+            // Use the actual SwiftUI geometry size for hitbox
+            // validation.
+            // =====================================================
 
-            // =================================================
-            // DEBUG
-            // =================================================
+            .onReceive(
+                visionService
+                    .poseModel
+                    .$detectedPeople
+            ) { people in
 
-            testControlsOverlay
+                updateHitboxes(
+                    people: people,
+                    viewSize: geometry.size
+                )
+            }
         }
+        .ignoresSafeArea()
+
+        // =========================================================
+        // LIFECYCLE
+        // =========================================================
 
         .onAppear {
-
             handleAppear()
         }
 
         .onDisappear {
-
             handleDisappear()
-        }
-
-        // IMPORTANT:
-        // Whenever Vision produces new people,
-        // check the hitboxes again.
-
-        .onReceive(
-            visionService
-                .poseModel
-                .$detectedPeople
-        ) { people in
-
-            updateHitboxes(
-                people:
-                    people
-            )
         }
     }
 
 
-    // =========================================================
+    // =============================================================
     // MARK: - Tutorial
-    // =========================================================
+    // =============================================================
 
     @ViewBuilder
-    private var tutorialPhase:
-        some View {
+    private var tutorialPhase: some View {
 
         GeometryReader { geometry in
 
             TutorialOverlayView(
-
                 tutorial:
                     tutorialController,
 
                 detectedPeople:
                     visionService
-                    .poseModel
-                    .detectedPeople,
+                        .poseModel
+                        .detectedPeople,
 
                 videoSize:
                     visionService
-                    .poseModel
-                    .videoSize,
+                        .poseModel
+                        .videoSize,
 
                 viewSize:
                     geometry.size
@@ -181,35 +190,37 @@ struct PoseTrackingView: View {
     }
 
 
-    // =========================================================
+    // =============================================================
     // MARK: - Gameplay
-    // =========================================================
+    // =============================================================
 
     @ViewBuilder
-    private var gameplayPhase:
-        some View {
+    private var gameplayPhase: some View {
 
         GeometryReader { geometry in
 
             ZStack {
 
-                // ---------------------------------------------
-                // Center divider
-                // ---------------------------------------------
+                // =================================================
+                // CENTER DIVIDER
+                // =================================================
 
                 CenterDividerLineView()
+                    .frame(
+                        width: geometry.size.width,
+                        height: geometry.size.height
+                    )
                     .ignoresSafeArea()
 
 
-                // ---------------------------------------------
-                // Hitboxes
-                // ---------------------------------------------
+                // =================================================
+                // HITBOXES
+                // =================================================
 
                 MovementHitboxOverlayView(
-
                     hitboxes:
                         MovementHitboxLayout
-                        .hitboxes(),
+                            .hitboxes(),
 
                     results:
                         hitboxResults,
@@ -217,16 +228,20 @@ struct PoseTrackingView: View {
                     viewSize:
                         geometry.size
                 )
+                .frame(
+                    width: geometry.size.width,
+                    height: geometry.size.height
+                )
+                .ignoresSafeArea()
 
 
-                // ---------------------------------------------
-                // Success
-                // ---------------------------------------------
+                // =================================================
+                // SUCCESS
+                // =================================================
 
                 if isMovementSuccessful {
 
                     Text("PERFECT!")
-
                         .font(
                             .system(
                                 size: 64,
@@ -234,51 +249,73 @@ struct PoseTrackingView: View {
                                 design: .rounded
                             )
                         )
-
-                        .foregroundColor(
-                            .white
-                        )
-
+                        .foregroundColor(.white)
                         .shadow(
                             color:
-                                .black.opacity(
-                                    0.7
-                                ),
-
-                            radius:
-                                12
+                                .black.opacity(0.7),
+                            radius: 12
                         )
                         .transition(
                             .scale
-                            .combined(
-                                with: .opacity
-                            )
+                                .combined(
+                                    with: .opacity
+                                )
                         )
                 }
 
 
-                // ---------------------------------------------
-                // Header
-                // ---------------------------------------------
+                // =================================================
+                // HEADER
+                //
+                // IMPORTANT:
+                // This VStack pins the header to the top.
+                // Previously gameplayHeader was directly inside
+                // ZStack, which caused it to appear in the middle.
+                // =================================================
 
-                gameplayHeader
+                VStack(
+                    spacing: 0
+                ) {
+
+                    gameplayHeader
+
+                    Spacer()
+                }
+                .frame(
+                    width: geometry.size.width,
+                    height: geometry.size.height,
+                    alignment: .top
+                )
             }
+            .frame(
+                width: geometry.size.width,
+                height: geometry.size.height
+            )
         }
         .ignoresSafeArea()
     }
 
 
-    // =========================================================
-    // MARK: - Header
-    // =========================================================
+    // =============================================================
+    // MARK: - Gameplay Header
+    // =============================================================
 
     @ViewBuilder
-    private var gameplayHeader:
-        some View {
+    private var gameplayHeader: some View {
 
-        VStack {
+        VStack(
+            spacing: 12
+        ) {
+
+            // =====================================================
+            // TOP ROW
+            // =====================================================
 
             HStack {
+
+                // -------------------------------------------------
+                // Pause button
+                // -------------------------------------------------
 
                 Button {
 
@@ -290,12 +327,11 @@ struct PoseTrackingView: View {
 
                         Circle()
                             .fill(
-                                Color.white
-                                .opacity(0.85)
+                                Color.white.opacity(0.92)
                             )
                             .frame(
-                                width: 60,
-                                height: 60
+                                width: 52,
+                                height: 52
                             )
 
                         Image(
@@ -304,13 +340,11 @@ struct PoseTrackingView: View {
                         )
                         .font(
                             .system(
-                                size: 22,
+                                size: 18,
                                 weight: .bold
                             )
                         )
-                        .foregroundColor(
-                            .black
-                        )
+                        .foregroundColor(.black)
                     }
                 }
                 .buttonStyle(.plain)
@@ -319,98 +353,199 @@ struct PoseTrackingView: View {
                 Spacer()
 
 
+                // -------------------------------------------------
+                // Movement number
+                // -------------------------------------------------
+
                 Text(
                     "\(movementNumber)/\(totalMovements) Gerakan"
                 )
                 .font(
                     .system(
-                        size: 30,
+                        size: 26,
                         weight: .bold,
                         design: .rounded
                     )
                 )
-                .foregroundColor(
-                    .black
+                .foregroundColor(.white)
+                .shadow(
+                    color: .black.opacity(0.8),
+                    radius: 4,
+                    x: 0,
+                    y: 2
                 )
 
 
                 Spacer()
 
 
+                // -------------------------------------------------
+                // Invisible spacer
+                // -------------------------------------------------
+
                 Color.clear
                     .frame(
-                        width: 60,
-                        height: 60
+                        width: 52,
+                        height: 52
                     )
             }
-            .padding(
-                .horizontal,
-                40
-            )
-            .padding(
-                .top,
-                20
+
+
+            // =====================================================
+            // PROGRESS BAR
+            // =====================================================
+
+            GeometryReader { geometry in
+
+                let spacing: CGFloat = 8
+
+                let totalWidth =
+                    geometry.size.width
+
+                let segmentWidth =
+                    (
+                        totalWidth
+                        -
+                        (
+                            spacing
+                            *
+                            CGFloat(
+                                totalMovements - 1
+                            )
+                        )
+                    )
+                    /
+                    CGFloat(
+                        totalMovements
+                    )
+
+
+                HStack(
+                    spacing: spacing
+                ) {
+
+                    ForEach(
+                        0..<totalMovements,
+                        id: \.self
+                    ) { index in
+
+                        RoundedRectangle(
+                            cornerRadius: 5
+                        )
+                        .fill(
+
+                            index < movementNumber
+
+                            ? Color.blue
+
+                            : Color.white.opacity(0.35)
+                        )
+                        .frame(
+                            width:
+                                segmentWidth,
+                            height: 7
+                        )
+                        .animation(
+                            .easeInOut(
+                                duration: 0.25
+                            ),
+                            value:
+                                movementNumber
+                        )
+                    }
+                }
+            }
+            .frame(
+                height: 7
             )
         }
-        .frame(
-            maxWidth: .infinity,
-            alignment: .top
+
+        .padding(
+            .horizontal,
+            30
         )
+
+        .padding(
+            .top,
+            18
+        )
+
+        .padding(
+            .bottom,
+            18
+        )
+
+        // =========================================================
+        // IMPORTANT:
+        //
+        // NO .background()
+        //
+        // The camera is now visible behind the header.
+        // =========================================================
     }
 
-
-    // =========================================================
+    // =============================================================
     // MARK: - Hitbox Processing
-    // =========================================================
+    // =============================================================
 
     private func updateHitboxes(
-        people:
-            [DetectedPerson]
+        people: [DetectedPerson],
+        viewSize: CGSize
     ) {
+
+        // ---------------------------------------------------------
+        // Only validate during gameplay.
+        // ---------------------------------------------------------
 
         guard
             tutorialController.hasStarted
         else {
-
             return
         }
 
 
+        // ---------------------------------------------------------
+        // Hitbox layout
+        // ---------------------------------------------------------
+
         let hitboxes =
             MovementHitboxLayout
-            .hitboxes()
+                .hitboxes()
 
+
+        // ---------------------------------------------------------
+        // Video size
+        // ---------------------------------------------------------
 
         let videoSize =
             visionService
-            .poseModel
-            .videoSize
+                .poseModel
+                .videoSize
 
 
         guard
             videoSize.width > 0,
             videoSize.height > 0
         else {
-
             return
         }
 
 
-        // IMPORTANT:
-        // Use the actual window size if available.
-
-        let viewSize =
-            currentViewSize()
-
+        // ---------------------------------------------------------
+        // View size
+        // ---------------------------------------------------------
 
         guard
             viewSize.width > 0,
             viewSize.height > 0
         else {
-
             return
         }
 
+
+        // ---------------------------------------------------------
+        // Validate all hitboxes
+        // ---------------------------------------------------------
 
         let results =
             MovementHitboxValidator.validate(
@@ -430,21 +565,21 @@ struct PoseTrackingView: View {
                 convert: {
                     point,
                     size,
-                    video in
+                    video
+                    in
 
                     convertPoint(
-
                         point,
-
-                        viewSize:
-                            size,
-
-                        videoSize:
-                            video
+                        viewSize: size,
+                        videoSize: video
                     )
                 }
             )
 
+
+        // ---------------------------------------------------------
+        // Update UI
+        // ---------------------------------------------------------
 
         DispatchQueue.main.async {
 
@@ -452,8 +587,13 @@ struct PoseTrackingView: View {
                 results
 
 
+            // -----------------------------------------------------
+            // Every required hitbox must be hit.
+            // -----------------------------------------------------
+
             let allHit =
-                !results.isEmpty &&
+                !results.isEmpty
+                &&
                 results.allSatisfy {
                     $0.isHit
                 }
@@ -467,43 +607,14 @@ struct PoseTrackingView: View {
     }
 
 
-    // =========================================================
-    // MARK: - View Size
-    // =========================================================
-
-    private func currentViewSize()
-        -> CGSize {
-
-        if let scene =
-            UIApplication.shared
-            .connectedScenes
-            .compactMap({
-                $0 as? UIWindowScene
-            })
-            .first {
-
-            return scene.screen.bounds.size
-        }
-
-        return UIScreen.main.bounds.size
-    }
-
-
-    // =========================================================
+    // =============================================================
     // MARK: - Coordinate Conversion
-    // =========================================================
+    // =============================================================
 
     private func convertPoint(
-
-        _ point:
-            CGPoint,
-
-        viewSize:
-            CGSize,
-
-        videoSize:
-            CGSize
-
+        _ point: CGPoint,
+        viewSize: CGSize,
+        videoSize: CGSize
     ) -> CGPoint {
 
         guard
@@ -512,7 +623,6 @@ struct PoseTrackingView: View {
             viewSize.width > 0,
             viewSize.height > 0
         else {
-
             return .zero
         }
 
@@ -524,6 +634,10 @@ struct PoseTrackingView: View {
             videoSize.height
 
 
+        // =========================================================
+        // Aspect ratios
+        // =========================================================
+
         let videoAspect =
             videoWidth /
             videoHeight
@@ -533,19 +647,18 @@ struct PoseTrackingView: View {
             viewSize.height
 
 
-        let scale:
-            CGFloat
+        var scale: CGFloat
 
-        var offsetX:
-            CGFloat = 0
+        var offsetX: CGFloat = 0
 
-        var offsetY:
-            CGFloat = 0
+        var offsetY: CGFloat = 0
 
 
-        // =====================================================
-        // resizeAspectFill
-        // =====================================================
+        // =========================================================
+        // AVCaptureVideoPreviewLayer uses resizeAspectFill
+        //
+        // We must reproduce the same crop here.
+        // =========================================================
 
         if viewAspect > videoAspect {
 
@@ -553,14 +666,19 @@ struct PoseTrackingView: View {
                 viewSize.width /
                 videoWidth
 
+
             let renderedHeight =
                 videoHeight * scale
 
+
             offsetY =
                 (
-                    viewSize.height -
+                    viewSize.height
+                    -
                     renderedHeight
-                ) / 2
+                )
+                /
+                2
 
         } else {
 
@@ -568,24 +686,47 @@ struct PoseTrackingView: View {
                 viewSize.height /
                 videoHeight
 
+
             let renderedWidth =
                 videoWidth * scale
 
+
             offsetX =
                 (
-                    viewSize.width -
+                    viewSize.width
+                    -
                     renderedWidth
-                ) / 2
+                )
+                /
+                2
         }
 
 
-        // =====================================================
-        // Front camera mirroring
-        // =====================================================
+        // =========================================================
+        // FRONT CAMERA MIRROR
+        // =========================================================
 
         let mirroredX =
             1.0 - point.x
 
+
+        // =========================================================
+        // VISION -> UI Y FLIP
+        //
+        // Vision:
+        //     origin = bottom-left
+        //
+        // SwiftUI:
+        //     origin = top-left
+        // =========================================================
+
+        let flippedY =
+            1.0 - point.y
+
+
+        // =========================================================
+        // Final screen position
+        // =========================================================
 
         return CGPoint(
 
@@ -599,7 +740,7 @@ struct PoseTrackingView: View {
                 offsetX,
 
             y:
-                point.y
+                flippedY
                 *
                 videoHeight
                 *
@@ -610,19 +751,22 @@ struct PoseTrackingView: View {
     }
 
 
-    // =========================================================
-    // MARK: - Success
-    // =========================================================
+    // =============================================================
+    // MARK: - Movement Success
+    // =============================================================
 
     private func movementSucceeded() {
 
         guard
             !isMovementSuccessful
         else {
-
             return
         }
 
+
+        // ---------------------------------------------------------
+        // Success animation
+        // ---------------------------------------------------------
 
         withAnimation(
             .spring(
@@ -641,6 +785,10 @@ struct PoseTrackingView: View {
         )
 
 
+        // ---------------------------------------------------------
+        // Wait before next movement
+        // ---------------------------------------------------------
+
         DispatchQueue.main.asyncAfter(
             deadline:
                 .now() + 1.0
@@ -651,9 +799,9 @@ struct PoseTrackingView: View {
     }
 
 
-    // =========================================================
+    // =============================================================
     // MARK: - Next Movement
-    // =========================================================
+    // =============================================================
 
     private func advanceMovement() {
 
@@ -666,10 +814,15 @@ struct PoseTrackingView: View {
         if movementNumber <
             totalMovements {
 
-            withAnimation {
+            withAnimation(
+                .easeInOut(
+                    duration: 0.25
+                )
+            ) {
 
                 movementNumber += 1
             }
+
 
             print(
                 "➡️ Movement:",
@@ -682,20 +835,36 @@ struct PoseTrackingView: View {
                 "🎉 SEQUENCE COMPLETE"
             )
 
+
+            // -----------------------------------------------------
+            // For now restart at 1.
+            // Replace this with your completion screen later.
+            // -----------------------------------------------------
+
             movementNumber = 1
         }
     }
 
 
-    // =========================================================
+    // =============================================================
     // MARK: - Lifecycle
-    // =========================================================
+    // =============================================================
 
     private func handleAppear() {
 
         forceLandscape()
 
+
+        // ---------------------------------------------------------
+        // Reset tutorial
+        // ---------------------------------------------------------
+
         tutorialController.reset()
+
+
+        // ---------------------------------------------------------
+        // Reset gameplay
+        // ---------------------------------------------------------
 
         movementNumber =
             1
@@ -705,6 +874,11 @@ struct PoseTrackingView: View {
 
         isMovementSuccessful =
             false
+
+
+        // ---------------------------------------------------------
+        // Start camera
+        // ---------------------------------------------------------
 
         visionService.startSession()
     }
@@ -716,30 +890,36 @@ struct PoseTrackingView: View {
     }
 
 
-    // =========================================================
+    // =============================================================
     // MARK: - Landscape
-    // =========================================================
+    // =============================================================
 
     private func forceLandscape() {
 
-        UIDevice.current.setValue(
+        // ---------------------------------------------------------
+        // Force device orientation
+        // ---------------------------------------------------------
 
+        UIDevice.current.setValue(
             UIInterfaceOrientation
                 .landscapeLeft
                 .rawValue,
-
             forKey:
                 "orientation"
         )
 
 
+        // ---------------------------------------------------------
+        // iOS 16+
+        // ---------------------------------------------------------
+
         if let windowScene =
             UIApplication.shared
-            .connectedScenes
-            .compactMap({
-                $0 as? UIWindowScene
-            })
-            .first {
+                .connectedScenes
+                .compactMap({
+                    $0 as? UIWindowScene
+                })
+                .first {
 
             if #available(
                 iOS 16.0,
@@ -748,11 +928,12 @@ struct PoseTrackingView: View {
 
                 let preferences =
                     UIWindowScene
-                    .GeometryPreferences
-                    .iOS(
-                        interfaceOrientations:
-                            .landscape
-                    )
+                        .GeometryPreferences
+                        .iOS(
+                            interfaceOrientations:
+                                .landscape
+                        )
+
 
                 windowScene
                     .requestGeometryUpdate(
@@ -774,25 +955,30 @@ struct PoseTrackingView: View {
     }
 
 
-    // =========================================================
+    // =============================================================
     // MARK: - Debug
-    // =========================================================
+    // =============================================================
 
     #if DEBUG
 
     @ViewBuilder
-    private var testControlsOverlay:
-        some View {
+    private var testControlsOverlay: some View {
 
         VStack {
 
             Spacer()
 
+
             HStack {
 
                 Spacer()
 
+
                 Menu {
+
+                    // =================================================
+                    // Tutorial
+                    // =================================================
 
                     Button(
                         "1. Player Setup"
@@ -860,6 +1046,10 @@ struct PoseTrackingView: View {
                     Divider()
 
 
+                    // =================================================
+                    // Gameplay
+                    // =================================================
+
                     Button(
                         "Next Movement"
                     ) {
@@ -910,9 +1100,7 @@ struct PoseTrackingView: View {
                             design: .rounded
                         )
                     )
-                    .foregroundColor(
-                        .white
-                    )
+                    .foregroundColor(.white)
                     .padding(
                         .horizontal,
                         12
@@ -942,6 +1130,10 @@ struct PoseTrackingView: View {
     }
 
 
+    // =============================================================
+    // MARK: - Reset Gameplay
+    // =============================================================
+
     private func resetGameplay() {
 
         movementNumber =
@@ -955,8 +1147,11 @@ struct PoseTrackingView: View {
     }
 
 
-    private var debugPhaseName:
-        String {
+    // =============================================================
+    // MARK: - Debug Phase
+    // =============================================================
+
+    private var debugPhaseName: String {
 
         if tutorialController.hasStarted {
 
@@ -964,16 +1159,16 @@ struct PoseTrackingView: View {
                 "Gameplay \(movementNumber)/\(totalMovements)"
         }
 
+
         return
             tutorialController
-            .currentStep
-            .title
+                .currentStep
+                .title
     }
 
     #else
 
-    private var testControlsOverlay:
-        some View {
+    private var testControlsOverlay: some View {
 
         EmptyView()
     }
