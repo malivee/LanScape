@@ -34,12 +34,12 @@ struct TutorialOverlayView: View {
 
             case .colorMatchingGuide:
                 tutorialSlideView(
-                    text: "Sentuh titik target sesuai warna tubuhmu"
+                    text: "Arahkan titik di tubuh sesuai dengan titik di layar"
                 )
 
             case .practiceHold:
                 tutorialSlideView(
-                    text: "Tahan posisimu selama 5 detik"
+                    text: "Lalu tahan posisimu selama 5 detik"
                 )
 
             case .tutorialCompleted:
