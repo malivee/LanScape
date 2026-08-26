@@ -6,52 +6,38 @@ import SwiftUI
 // MARK: - Player Role
 
 public enum PlayerRole: String, CaseIterable {
-    case upperBody = "Upper Body"
-    case lowerBody = "Lower Body"
-    case fullBody = "Full Body"
+    case player1 = "Player 1"
+    case player2 = "Player 2"
+
+    // Backward-compatibility aliases
+    public static var upperBody: PlayerRole { .player1 }
+    public static var lowerBody: PlayerRole { .player2 }
+    public static var fullBody: PlayerRole { .player1 }
 
     public var title: String {
         switch self {
-        case .upperBody:
-            return "Player 1: Upper Body"
-        case .lowerBody:
-            return "Player 2: Lower Body"
-        case .fullBody:
-            return "Full Body"
+        case .player1:
+            return "Person 1 (Yellow)"
+        case .player2:
+            return "Person 2 (Blue)"
         }
     }
 
     public var primaryColor: Color {
         switch self {
-        case .upperBody:
-            return .yellow
-        case .lowerBody:
-            return .blue
-        case .fullBody:
-            return .green
+        case .player1:
+            return Color(hex: "FFD84D")
+        case .player2:
+            return Color(hex: "0088FF")
         }
     }
 
     public var connections: [(VNHumanBodyPoseObservation.JointName, VNHumanBodyPoseObservation.JointName)] {
-        switch self {
-        case .upperBody:
-            return PoseBodyDefinitions.upperBodyConnections
-        case .lowerBody:
-            return PoseBodyDefinitions.lowerBodyConnections
-        case .fullBody:
-            return PoseBodyDefinitions.allConnections
-        }
+        []
     }
 
     public var relevantJoints: Set<VNHumanBodyPoseObservation.JointName> {
-        switch self {
-        case .upperBody:
-            return PoseBodyDefinitions.upperBodyJoints
-        case .lowerBody:
-            return PoseBodyDefinitions.lowerBodyJoints
-        case .fullBody:
-            return PoseBodyDefinitions.allJoints
-        }
+        PoseBodyDefinitions.trackedJoints
     }
 }
 
@@ -59,73 +45,50 @@ public enum PlayerRole: String, CaseIterable {
 
 public struct PoseBodyDefinitions {
 
-    // MARK: Upper Body Connections (Head, Neck, Arms, Hands, Upper Torso)
-    public static let upperBodyConnections: [(VNHumanBodyPoseObservation.JointName, VNHumanBodyPoseObservation.JointName)] = [
-        (.nose, .neck),
-        (.nose, .leftEye),
-        (.nose, .rightEye),
-        (.leftEye, .leftEar),
-        (.rightEye, .rightEar),
-        (.neck, .leftShoulder),
-        (.neck, .rightShoulder),
-        (.leftShoulder, .rightShoulder),
-        (.neck, .root),
-        (.leftShoulder, .leftElbow),
-        (.leftElbow, .leftWrist),
-        (.rightShoulder, .rightElbow),
-        (.rightElbow, .rightWrist)
+    /// 4 Tracked joints per player: 2 hands (left/right wrist) and 2 legs (left/right ankle)
+    /// Total of 8 joints across both Player 1 and Player 2
+    public static let trackedJoints: Set<VNHumanBodyPoseObservation.JointName> = [
+        .rightWrist,  // Right Wrist / Hand
+        .leftWrist,   // Left Wrist / Hand
+        .rightAnkle,  // Right Leg
+        .leftAnkle    // Left Leg
     ]
 
-    // MARK: Lower Body Connections (Hips, Knees, Ankles/Feet)
-    public static let lowerBodyConnections: [(VNHumanBodyPoseObservation.JointName, VNHumanBodyPoseObservation.JointName)] = [
-        (.leftHip, .rightHip),
-        (.leftHip, .leftKnee),
-        (.leftKnee, .leftAnkle),
-        (.rightHip, .rightKnee),
-        (.rightKnee, .rightAnkle)
-    ]
-
-    // MARK: Torso / Core Connections
-    public static let coreConnections: [(VNHumanBodyPoseObservation.JointName, VNHumanBodyPoseObservation.JointName)] = [
-        (.leftShoulder, .leftHip),
-        (.rightShoulder, .rightHip)
-    ]
-
-    // MARK: All Connections (Full Body)
-    public static var allConnections: [(VNHumanBodyPoseObservation.JointName, VNHumanBodyPoseObservation.JointName)] {
-        upperBodyConnections + lowerBodyConnections + coreConnections
+    public static var allJoints: Set<VNHumanBodyPoseObservation.JointName> {
+        trackedJoints
     }
 
-    // MARK: Upper Joints (Player 1)
-    public static let upperBodyJoints: Set<VNHumanBodyPoseObservation.JointName> = [
-        .nose,
-        .neck,
-        .leftEye,
-        .rightEye,
-        .leftEar,
-        .rightEar,
-        .leftShoulder,
-        .rightShoulder,
-        .root,
-        .leftElbow,
-        .leftWrist,
-        .rightElbow,
-        .rightWrist
-    ]
-
-    // MARK: Lower Joints (Player 2: Kaki sampai Hips)
-    public static let lowerBodyJoints: Set<VNHumanBodyPoseObservation.JointName> = [
-        .leftHip,
-        .rightHip,
-        .leftKnee,
-        .rightKnee,
-        .leftAnkle,
-        .rightAnkle
-    ]
-
-    // MARK: All Joints
-    public static var allJoints: Set<VNHumanBodyPoseObservation.JointName> {
-        upperBodyJoints.union(lowerBodyJoints)
+    /// Color lookup per joint per person as specified in design
+    public static func jointColor(for joint: VNHumanBodyPoseObservation.JointName, personIndex: Int) -> Color {
+        if personIndex == 0 {
+            // PERSON 1 (YELLOW)
+            switch joint {
+            case .rightWrist:
+                return Color(hex: "FFD84D")
+            case .leftWrist:
+                return Color(hex: "FFF066")
+            case .rightAnkle, .rightKnee:
+                return Color(hex: "FFC13D")
+            case .leftAnkle, .leftKnee:
+                return Color(hex: "C6FF4D")
+            default:
+                return Color(hex: "FFD84D")
+            }
+        } else {
+            // PERSON 2 (BLUE)
+            switch joint {
+            case .rightWrist:
+                return Color(hex: "0088FF")
+            case .leftWrist:
+                return Color(hex: "33E0FF")
+            case .rightAnkle, .rightKnee:
+                return Color(hex: "5A6BFF")
+            case .leftAnkle, .leftKnee:
+                return Color(hex: "8A5CFF")
+            default:
+                return Color(hex: "0088FF")
+            }
+        }
     }
 }
 
@@ -141,6 +104,21 @@ public struct JointPoint: Identifiable {
         self.name = name
         self.location = location
         self.confidence = confidence
+    }
+
+    public var displayName: String {
+        switch name {
+        case .rightWrist:
+            return "Right Wrist"
+        case .leftWrist:
+            return "Left Wrist"
+        case .rightAnkle:
+            return "Right Leg"
+        case .leftAnkle:
+            return "Left Leg"
+        default:
+            return name.rawValue.rawValue
+        }
     }
 }
 
@@ -165,13 +143,11 @@ public struct DetectedPerson: Identifiable {
     public var role: PlayerRole {
         switch personIndex {
         case 0:
-            // Player 1: Upper Body (Head, Arms, Hands, Torso)
-            return .upperBody
+            return .player1
         case 1:
-            // Player 2: Lower Body (Hips to Feet)
-            return .lowerBody
+            return .player2
         default:
-            return .fullBody
+            return .player1
         }
     }
 
@@ -182,6 +158,10 @@ public struct DetectedPerson: Identifiable {
     public var filteredJointList: [JointPoint] {
         let allowedJoints = role.relevantJoints
         return jointList.filter { allowedJoints.contains($0.name) }
+    }
+
+    public func jointColor(for joint: VNHumanBodyPoseObservation.JointName) -> Color {
+        PoseBodyDefinitions.jointColor(for: joint, personIndex: personIndex)
     }
 }
 

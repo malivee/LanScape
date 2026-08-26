@@ -1,91 +1,127 @@
 import SwiftUI
 import Vision
 
-/// Draws real-time skeleton overlay lines and joint dots on top of the camera feed.
-/// - Player 1 (Upper Body): Head, arms, hands, and upper torso in yellow/green.
-/// - Player 2 (Lower Body): Hips, legs, knees, and ankles in blue/green.
+/// Draws real-time 8-joint tracking indicators (4 distinct colored joints per player):
+///
+/// Person 1 (Yellow Palette):
+/// - Right Wrist: #FFD84D
+/// - Left Wrist: #FFF066
+/// - Right Leg: #FFC13D
+/// - Left Leg: #C6FF4D
+///
+/// Person 2 (Blue Palette):
+/// - Right Wrist: #0088FF
+/// - Left Wrist: #33E0FF
+/// - Right Leg: #5A6BFF
+/// - Left Leg: #8A5CFF
 struct PoseSkeletonOverlayView: View {
     let detectedPeople: [DetectedPerson]
     let videoSize: CGSize
-    let isMatching: Bool
+    var isMatching: Bool = false
+
+    private let jointSize: CGFloat = 46
 
     var body: some View {
         GeometryReader { geometry in
             let viewSize = geometry.size
 
             ForEach(detectedPeople) { person in
-                let playerColor = isMatching ? Color.green : person.role.primaryColor
-                let allowedJoints = person.role.relevantJoints
+                let playerPrimary = person.role.primaryColor
 
-                // MARK: - Skeleton Lines
-                Path { path in
-                    for (startJoint, endJoint) in person.activeConnections {
-                        guard
-                            allowedJoints.contains(startJoint),
-                            allowedJoints.contains(endJoint),
-                            let startNorm = person.joints[startJoint],
-                            let endNorm = person.joints[endJoint]
-                        else {
-                            continue
-                        }
-
-                        let startPoint = convertPoint(startNorm, viewSize: viewSize, videoSize: videoSize)
-                        let endPoint = convertPoint(endNorm, viewSize: viewSize, videoSize: videoSize)
-
-                        path.move(to: startPoint)
-                        path.addLine(to: endPoint)
-                    }
-                }
-                .stroke(
-                    playerColor,
-                    style: StrokeStyle(
-                        lineWidth: isMatching ? 6 : 4,
-                        lineCap: .round,
-                        lineJoin: .round
-                    )
-                )
-                .shadow(color: playerColor.opacity(0.8), radius: 5)
-
-                // MARK: - Joint Circles
+                // MARK: - 4 Distinctly Colored Joint Dots
                 ForEach(person.filteredJointList) { joint in
                     let screenPoint = convertPoint(joint.location, viewSize: viewSize, videoSize: videoSize)
+                    let jointColor = person.jointColor(for: joint.name)
 
-                    Circle()
-                        .fill(playerColor)
-                        .frame(width: 14, height: 14)
-                        .overlay(
-                            Circle().stroke(Color.white, lineWidth: 2)
-                        )
-                        .shadow(color: playerColor.opacity(0.8), radius: 4)
-                        .position(screenPoint)
+                    ZStack {
+                        // 1. Ambient Outer Colored Glow
+                        Circle()
+                            .fill(jointColor)
+                            .frame(width: jointSize * 1.45, height: jointSize * 1.45)
+                            .blur(radius: jointSize * 0.28)
+                            .opacity(0.9)
+
+                        // 2. Vibrant Outer Ring
+                        Circle()
+                            .fill(jointColor)
+                            .frame(width: jointSize, height: jointSize)
+                            .shadow(color: jointColor.opacity(0.85), radius: jointSize * 0.15)
+
+                        // 3. Inner Contrast Ring
+                        Circle()
+                            .stroke(Color.white.opacity(0.35), lineWidth: jointSize * 0.08)
+                            .frame(width: jointSize * 0.78, height: jointSize * 0.78)
+
+                        // 4. Glowing White Center Core
+                        Circle()
+                            .fill(Color.white)
+                            .frame(width: jointSize * 0.54, height: jointSize * 0.54)
+                            .shadow(color: Color.white.opacity(0.95), radius: jointSize * 0.08)
+
+                        // 5. Joint Name Tag
+                        Text(joint.displayName)
+                            .font(.system(size: 10, weight: .bold, design: .rounded))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 3)
+                            .background(Color.black.opacity(0.75))
+                            .clipShape(Capsule())
+                            .overlay(
+                                Capsule().stroke(jointColor.opacity(0.9), lineWidth: 1.2)
+                            )
+                            .shadow(color: Color.black.opacity(0.4), radius: 3)
+                            .offset(y: jointSize * 0.55 + 12)
+                    }
+                    .position(screenPoint)
                 }
 
-                // MARK: - Player Floating Label Pill
-                if let anchorNorm = person.role == .upperBody
-                    ? (person.joints[.neck] ?? person.joints[.nose])
-                    : (person.joints[.root] ?? person.joints[.leftHip]) {
+                // MARK: - Player Floating Header Pill
+                if let anchorPoint = anchorForPerson(person, viewSize: viewSize, videoSize: videoSize) {
+                    let jointCount = person.filteredJointList.count
 
-                    let anchorPoint = convertPoint(anchorNorm, viewSize: viewSize, videoSize: videoSize)
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(playerPrimary)
+                            .frame(width: 8, height: 8)
 
-                    Text(person.role == .upperBody ? "P1: UPPER" : "P2: LOWER")
-                        .font(.system(size: 11, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(playerColor.opacity(0.85))
-                        .clipShape(Capsule())
-                        .overlay(
-                            Capsule().stroke(Color.white.opacity(0.7), lineWidth: 1)
-                        )
-                        .shadow(color: .black.opacity(0.3), radius: 3)
-                        .position(
-                            x: anchorPoint.x,
-                            y: max(anchorPoint.y - 30, 25)
-                        )
+                        Text("\(person.role.title) • \(jointCount)/4")
+                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                            .foregroundColor(.white)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.black.opacity(0.8))
+                    .clipShape(Capsule())
+                    .overlay(
+                        Capsule().stroke(playerPrimary.opacity(0.85), lineWidth: 1.5)
+                    )
+                    .shadow(color: playerPrimary.opacity(0.45), radius: 6)
+                    .position(
+                        x: anchorPoint.x,
+                        y: max(anchorPoint.y - 45, 32)
+                    )
                 }
             }
         }
         .allowsHitTesting(false)
+    }
+
+    // MARK: - Anchor Calculation
+    private func anchorForPerson(
+        _ person: DetectedPerson,
+        viewSize: CGSize,
+        videoSize: CGSize
+    ) -> CGPoint? {
+        let points = person.filteredJointList.map {
+            convertPoint($0.location, viewSize: viewSize, videoSize: videoSize)
+        }
+        guard !points.isEmpty else { return nil }
+
+        let minX = points.map(\.x).min() ?? 0
+        let maxX = points.map(\.x).max() ?? 0
+        let minY = points.map(\.y).min() ?? 0
+
+        return CGPoint(x: (minX + maxX) / 2.0, y: minY)
     }
 
     // MARK: - Point Conversion
@@ -114,7 +150,7 @@ struct PoseSkeletonOverlayView: View {
             offsetX = (viewSize.width - renderedWidth) / 2.0
         }
 
-        // Camera Preview is mirrored horizontally for the front camera
+        // Camera preview is mirrored horizontally for front camera
         let mirroredX = 1.0 - point.x
         let x = mirroredX * videoWidth * scale + offsetX
         let y = point.y * videoHeight * scale + offsetY
@@ -129,9 +165,8 @@ struct PoseSkeletonOverlayView: View {
         Color.black.ignoresSafeArea()
         PoseSkeletonOverlayView(
             detectedPeople: [],
-            videoSize: CGSize(width: 1920, height: 1080),
-            isMatching: false
+            videoSize: CGSize(width: 1920, height: 1080)
         )
     }
-    .previewInterfaceOrientation(.landscapeRight)
+    .previewInterfaceOrientation(.landscapeLeft)
 }

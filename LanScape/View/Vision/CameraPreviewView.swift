@@ -5,15 +5,14 @@ import UIKit
 struct CameraPreviewView: UIViewControllerRepresentable {
 
     let session: AVCaptureSession
+    var onOrientationChanged: ((AVCaptureVideoOrientation) -> Void)? = nil
 
     func makeUIViewController(
         context: Context
     ) -> CameraPreviewViewController {
-
         let controller = CameraPreviewViewController()
-
         controller.session = session
-
+        controller.onOrientationChanged = onOrientationChanged
         return controller
     }
 
@@ -21,9 +20,8 @@ struct CameraPreviewView: UIViewControllerRepresentable {
         _ uiViewController: CameraPreviewViewController,
         context: Context
     ) {
-
         uiViewController.session = session
-
+        uiViewController.onOrientationChanged = onOrientationChanged
         uiViewController.updatePreview()
     }
 }
@@ -38,63 +36,55 @@ final class CameraPreviewViewController: UIViewController {
         }
     }
 
+    var onOrientationChanged: ((AVCaptureVideoOrientation) -> Void)?
+
     private var previewLayer: AVCaptureVideoPreviewLayer?
 
     // MARK: - Lifecycle
 
     override func viewDidLoad() {
         super.viewDidLoad()
-
         view.backgroundColor = .black
-
         setupLayer()
     }
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-
         previewLayer?.frame = view.bounds
-
         updateOrientation()
     }
 
-    override func viewWillAppear(
-        _ animated: Bool
-    ) {
-
+    override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-
         previewLayer?.frame = view.bounds
-
         updateOrientation()
+    }
+
+    override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
+        super.viewWillTransition(to: size, with: coordinator)
+        coordinator.animate(alongsideTransition: { [weak self] _ in
+            guard let self else { return }
+            self.previewLayer?.frame = self.view.bounds
+            self.updateOrientation()
+        })
     }
 
     // MARK: - Setup
 
     private func setupLayer() {
-
-        guard previewLayer == nil else {
-            return
-        }
+        guard previewLayer == nil else { return }
 
         let layer = AVCaptureVideoPreviewLayer()
-
         layer.videoGravity = .resizeAspectFill
-
         layer.session = session
 
-        view.layer.insertSublayer(
-            layer,
-            at: 0
-        )
-
+        view.layer.insertSublayer(layer, at: 0)
         previewLayer = layer
     }
 
     // MARK: - Update
 
     func updatePreview() {
-
         if previewLayer == nil {
             setupLayer()
         }
@@ -104,43 +94,42 @@ final class CameraPreviewViewController: UIViewController {
         }
 
         previewLayer?.frame = view.bounds
-
         updateOrientation()
     }
 
     // MARK: - Orientation
 
     func updateOrientation() {
-
         guard let connection = previewLayer?.connection else {
             return
         }
 
-        // The app is locked to landscape.
-        //
-        // We intentionally use landscapeRight
-        // everywhere so the camera, Vision and
-        // overlay all use the same orientation.
-
-        let orientation: AVCaptureVideoOrientation = .landscapeRight
+        let activeOrientation: AVCaptureVideoOrientation
+        if let windowScene = view.window?.windowScene {
+            switch windowScene.interfaceOrientation {
+            case .landscapeRight:
+                activeOrientation = .landscapeRight
+            case .landscapeLeft:
+                activeOrientation = .landscapeLeft
+            default:
+                activeOrientation = .landscapeLeft
+            }
+        } else {
+            activeOrientation = .landscapeLeft
+        }
 
         if connection.isVideoOrientationSupported {
-
-            connection.videoOrientation = orientation
+            if connection.videoOrientation != activeOrientation {
+                connection.videoOrientation = activeOrientation
+            }
         }
 
-        // FRONT CAMERA
-        //
-        // Mirror ONLY the preview.
-        //
-        // Vision receives the original,
-        // non-mirrored camera image.
-
+        // FRONT CAMERA: Mirror preview horizontally
         if connection.isVideoMirroringSupported {
-
             connection.automaticallyAdjustsVideoMirroring = false
-
             connection.isVideoMirrored = true
         }
+
+        onOrientationChanged?(activeOrientation)
     }
 }
