@@ -220,7 +220,9 @@ struct PoseTrackingView: View {
                 MovementHitboxOverlayView(
                     hitboxes:
                         MovementHitboxLayout
-                            .hitboxes(),
+                            .hitboxes(
+                                for: movementNumber
+                            ),
 
                     results:
                         hitboxResults,
@@ -510,7 +512,9 @@ struct PoseTrackingView: View {
 
         let hitboxes =
             MovementHitboxLayout
-                .hitboxes()
+                .hitboxes(
+                    for: movementNumber
+                )
 
 
         // ---------------------------------------------------------
