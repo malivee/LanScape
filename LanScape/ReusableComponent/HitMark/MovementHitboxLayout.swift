@@ -66,7 +66,7 @@ struct MovementHitboxLayout {
                     ),
 
                 normalizedRadius:
-                    0.045
+                    0.065
             ),
 
 
@@ -85,7 +85,7 @@ struct MovementHitboxLayout {
                     ),
 
                 normalizedRadius:
-                    0.045
+                    0.065
             ),
 
 
@@ -104,7 +104,7 @@ struct MovementHitboxLayout {
                     ),
 
                 normalizedRadius:
-                    0.045
+                    0.065
             ),
 
 
@@ -123,7 +123,7 @@ struct MovementHitboxLayout {
                     ),
 
                 normalizedRadius:
-                    0.045
+                    0.065
             ),
 
 
@@ -146,7 +146,7 @@ struct MovementHitboxLayout {
                     ),
 
                 normalizedRadius:
-                    0.045
+                    0.065
             ),
 
 
@@ -165,7 +165,7 @@ struct MovementHitboxLayout {
                     ),
 
                 normalizedRadius:
-                    0.045
+                    0.065
             ),
 
 
@@ -184,7 +184,7 @@ struct MovementHitboxLayout {
                     ),
 
                 normalizedRadius:
-                    0.045
+                    0.065
             ),
 
 
@@ -203,7 +203,7 @@ struct MovementHitboxLayout {
                     ),
 
                 normalizedRadius:
-                    0.045
+                    0.065
             )
         ]
     }
@@ -252,7 +252,7 @@ struct MovementHitboxLayout {
                     ),
 
                 normalizedRadius:
-                    0.045
+                    0.065
             ),
 
 
@@ -271,7 +271,7 @@ struct MovementHitboxLayout {
                     ),
 
                 normalizedRadius:
-                    0.045
+                    0.065
             ),
 
 
@@ -290,7 +290,7 @@ struct MovementHitboxLayout {
                     ),
 
                 normalizedRadius:
-                    0.045
+                    0.065
             ),
 
 
@@ -309,7 +309,7 @@ struct MovementHitboxLayout {
                     ),
 
                 normalizedRadius:
-                    0.045
+                    0.065
             ),
 
 
@@ -332,7 +332,7 @@ struct MovementHitboxLayout {
                     ),
 
                 normalizedRadius:
-                    0.045
+                    0.065
             ),
 
 
@@ -351,7 +351,7 @@ struct MovementHitboxLayout {
                     ),
 
                 normalizedRadius:
-                    0.045
+                    0.065
             ),
 
 
@@ -370,7 +370,7 @@ struct MovementHitboxLayout {
                     ),
 
                 normalizedRadius:
-                    0.045
+                    0.065
             ),
 
 
@@ -389,7 +389,7 @@ struct MovementHitboxLayout {
                     ),
 
                 normalizedRadius:
-                    0.045
+                    0.065
             )
         ]
     }

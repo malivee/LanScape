@@ -286,14 +286,27 @@ final class VisionService: NSObject, ObservableObject, AVCaptureVideoDataOutputS
             rawPeople.sort { $0.avgX > $1.avgX }
 
             var people: [DetectedPerson] = []
-            for (index, personData) in rawPeople.enumerated() {
+            if rawPeople.count == 1 {
+                let p = rawPeople[0]
+                // Mirrored screen: avgX > 0.5 in raw video means left of preview (Player 1); avgX <= 0.5 means right of preview (Player 2)
+                let assignedIndex = p.avgX <= 0.5 ? 1 : 0
                 people.append(
                     DetectedPerson(
-                        personIndex: index,
-                        joints: personData.joints,
-                        jointList: personData.jointList
+                        personIndex: assignedIndex,
+                        joints: p.joints,
+                        jointList: p.jointList
                     )
                 )
+            } else {
+                for (index, personData) in rawPeople.enumerated() {
+                    people.append(
+                        DetectedPerson(
+                            personIndex: index,
+                            joints: personData.joints,
+                            jointList: personData.jointList
+                        )
+                    )
+                }
             }
 
             DispatchQueue.main.async { [weak self] in

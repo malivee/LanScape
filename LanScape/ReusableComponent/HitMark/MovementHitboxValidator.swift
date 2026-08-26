@@ -17,7 +17,7 @@ struct MovementHitboxValidator {
 
     /// Minimum Vision confidence required.
     static let minimumConfidence:
-        Float = 0.30
+        Float = 0.15
 
 
     // =========================================================

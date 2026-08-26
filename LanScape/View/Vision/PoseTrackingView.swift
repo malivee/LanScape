@@ -117,6 +117,7 @@ struct PoseTrackingView: View {
                 // =================================================
 
                 testControlsOverlay
+                    .zIndex(999)
             }
             .frame(
                 width: geometry.size.width,
@@ -715,17 +716,18 @@ struct PoseTrackingView: View {
 
 
         // =========================================================
-        // VISION -> UI Y FLIP
-        //
-        // Vision:
-        //     origin = bottom-left
-        //
-        // SwiftUI:
-        //     origin = top-left
+        // Y POSITION
+        // point.y is already normalized with top-left origin by VisionService
         // =========================================================
 
-        let flippedY =
-            1.0 - point.y
+        let y =
+            point.y
+            *
+            videoHeight
+            *
+            scale
+            +
+            offsetY
 
 
         // =========================================================
@@ -733,7 +735,6 @@ struct PoseTrackingView: View {
         // =========================================================
 
         return CGPoint(
-
             x:
                 mirroredX
                 *
@@ -744,13 +745,7 @@ struct PoseTrackingView: View {
                 offsetX,
 
             y:
-                flippedY
-                *
-                videoHeight
-                *
-                scale
-                +
-                offsetY
+                y
         )
     }
 
@@ -998,12 +993,12 @@ struct PoseTrackingView: View {
 
 
                     Button(
-                        "2. Countdown 3"
+                        "2. Setup Countdown"
                     ) {
 
                         tutorialController
                             .debugSetStep(
-                                .countdown3
+                                .setupCountdown3
                             )
 
                         resetGameplay()
@@ -1011,12 +1006,12 @@ struct PoseTrackingView: View {
 
 
                     Button(
-                        "3. Countdown 2"
+                        "3. Panduan Warna (8s)"
                     ) {
 
                         tutorialController
                             .debugSetStep(
-                                .countdown2
+                                .colorMatchingGuide
                             )
 
                         resetGameplay()
@@ -1024,12 +1019,12 @@ struct PoseTrackingView: View {
 
 
                     Button(
-                        "4. Countdown 1"
+                        "4. Latihan Tahan (5s)"
                     ) {
 
                         tutorialController
                             .debugSetStep(
-                                .countdown1
+                                .practiceHold
                             )
 
                         resetGameplay()
@@ -1037,7 +1032,33 @@ struct PoseTrackingView: View {
 
 
                     Button(
-                        "5. Start Gameplay"
+                        "5. Tutorial Selesai"
+                    ) {
+
+                        tutorialController
+                            .debugSetStep(
+                                .tutorialCompleted
+                            )
+
+                        resetGameplay()
+                    }
+
+
+                    Button(
+                        "6. Countdown Mulai"
+                    ) {
+
+                        tutorialController
+                            .debugSetStep(
+                                .readyCountdown3
+                            )
+
+                        resetGameplay()
+                    }
+
+
+                    Button(
+                        "7. Start Gameplay"
                     ) {
 
                         tutorialController
@@ -1120,7 +1141,11 @@ struct PoseTrackingView: View {
                     .clipShape(
                         Capsule()
                     )
+                    .contentShape(
+                        Capsule()
+                    )
                 }
+                .buttonStyle(.plain)
                 .padding(
                     .trailing,
                     20
@@ -1131,6 +1156,8 @@ struct PoseTrackingView: View {
                 )
             }
         }
+        .allowsHitTesting(true)
+        .zIndex(999)
     }
 
 
