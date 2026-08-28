@@ -79,6 +79,12 @@ extension MovementHitboxType {
         }
     }
 
+    // MARK: Shape
+
+    var shape: JointShape {
+        PoseBodyDefinitions.jointShape(for: jointName)
+    }
+
     // MARK: Shared Color
 
     /// Gets the exact same color used by
@@ -112,6 +118,9 @@ struct MovementHitbox: Identifiable {
     /// Automatically comes from MovementHitboxType.
     let color: Color
 
+    /// Shape: circle for hand, square for leg.
+    let shape: JointShape
+
     init(
         id: Int,
         type: MovementHitboxType,
@@ -128,6 +137,9 @@ struct MovementHitbox: Identifiable {
 
         self.color =
             type.color
+
+        self.shape =
+            type.shape
     }
 }
 

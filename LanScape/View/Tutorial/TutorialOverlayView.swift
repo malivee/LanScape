@@ -33,14 +33,10 @@ struct TutorialOverlayView: View {
                 countdownOverlay(number: tutorial.countdown)
 
             case .colorMatchingGuide:
-                tutorialSlideView(
-                    text: "Arahkan titik di tubuh sesuai dengan titik di layar"
-                )
+                TutorialSymbolGuideView()
 
             case .practiceHold:
-                tutorialSlideView(
-                    text: "Lalu tahan posisi tangan dan kaki  selama 5 detik"
-                )
+                practiceHoldView
 
             case .tutorialCompleted:
                 tutorialCompletedView
@@ -53,6 +49,71 @@ struct TutorialOverlayView: View {
             }
         }
         .allowsHitTesting(false)
+    }
+
+
+    // =========================================================
+    // MARK: - Practice Hold View (Tahan Posisi 5 Detik)
+    // =========================================================
+
+    @ViewBuilder
+    private var practiceHoldView: some View {
+        ZStack {
+            // 1. Dark Backdrop
+            Color.black.opacity(0.60).ignoresSafeArea()
+
+            // 2. Center Divider Line
+            Rectangle()
+                .fill(Color.white.opacity(0.35))
+                .frame(width: 2)
+                .ignoresSafeArea()
+
+            // 3. Movement Hitbox Targets (Circles on Hands, Squares on Feet)
+            MovementHitboxOverlayView(
+                hitboxes: MovementHitboxLayout.hitboxes(for: 1),
+                results: [],
+                viewSize: viewSize
+            )
+            .ignoresSafeArea()
+
+            // 4. Center 5-Second Circular Countdown (Matching Mockup)
+            ZStack {
+                Circle()
+                    .fill(Color(hex: "6A85B6").opacity(0.88))
+                    .frame(width: 150, height: 150)
+                    .shadow(color: Color.black.opacity(0.4), radius: 12)
+
+                Circle()
+                    .stroke(Color.white, lineWidth: 4.5)
+                    .frame(width: 150, height: 150)
+
+                Text("\(tutorial.countdown)")
+                    .id(tutorial.countdown)
+                    .font(.system(size: 88, weight: .bold, design: .rounded))
+                    .foregroundColor(.white)
+                    .shadow(color: Color.black.opacity(0.3), radius: 4)
+                    .transition(.scale.combined(with: .opacity))
+            }
+            .animation(.spring(response: 0.35, dampingFraction: 0.65), value: tutorial.countdown)
+
+            // 5. Header Banner
+            VStack {
+                Text("Tahan posisimu selama 5 detik")
+                    .font(.system(size: 34, weight: .bold, design: .rounded))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 36)
+                    .padding(.vertical, 12)
+                    .background(Color.black.opacity(0.55))
+                    .clipShape(Capsule())
+                    .overlay(
+                        Capsule().stroke(Color.white.opacity(0.3), lineWidth: 1.5)
+                    )
+                    .shadow(color: Color.black.opacity(0.5), radius: 8)
+                    .padding(.top, 40)
+
+                Spacer()
+            }
+        }
     }
 
 

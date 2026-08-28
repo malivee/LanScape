@@ -40,7 +40,7 @@ enum TutorialStep: Int, CaseIterable, Equatable {
         case .setupCountdown1:
             return "Bersiap: 1"
         case .colorMatchingGuide:
-            return "Sentuh Sesuai Warna"
+            return "Petunjuk Simbol & Warna"
         case .practiceHold:
             return "Tahan Posisi 5 Detik"
         case .tutorialCompleted:
@@ -63,7 +63,7 @@ enum TutorialStep: Int, CaseIterable, Equatable {
         case .setupCountdown3, .setupCountdown2, .setupCountdown1:
             return "Bersiap dalam..."
         case .colorMatchingGuide:
-            return "Sentuh titik target sesuai warna tubuhmu"
+            return "Perhatikan simbol dan warna"
         case .practiceHold:
             return "Tahan posisimu selama 5 detik"
         case .tutorialCompleted:
@@ -305,18 +305,23 @@ final class TutorialController: ObservableObject {
         cancelAllTasks()
 
         currentStep = .practiceHold
+        countdown = 5
 
         slideTimerTask = Task { @MainActor [weak self] in
             guard let self else { return }
 
-            do {
-                try await Task.sleep(
-                    nanoseconds: UInt64(self.slideDurationSeconds) * 1_000_000_000
-                )
-            } catch {
-                return
+            for num in (1...5).reversed() {
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.65)) {
+                    self.countdown = num
+                }
+
+                do {
+                    try await Task.sleep(nanoseconds: 1_000_000_000)
+                } catch {
+                    return
+                }
+                guard !Task.isCancelled else { return }
             }
-            guard !Task.isCancelled else { return }
 
             withAnimation(.easeInOut(duration: 0.3)) {
                 self.startTutorialCompleted()

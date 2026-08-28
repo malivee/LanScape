@@ -61,6 +61,9 @@ struct MovementHitboxOverlayView: View {
                 viewSize.height
             )
 
+        let isSquare = hitbox.shape == .square
+        let size = radius * 2
+        let cornerRadius: CGFloat = isSquare ? 18 : 0
 
         ZStack {
 
@@ -68,87 +71,136 @@ struct MovementHitboxOverlayView: View {
             // Outer glow
             // -------------------------------------------------
 
-            Circle()
-                .fill(
-                    hitbox.color.opacity(
-                        isHit
-                        ? 0.40
-                        : 0.16
+            if isSquare {
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(
+                        hitbox.color.opacity(
+                            isHit ? 0.60 : 0.40
+                        )
                     )
-                )
-                .frame(
-                    width:
-                        radius * 2,
-
-                    height:
-                        radius * 2
-                )
-                .blur(
-                    radius:
-                        isHit ? 8 : 4
-                )
+                    .frame(
+                        width: size * 1.35,
+                        height: size * 1.35
+                    )
+                    .blur(
+                        radius:
+                            isHit ? 12 : 8
+                    )
+            } else {
+                Circle()
+                    .fill(
+                        hitbox.color.opacity(
+                            isHit ? 0.60 : 0.40
+                        )
+                    )
+                    .frame(
+                        width: size * 1.35,
+                        height: size * 1.35
+                    )
+                    .blur(
+                        radius:
+                            isHit ? 12 : 8
+                    )
+            }
 
 
             // -------------------------------------------------
-            // Main hitbox
+            // Main hitbox rim & translucent backing
             // -------------------------------------------------
 
-            Circle()
-                .fill(
-                    hitbox.color.opacity(
-                        isHit
-                        ? 0.35
-                        : 0.12
+            if isSquare {
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .fill(
+                        hitbox.color.opacity(
+                            isHit ? 0.40 : 0.20
+                        )
                     )
-                )
-                .frame(
-                    width:
-                        radius * 2,
-
-                    height:
-                        radius * 2
-                )
-                .overlay {
-
-                    Circle()
-                        .stroke(
-                            isHit
-                            ? Color.green
-                            : hitbox.color,
-
-                            lineWidth:
+                    .frame(
+                        width: size,
+                        height: size
+                    )
+                    .overlay {
+                        RoundedRectangle(cornerRadius: cornerRadius)
+                            .stroke(
                                 isHit
-                                ? 7
-                                : 4
+                                ? Color.green
+                                : hitbox.color,
+
+                                lineWidth:
+                                    isHit ? 6 : 4.5
+                            )
+                            .shadow(
+                                color: (isHit ? Color.green : hitbox.color).opacity(0.8),
+                                radius: 6
+                            )
+                    }
+            } else {
+                Circle()
+                    .fill(
+                        hitbox.color.opacity(
+                            isHit ? 0.40 : 0.20
                         )
-                }
+                    )
+                    .frame(
+                        width: size,
+                        height: size
+                    )
+                    .overlay {
+                        Circle()
+                            .stroke(
+                                isHit
+                                ? Color.green
+                                : hitbox.color,
+
+                                lineWidth:
+                                    isHit ? 6 : 4.5
+                            )
+                            .shadow(
+                                color: (isHit ? Color.green : hitbox.color).opacity(0.8),
+                                radius: 6
+                            )
+                    }
+            }
 
 
             // -------------------------------------------------
-            // Center
+            // Center Core
             // -------------------------------------------------
 
-            Circle()
-                .fill(
-                    isHit
-                    ? Color.white
-                    : hitbox.color
-                )
-                .frame(
-                    width:
-                        radius * (
-                            isHit
-                            ? 0.55
-                            : 0.42
-                        ),
+            let centerRatio: CGFloat = isHit ? 0.65 : 0.56
+            let centerSize = size * centerRatio * 0.5
 
-                    height:
-                        radius * (
-                            isHit
-                            ? 0.55
-                            : 0.42
-                        )
-                )
+            if isSquare {
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(
+                        isHit
+                        ? Color.white
+                        : Color.white.opacity(0.88)
+                    )
+                    .frame(
+                        width: centerSize,
+                        height: centerSize
+                    )
+                    .shadow(
+                        color: Color.white.opacity(0.9),
+                        radius: 6
+                    )
+            } else {
+                Circle()
+                    .fill(
+                        isHit
+                        ? Color.white
+                        : Color.white.opacity(0.88)
+                    )
+                    .frame(
+                        width: centerSize,
+                        height: centerSize
+                    )
+                    .shadow(
+                        color: Color.white.opacity(0.9),
+                        radius: 6
+                    )
+            }
 
 
             // -------------------------------------------------
@@ -164,7 +216,7 @@ struct MovementHitboxOverlayView: View {
                 .font(
                     .system(
                         size:
-                            radius * 0.45,
+                            radius * 0.50,
 
                         weight:
                             .black
