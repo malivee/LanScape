@@ -39,7 +39,7 @@ struct TutorialOverlayView: View {
 
             case .practiceHold:
                 tutorialSlideView(
-                    text: "Lalu tahan posisimu selama 5 detik"
+                    text: "Lalu tahan posisi tangan dan kaki  selama 5 detik"
                 )
 
             case .tutorialCompleted:
@@ -107,12 +107,14 @@ struct TutorialOverlayView: View {
 
             VStack(spacing: 16) {
                 Spacer()
-
-                Text("Tutorial Selesai!")
+                
+                
+                Text("\(Text("Keren ").font(.system(size: 72, weight: .heavy, design: .rounded)))Tutorial Selesai!")
                     .font(.system(size: 52, weight: .heavy, design: .rounded))
                     .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
 
-                Text("Bersiap masuk ke game...")
+                Text("Bersiap masuk ke game")
                     .font(.system(size: 26, weight: .semibold, design: .rounded))
                     .foregroundColor(.white.opacity(0.9))
 
@@ -121,7 +123,6 @@ struct TutorialOverlayView: View {
             .transition(.scale.combined(with: .opacity))
         }
     }
-
 
     // =========================================================
     // MARK: - Countdown Overlay (Persis Sesuai Mockup Gambar)
