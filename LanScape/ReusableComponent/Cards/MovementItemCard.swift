@@ -5,21 +5,21 @@ struct MovementItemCard: View {
     let title: String
     
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 4) {
             
             Image(imageName)
                 .resizable()
                 .scaledToFit()
-                .frame(height: 85)
+                .frame(height: 160)
             
             Text(title)
-                .font(.system(size: 18, weight: .medium))
+                .font(.system(size: 24, weight: .medium))
                 .foregroundColor(.black)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 12)
-        .background(Color.white)
-        .clipShape(.rect(cornerRadius: 14))
+        .padding(.vertical, 16)
+        .background(Color.lightBlue)
+        .clipShape(.rect(cornerRadius: 20))
     }
 }
 
