@@ -5,7 +5,7 @@ struct MusicCarouselCard: View {
     let isSelected: Bool
     
     var body: some View {
-        VStack(alignment: .leading) {
+        VStack(alignment: .center) {
             Image(music.image)
                 .resizable()
                 .aspectRatio(contentMode: .fill)
@@ -22,18 +22,12 @@ struct MusicCarouselCard: View {
             Spacer()
             
             HStack {
-                HStack {
-                    Image(systemName: "stopwatch")
-                    Text("\(music.duration) detik")
-                }
-                Spacer()
-                HStack {
-                    Image(systemName: "figure.dance")
-                    Text("\(music.moves) gerakan")
-                }
+                Image(systemName: "figure.dance")
+                Text("\(music.moves) gerakan")
+                
             }
             .fontWeight(.medium)
-            .font(.system(size: 20))
+            .font(.system(size: 22))
             .foregroundColor(.secondary)
         }
         .padding(20)
@@ -43,7 +37,7 @@ struct MusicCarouselCard: View {
         .overlay {
             RoundedRectangle(cornerRadius: 18)
                 // Ubah Color.blue jadi Color.darkBlue jika error warnamu sudah diperbaiki
-                .stroke(isSelected ? Color.blue : Color.clear, lineWidth: 8)
+                .stroke(isSelected ? Color.darkBlue : Color.clear, lineWidth: 8)
         }
         .shadow(
             color: .black.opacity(isSelected ? 0.25 : 0.12),

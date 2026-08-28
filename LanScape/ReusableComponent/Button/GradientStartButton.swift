@@ -13,7 +13,7 @@ struct GradientStartButton: View {
                 .padding(.vertical, 14)
                 .background(
                     LinearGradient(
-                        colors: [.blue, .cyan], 
+                        colors: [.gradient1, .gradient2, .gradient3],
                         startPoint: .top,
                         endPoint: .bottom
                     )

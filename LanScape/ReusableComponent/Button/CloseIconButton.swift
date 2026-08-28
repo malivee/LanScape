@@ -10,7 +10,7 @@ struct CloseIconButton: View {
                 .foregroundColor(.black)
                 .frame(width: 44, height: 44)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.glass)
         .background(Color.white.opacity(0.5))
         .clipShape(Circle())
         .padding(10)

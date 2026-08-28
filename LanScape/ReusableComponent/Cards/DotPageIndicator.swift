@@ -9,7 +9,7 @@ struct DotPageIndicator: View {
             ForEach(0..<totalPages, id: \.self) { index in
                 Circle()
                     
-                    .fill(currentPage == index ? Color.blue : Color.gray.opacity(0.3))
+                    .fill(currentPage == index ? Color.black : Color.gray.opacity(0.3))
                     .frame(
                         width: currentPage == index ? 10 : 7,
                         height: currentPage == index ? 10 : 7

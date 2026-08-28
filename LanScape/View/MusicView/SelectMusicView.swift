@@ -10,8 +10,6 @@ struct SelectMusicView: View {
     var body: some View {
         GeometryReader { geometry in
             HStack(spacing: 0) {
-                
-                
                 musicSelectionView
                     .frame(width: selectionWidth(for: geometry.size.width))
                 
@@ -32,23 +30,41 @@ struct SelectMusicView: View {
         GeometryReader { geometry in
             ZStack {
                 Color.white
+                Ellipse()
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                Color.gradientSelectMusic1,
+                                Color.gradientSelectMusic2,
+                                Color.gradientSelectMusic3
+                            ],
+                            center: .center,
+                            startRadius: 50,
+                            endRadius: 700
+                        )
+                    )
+                    .frame(
+                        width: geometry.size.width * 1.4,
+                        height: 400
+                    )
+                    .blur(radius: 150)
+                    .offset(y: 80)
+                    .allowsHitTesting(false)
                 
                 VStack(spacing: 40) {
                     Spacer()
                     
-                    VStack(spacing: 20) {
+                    VStack(spacing: 8) {
                         Text("Yuk, pilih lagu!")
                             .font(.system(size: 40, weight: .bold))
                             .foregroundStyle(.black)
                         
-                        Text("Temukan musik yang ingin kalian nikmati sambil bergerak bersama.")
+                        Text("Pilih musik favoritmu dan bergerak bersama")
                             .font(.system(size: 20, weight: .medium))
                             .foregroundStyle(.secondary)
                     }
-                    .padding(.bottom, 40)
                     
                     musicCarousel(availableWidth: geometry.size.width)
-                    
                     
                     DotPageIndicator(
                         totalPages: musicItems.count,
@@ -111,65 +127,46 @@ struct SelectMusicView: View {
     
     @ViewBuilder
     private func movementSequencePanel(for music: MusicData) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 30) {
             
             HStack {
                 Text("List Gerakan")
-                    .font(.system(size: 24, weight: .bold))
-                    .foregroundColor(.black)
+                    .font(.system(size: 30, weight: .bold))
+                    .foregroundColor(.white)
                 
                 Spacer()
                 
                 
-                Button {
+                CloseIconButton {
                     withAnimation(.easeInOut) {
                         selectedMusic = nil
                     }
-                } label: {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 30))
-                        .foregroundColor(.black)
-                        .frame(width: 44, height: 44)
+                } 
+            }
+            
+            ZStack (alignment:.bottom){
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(spacing: 30) {
+                        
+                        MovementItemCard(imageName: "Fusion", title: "Pose Fusion")
+                        MovementItemCard(imageName: "Fusion", title: "Pose Fusion")
+                        MovementItemCard(imageName: "Fusion", title: "Pose Fusion")
+                        MovementItemCard(imageName: "Fusion", title: "Pose Fusion")
+                        Spacer()
+                            .frame(height: 60)
+                    }
                 }
-                .buttonStyle(.plain)
-                .background(Color.white.opacity(0.5))
-                .clipShape(Circle())
-            }
-            
-            VStack(spacing: 12) {
                 
-                MovementItemCard(imageName: "Mountain Pose", title: "Mountain Pose")
-                MovementItemCard(imageName: "Tree Pose", title: "Tree Pose")
-                MovementItemCard(imageName: "Warrior 2", title: "Warrior 2")
-                MovementItemCard(imageName: "Warrior 3", title: "Warrior 3")
+                GradientStartButton(title: "Mulai") {
+                    // mulai movement
+                }
+                .padding(.bottom, 10)
             }
-            
-            Spacer()
-            
-            
-            Button {
-                print("Lagu \(music.title) siap dimulai!")
-               
-            } label: {
-                Text("Mulai")
-                    .font(.system(size: 22, weight: .semibold))
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(
-                        LinearGradient(
-                            colors: [.blue, .cyan],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .clipShape(Capsule())
-                    .shadow(color: .black.opacity(0.5), radius: 8, x: 0, y: 4)
-            }
+            .frame(maxHeight: .infinity)
         }
         .padding(20)
       
-        .background(Color.blue.opacity(0.25))
+        .background(Color.darkBlue)
         .clipShape(.rect(cornerRadius: 20))
         .padding(.vertical, 10)
         .padding(.trailing, 10)
