@@ -15,22 +15,34 @@ struct TutorialOverlayView: View {
     let videoSize: CGSize
     let viewSize: CGSize
 
-    // Rectangle size ratios for player setup
+    // =========================================================
+    // MARK: - Player Rectangle Configuration
+    // =========================================================
+
     private let rectangleWidthRatio: CGFloat = 0.35
     private let rectangleHeightRatio: CGFloat = 0.82
     private let rectangleGapRatio: CGFloat = 0.13
 
+    // =========================================================
+    // MARK: - Body
+    // =========================================================
+
     var body: some View {
+
         ZStack {
-            // =================================================
-            // 1. PHASE SPECIFIC CONTENT
-            // =================================================
+
             switch tutorial.currentStep {
+
             case .playerSetup:
                 playerSetupPhase
 
-            case .setupCountdown3, .setupCountdown2, .setupCountdown1:
-                countdownOverlay(number: tutorial.countdown)
+            case .setupCountdown3,
+                 .setupCountdown2,
+                 .setupCountdown1:
+
+                countdownOverlay(
+                    number: tutorial.countdown
+                )
 
             case .colorMatchingGuide:
                 TutorialSymbolGuideView()
@@ -41,8 +53,13 @@ struct TutorialOverlayView: View {
             case .tutorialCompleted:
                 tutorialCompletedView
 
-            case .readyCountdown3, .readyCountdown2, .readyCountdown1:
-                countdownOverlay(number: tutorial.countdown)
+            case .readyCountdown3,
+                 .readyCountdown2,
+                 .readyCountdown1:
+
+                countdownOverlay(
+                    number: tutorial.countdown
+                )
 
             case .started:
                 startedView
@@ -51,100 +68,171 @@ struct TutorialOverlayView: View {
         .allowsHitTesting(false)
     }
 
-
     // =========================================================
-    // MARK: - Practice Hold View (Tahan Posisi 5 Detik)
+    // MARK: - Practice Hold View
     // =========================================================
 
     @ViewBuilder
     private var practiceHoldView: some View {
-        ZStack {
-            // 1. Dark Backdrop
-            Color.black.opacity(0.60).ignoresSafeArea()
 
-            // 2. Center Divider Line
+        ZStack {
+
+            Color.black
+                .opacity(0.60)
+                .ignoresSafeArea()
+
             Rectangle()
-                .fill(Color.white.opacity(0.35))
+                .fill(
+                    Color.white.opacity(0.35)
+                )
                 .frame(width: 2)
                 .ignoresSafeArea()
 
-            // 3. Movement Hitbox Targets (Circles on Hands, Squares on Feet)
             MovementHitboxOverlayView(
-                hitboxes: MovementHitboxLayout.hitboxes(for: 1),
+                hitboxes:
+                    MovementHitboxLayout.hitboxes(
+                        for: 1
+                    ),
                 results: [],
                 viewSize: viewSize
             )
             .ignoresSafeArea()
 
-            // 4. Center 5-Second Circular Countdown (Matching Mockup)
             ZStack {
-                Circle()
-                    .fill(Color(hex: "6A85B6").opacity(0.88))
-                    .frame(width: 150, height: 150)
-                    .shadow(color: Color.black.opacity(0.4), radius: 12)
 
                 Circle()
-                    .stroke(Color.white, lineWidth: 4.5)
-                    .frame(width: 150, height: 150)
-
-                Text("\(tutorial.countdown)")
-                    .id(tutorial.countdown)
-                    .font(.system(size: 88, weight: .bold, design: .rounded))
-                    .foregroundColor(.white)
-                    .shadow(color: Color.black.opacity(0.3), radius: 4)
-                    .transition(.scale.combined(with: .opacity))
-            }
-            .animation(.spring(response: 0.35, dampingFraction: 0.65), value: tutorial.countdown)
-
-            // 5. Header Banner
-            VStack {
-                Text("Tahan posisimu selama 5 detik")
-                    .font(.system(size: 34, weight: .bold, design: .rounded))
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 36)
-                    .padding(.vertical, 12)
-                    .background(Color.black.opacity(0.55))
-                    .clipShape(Capsule())
-                    .overlay(
-                        Capsule().stroke(Color.white.opacity(0.3), lineWidth: 1.5)
+                    .fill(
+                        Color(hex: "6A85B6")
+                            .opacity(0.88)
                     )
-                    .shadow(color: Color.black.opacity(0.5), radius: 8)
-                    .padding(.top, 40)
+                    .frame(
+                        width: 150,
+                        height: 150
+                    )
+                    .shadow(
+                        color: Color.black.opacity(0.4),
+                        radius: 12
+                    )
+
+                Circle()
+                    .stroke(
+                        Color.white,
+                        lineWidth: 4.5
+                    )
+                    .frame(
+                        width: 150,
+                        height: 150
+                    )
+
+                Text(
+                    "\(tutorial.countdown)"
+                )
+                .id(tutorial.countdown)
+                .font(
+                    .system(
+                        size: 88,
+                        weight: .bold,
+                        design: .rounded
+                    )
+                )
+                .foregroundColor(.white)
+                .shadow(
+                    color: Color.black.opacity(0.3),
+                    radius: 4
+                )
+                .transition(
+                    .scale.combined(
+                        with: .opacity
+                    )
+                )
+            }
+            .animation(
+                .spring(
+                    response: 0.35,
+                    dampingFraction: 0.65
+                ),
+                value: tutorial.countdown
+            )
+
+            VStack {
+
+                Text(
+                    "Tahan posisimu selama 5 detik"
+                )
+                .font(
+                    .system(
+                        size: 34,
+                        weight: .bold,
+                        design: .rounded
+                    )
+                )
+                .foregroundColor(.white)
+                .padding(.horizontal, 36)
+                .padding(.vertical, 12)
+                .background(
+                    Color.black.opacity(0.55)
+                )
+                .clipShape(Capsule())
+                .overlay(
+                    Capsule()
+                        .stroke(
+                            Color.white.opacity(0.3),
+                            lineWidth: 1.5
+                        )
+                )
+                .shadow(
+                    color: Color.black.opacity(0.5),
+                    radius: 8
+                )
+                .padding(.top, 40)
 
                 Spacer()
             }
         }
     }
 
-
     // =========================================================
-    // MARK: - Reusable Tutorial Slide View (Menggunakan Hitbox Component)
+    // MARK: - Tutorial Slide View
     // =========================================================
 
     @ViewBuilder
-    private func tutorialSlideView(text: String) -> some View {
-        ZStack {
-            // 1. Dark Backdrop (Layar gelap & fokus)
-            Color.black.opacity(0.70).ignoresSafeArea()
+    private func tutorialSlideView(
+        text: String
+    ) -> some View {
 
-            // 2. Center Divider Line
+        ZStack {
+
+            Color.black
+                .opacity(0.70)
+                .ignoresSafeArea()
+
             Rectangle()
-                .fill(Color.white.opacity(0.20))
+                .fill(
+                    Color.white.opacity(0.20)
+                )
                 .frame(width: 1.5)
                 .ignoresSafeArea()
 
-            // 3. Reusable Movement Hitbox Component
             MovementHitboxOverlayView(
-                hitboxes: MovementHitboxLayout.hitboxes(for: 1),
+                hitboxes:
+                    MovementHitboxLayout.hitboxes(
+                        for: 1
+                    ),
                 results: [],
                 viewSize: viewSize
             )
             .ignoresSafeArea()
 
-            // 4. Simple Clean White Text (Terletak rapi di bagian atas agar tidak tertimpa)
             VStack {
+
                 Text(text)
-                    .font(.system(size: 44, weight: .heavy, design: .rounded))
+                    .font(
+                        .system(
+                            size: 44,
+                            weight: .heavy,
+                            design: .rounded
+                        )
+                    )
                     .foregroundColor(.white)
                     .multilineTextAlignment(.center)
                     .lineSpacing(6)
@@ -156,204 +244,547 @@ struct TutorialOverlayView: View {
         }
     }
 
-
     // =========================================================
-    // MARK: - Tutorial Completed View (Transisi Sebelum Game)
+    // MARK: - Tutorial Completed
     // =========================================================
 
     @ViewBuilder
     private var tutorialCompletedView: some View {
+
         ZStack {
-            Color.black.opacity(0.75).ignoresSafeArea()
+
+            Color.black
+                .opacity(0.75)
+                .ignoresSafeArea()
 
             VStack(spacing: 16) {
-                Spacer()
-                
-                
-                Text("\(Text("Keren ").font(.system(size: 72, weight: .heavy, design: .rounded)))Tutorial Selesai!")
-                    .font(.system(size: 52, weight: .heavy, design: .rounded))
-                    .foregroundColor(.white)
-                    .multilineTextAlignment(.center)
 
-                Text("Bersiap masuk ke game")
-                    .font(.system(size: 26, weight: .semibold, design: .rounded))
-                    .foregroundColor(.white.opacity(0.9))
+                Spacer()
+
+                Text(
+                    "Keren Tutorial Selesai!"
+                )
+                .font(
+                    .system(
+                        size: 52,
+                        weight: .heavy,
+                        design: .rounded
+                    )
+                )
+                .foregroundColor(.white)
+                .multilineTextAlignment(.center)
+
+                Text(
+                    "Bersiap masuk ke game"
+                )
+                .font(
+                    .system(
+                        size: 26,
+                        weight: .semibold,
+                        design: .rounded
+                    )
+                )
+                .foregroundColor(
+                    .white.opacity(0.9)
+                )
 
                 Spacer()
             }
-            .transition(.scale.combined(with: .opacity))
+            .transition(
+                .scale.combined(
+                    with: .opacity
+                )
+            )
         }
     }
 
     // =========================================================
-    // MARK: - Countdown Overlay (Persis Sesuai Mockup Gambar)
+    // MARK: - Countdown
     // =========================================================
 
     @ViewBuilder
-    private func countdownOverlay(number: Int) -> some View {
+    private func countdownOverlay(
+        number: Int
+    ) -> some View {
+
         ZStack {
-            Color.black.opacity(0.65).ignoresSafeArea()
+
+            Color.black
+                .opacity(0.65)
+                .ignoresSafeArea()
 
             VStack(spacing: 24) {
+
                 Spacer()
 
-                // Header text
                 Text("Bersiap dalam...")
-                    .font(.system(size: 26, weight: .medium, design: .rounded))
+                    .font(
+                        .system(
+                            size: 26,
+                            weight: .medium,
+                            design: .rounded
+                        )
+                    )
                     .foregroundColor(.white)
 
-                // Blue Solid Circle dengan Border Putih
                 ZStack {
-                    Circle()
-                        .fill(Color(hex: "1E4BA3"))
-                        .frame(width: 140, height: 140)
 
                     Circle()
-                        .stroke(Color.white.opacity(0.5), lineWidth: 4)
-                        .frame(width: 140, height: 140)
+                        .fill(
+                            Color(hex: "1E4BA3")
+                        )
+                        .frame(
+                            width: 140,
+                            height: 140
+                        )
+
+                    Circle()
+                        .stroke(
+                            Color.white.opacity(0.5),
+                            lineWidth: 4
+                        )
+                        .frame(
+                            width: 140,
+                            height: 140
+                        )
 
                     Text("\(number)")
                         .id(number)
-                        .font(.system(size: 84, weight: .bold, design: .rounded))
+                        .font(
+                            .system(
+                                size: 84,
+                                weight: .bold,
+                                design: .rounded
+                            )
+                        )
                         .foregroundColor(.white)
-                        .transition(.scale.combined(with: .opacity))
+                        .transition(
+                            .scale.combined(
+                                with: .opacity
+                            )
+                        )
                 }
-                .animation(.spring(response: 0.35, dampingFraction: 0.65), value: number)
+                .animation(
+                    .spring(
+                        response: 0.35,
+                        dampingFraction: 0.65
+                    ),
+                    value: number
+                )
 
                 Spacer()
             }
         }
     }
 
-
     // =========================================================
-    // MARK: - Started Overlay View (Teks Bersih "Mulai!")
+    // MARK: - Started View
     // =========================================================
 
     @ViewBuilder
     private var startedView: some View {
+
         ZStack {
-            Color.black.opacity(0.5).ignoresSafeArea()
+
+            Color.black
+                .opacity(0.5)
+                .ignoresSafeArea()
 
             VStack {
+
                 Spacer()
 
                 Text("Mulai!")
-                    .font(.system(size: 80, weight: .bold, design: .rounded))
+                    .font(
+                        .system(
+                            size: 80,
+                            weight: .bold,
+                            design: .rounded
+                        )
+                    )
                     .foregroundColor(.white)
-                    .transition(.scale.combined(with: .opacity))
+                    .transition(
+                        .scale.combined(
+                            with: .opacity
+                        )
+                    )
 
                 Spacer()
             }
         }
     }
 
+    // =========================================================
+    // MARK: - Player Setup Phase
+    // =========================================================
 
-    // =========================================================
-    // MARK: - Phase 1: Player Setup
-    // =========================================================
 
     @ViewBuilder
     private var playerSetupPhase: some View {
+
         ZStack {
+
+            // -------------------------------------------------
+            // Darken outside the two player areas
+            // -------------------------------------------------
+
             outsideAreaOverlay()
 
-            VStack {
-                VStack(spacing: 4) {
-                    Text("Persiapan Pemain")
-                        .font(.system(size: 24, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
+            // -------------------------------------------------
+            // Header
+            // -------------------------------------------------
 
-                    Text("Posisikan tubuh di dalam area kotak masing-masing.")
-                        .font(.system(size: 14, weight: .medium, design: .rounded))
-                        .foregroundColor(.white.opacity(0.9))
-                }
-                .padding(.top, 18)
+            VStack(spacing: 0) {
+
+                Text(setupInstruction())
+                    .font(
+                        .system(
+                            size: 24,
+                            weight: .bold,
+                            design: .rounded
+                        )
+                    )
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
+                    .padding(.top, 18)
 
                 Spacer()
             }
+
+            // -------------------------------------------------
+            // Player rectangles
+            // -------------------------------------------------
 
             playerRectangles()
         }
     }
+    // =========================================================
+    // MARK: - Setup Instruction
+    // =========================================================
+
+    private func setupInstruction() -> String {
+
+        let (
+            player1Rect,
+            player2Rect
+        ) = rectanglePositions()
+
+        let player1 =
+            detectedPeople.first {
+                $0.personIndex == 0
+            }
+
+        let player2 =
+            detectedPeople.first {
+                $0.personIndex == 1
+            }
+
+        let player1Count =
+            detectedPointCount(
+                person: player1,
+                targetRect: player1Rect
+            )
+
+        let player2Count =
+            detectedPointCount(
+                person: player2,
+                targetRect: player2Rect
+            )
+
+        let total =
+            player1Count + player2Count
+
+        // Both players have all 4 points
+        if player1Count == 4 &&
+            player2Count == 4 {
+
+            return "Yeay, kalian sudah terlihat jelas di kamera!"
+        }
+
+        // No points detected
+        if total == 0 {
+
+            return "Pastikan seluruh tubuh kalian terlihat jelas."
+        }
+
+        // 1 point
+        if total == 1 {
+
+            return "Berikan sedikit jarak lagi!"
+        }
+
+        // 2 points
+        if total == 2 {
+
+            return "Sudah hampir tepat!"
+        }
+
+        // 3 points
+        if total == 3 {
+
+            return "Sudah hampir tepat!"
+        }
+
+        // One player complete but the other is not
+        if player1Count == 4 ||
+            player2Count == 4 {
+
+            return "Tetap di area ini, ya!"
+        }
+
+        return "Sudah hampir tepat!"
+    }
+
+    // =========================================================
+    // MARK: - Outside Area Overlay
+    // =========================================================
 
     @ViewBuilder
     private func outsideAreaOverlay() -> some View {
-        let (player1Rect, player2Rect) = rectanglePositions()
+
+        let (
+            player1Rect,
+            player2Rect
+        ) = rectanglePositions()
 
         Canvas { context, size in
+
             var path = Path()
-            path.addRect(CGRect(origin: .zero, size: size))
-            path.addPath(Path(roundedRect: player1Rect, cornerRadius: 14))
-            path.addPath(Path(roundedRect: player2Rect, cornerRadius: 14))
+
+            // Entire screen
+            path.addRect(
+                CGRect(
+                    origin: .zero,
+                    size: size
+                )
+            )
+
+            // Player 1 hole
+            path.addPath(
+                Path(
+                    roundedRect:
+                        player1Rect,
+                    cornerRadius: 14
+                )
+            )
+
+            // Player 2 hole
+            path.addPath(
+                Path(
+                    roundedRect:
+                        player2Rect,
+                    cornerRadius: 14
+                )
+            )
 
             context.fill(
                 path,
-                with: .color(Color.black.opacity(0.65)),
-                style: FillStyle(eoFill: true)
+                with:
+                    .color(
+                        Color.black.opacity(0.65)
+                    ),
+                style:
+                    FillStyle(
+                        eoFill: true
+                    )
             )
         }
         .allowsHitTesting(false)
     }
 
+    // =========================================================
+    // MARK: - Player Rectangles
+    // =========================================================
+
     @ViewBuilder
     private func playerRectangles() -> some View {
-        let (player1Rect, player2Rect) = rectanglePositions()
 
-        let player1 = detectedPeople.first { $0.personIndex == 0 }
-        let player2 = detectedPeople.first { $0.personIndex == 1 }
+        let (
+            player1Rect,
+            player2Rect
+        ) = rectanglePositions()
 
-        let player1State = TutorialPositionValidator.validate(
-            person: player1,
-            targetRect: player1Rect,
-            viewSize: viewSize,
-            videoSize: videoSize,
-            convert: { point, size, video in
-                convertPoint(point, viewSize: size, videoSize: video)
+        let player1 =
+            detectedPeople.first {
+                $0.personIndex == 0
             }
-        )
 
-        let player2State = TutorialPositionValidator.validate(
-            person: player2,
-            targetRect: player2Rect,
-            viewSize: viewSize,
-            videoSize: videoSize,
-            convert: { point, size, video in
-                convertPoint(point, viewSize: size, videoSize: video)
+        let player2 =
+            detectedPeople.first {
+                $0.personIndex == 1
             }
-        )
+
+        // -----------------------------------------------------
+        // Validate Player 1
+        // -----------------------------------------------------
+
+        let player1State =
+            TutorialPositionValidator.validate(
+                person: player1,
+                targetRect: player1Rect,
+                viewSize: viewSize,
+                videoSize: videoSize,
+                convert: {
+                    point,
+                    size,
+                    video in
+
+                    convertPoint(
+                        point,
+                        viewSize: size,
+                        videoSize: video
+                    )
+                }
+            )
+
+        // -----------------------------------------------------
+        // Validate Player 2
+        // -----------------------------------------------------
+
+        let player2State =
+            TutorialPositionValidator.validate(
+                person: player2,
+                targetRect: player2Rect,
+                viewSize: viewSize,
+                videoSize: videoSize,
+                convert: {
+                    point,
+                    size,
+                    video in
+
+                    convertPoint(
+                        point,
+                        viewSize: size,
+                        videoSize: video
+                    )
+                }
+            )
+
+        // -----------------------------------------------------
+        // Update controller
+        // -----------------------------------------------------
 
         Color.clear
-            .frame(width: 0, height: 0)
+            .frame(
+                width: 0,
+                height: 0
+            )
             .allowsHitTesting(false)
             .onAppear {
-                tutorial.updatePlayerStates(player1: player1State, player2: player2State)
+
+                tutorial.updatePlayerStates(
+                    player1: player1State,
+                    player2: player2State
+                )
             }
-            .onChange(of: player1State) { _, newValue in
-                tutorial.updatePlayerStates(player1: newValue, player2: player2State)
+            .onChange(
+                of: player1State
+            ) { _, newValue in
+
+                tutorial.updatePlayerStates(
+                    player1: newValue,
+                    player2: player2State
+                )
             }
-            .onChange(of: player2State) { _, newValue in
-                tutorial.updatePlayerStates(player1: player1State, player2: newValue)
+            .onChange(
+                of: player2State
+            ) { _, newValue in
+
+                tutorial.updatePlayerStates(
+                    player1: player1State,
+                    player2: newValue
+                )
             }
 
-        tutorialRectangle(rect: player1Rect, title: "PLAYER 1", state: player1State)
-        tutorialRectangle(rect: player2Rect, title: "PLAYER 2", state: player2State)
+        // -----------------------------------------------------
+        // Player 1
+        // -----------------------------------------------------
+
+        tutorialRectangle(
+            rect: player1Rect,
+            title: "PLAYER 1",
+            state: player1State
+        )
+
+        // -----------------------------------------------------
+        // Player 2
+        // -----------------------------------------------------
+
+        tutorialRectangle(
+            rect: player2Rect,
+            title: "PLAYER 2",
+            state: player2State
+        )
     }
 
-    private func rectanglePositions() -> (CGRect, CGRect) {
-        let rectangleWidth = viewSize.width * rectangleWidthRatio
-        let rectangleHeight = viewSize.height * rectangleHeightRatio
-        let rectangleGap = viewSize.width * rectangleGapRatio
-        let totalWidth = rectangleWidth + rectangleGap + rectangleWidth
+    // =========================================================
+    // MARK: - Rectangle Positions
+    // =========================================================
 
-        let startX = (viewSize.width - totalWidth) / 2
-        let startY = (viewSize.height - rectangleHeight) / 2
+    private func rectanglePositions()
+        -> (
+            CGRect,
+            CGRect
+        ) {
 
-        let player1 = CGRect(x: startX, y: startY, width: rectangleWidth, height: rectangleHeight)
-        let player2 = CGRect(x: startX + rectangleWidth + rectangleGap, y: startY, width: rectangleWidth, height: rectangleHeight)
+        let rectangleWidth =
+            viewSize.width *
+            rectangleWidthRatio
 
-        return (player1, player2)
+        let rectangleHeight =
+            viewSize.height *
+            rectangleHeightRatio
+
+        let rectangleGap =
+            viewSize.width *
+            rectangleGapRatio
+
+        let totalWidth =
+            rectangleWidth +
+            rectangleGap +
+            rectangleWidth
+
+        let startX =
+            (
+                viewSize.width -
+                totalWidth
+            ) / 2
+
+        let startY =
+            (
+                viewSize.height -
+                rectangleHeight
+            ) / 2
+
+        let player1 =
+            CGRect(
+                x: startX,
+                y: startY,
+                width: rectangleWidth,
+                height: rectangleHeight
+            )
+
+        let player2 =
+            CGRect(
+                x:
+                    startX +
+                    rectangleWidth +
+                    rectangleGap,
+                y: startY,
+                width: rectangleWidth,
+                height: rectangleHeight
+            )
+
+        return (
+            player1,
+            player2
+        )
     }
+
+    // =========================================================
+    // MARK: - Tutorial Rectangle
+    // =========================================================
 
     @ViewBuilder
     private func tutorialRectangle(
@@ -361,83 +792,285 @@ struct TutorialOverlayView: View {
         title: String,
         state: TutorialRectangleState
     ) -> some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 14)
-                .fill(state.color.opacity(0.08))
 
-            RoundedRectangle(cornerRadius: 14)
+        let personIndex =
+            title == "PLAYER 1" ? 0 : 1
+
+        let person =
+            detectedPeople.first {
+                $0.personIndex == personIndex
+            }
+
+        let pointCount =
+            detectedPointCount(
+                person: person,
+                targetRect: rect
+            )
+
+        let progress =
+            CGFloat(pointCount) / 4.0
+
+        ZStack {
+
+            // =====================================================
+            // TRANSPARENT INSIDE
+            // =====================================================
+
+            RoundedRectangle(
+                cornerRadius: 14
+            )
+            .fill(
+                Color.white.opacity(0.025)
+            )
+
+            // =====================================================
+            // OUTLINE
+            // =====================================================
+
+            if pointCount == 0 {
+
+                // -------------------------------------------------
+                // 0 / 4
+                // FULL RED
+                // -------------------------------------------------
+
+                RoundedRectangle(
+                    cornerRadius: 14
+                )
                 .stroke(
-                    state.color,
+                    Color.red,
                     style: StrokeStyle(
-                        lineWidth: state == .correct ? 5 : 3,
+                        lineWidth: 5,
                         lineCap: .round,
-                        dash: state == .waiting ? [10, 8] : []
+                        lineJoin: .round
                     )
                 )
 
+            } else {
+
+                // -------------------------------------------------
+                // GREEN PROGRESS
+                //
+                // 1/4 = 25%
+                // 2/4 = 50%
+                // 3/4 = 75%
+                // 4/4 = 100%
+                // -------------------------------------------------
+
+                RectangleProgressShape(
+                    progress: progress,
+                    cornerRadius: 14
+                )
+                .stroke(
+                    Color.green,
+                    style: StrokeStyle(
+                        lineWidth: 5,
+                        lineCap: .round,
+                        lineJoin: .round
+                    )
+                )
+                .animation(
+                    .easeInOut(duration: 0.35),
+                    value: pointCount
+                )
+            }
+
+            // =====================================================
+            // PLAYER LABEL
+            // =====================================================
+
             VStack {
+
                 HStack {
-                    Text(title)
-                        .font(.system(size: 12, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
+
+
 
                     Spacer()
 
                     Image(
-                        systemName: state == .correct
+                        systemName:
+                            pointCount == 4
                             ? "checkmark.circle.fill"
-                            : state == .incorrect
-                            ? "xmark.circle.fill"
-                            : "circle.dashed"
+                            : "xmark.circle.fill"
                     )
-                    .foregroundColor(state.color)
+                    .font(
+                        .system(
+                            size: 17,
+                            weight: .bold
+                        )
+                    )
+                    .foregroundColor(
+                        pointCount == 4
+                        ? .green
+                        : .red
+                    )
                 }
 
                 Spacer()
 
-                Text(stateText(state))
-                    .font(.system(size: 11, weight: .semibold, design: .rounded))
-                    .foregroundColor(state.color)
+                Text("\(pointCount)/4 titik")
+                    .font(
+                        .system(
+                            size: 14,
+                            weight: .bold,
+                            design: .rounded
+                        )
+                    )
+                    .foregroundColor(
+                        pointCount == 4
+                        ? .green
+                        : .white
+                    )
+                    .shadow(
+                        color: Color.black.opacity(0.7),
+                        radius: 4
+                    )
             }
             .padding(12)
         }
-        .frame(width: rect.width, height: rect.height)
-        .position(x: rect.midX, y: rect.midY)
+        .frame(
+            width: rect.width,
+            height: rect.height
+        )
+        .position(
+            x: rect.midX,
+            y: rect.midY
+        )
     }
+    // =========================================================
+    // MARK: - Count Exactly Four Required Points
+    // =========================================================
 
-    private func stateText(_ state: TutorialRectangleState) -> String {
-        switch state {
-        case .waiting: return "Menunggu pemain..."
-        case .incorrect: return "Posisi belum tepat"
-        case .correct: return "Posisi benar"
+    private func detectedPointCount(
+        person: DetectedPerson?,
+        targetRect: CGRect
+    ) -> Int {
+
+        guard let person else {
+            return 0
         }
+
+        let requiredJoints:
+            [VNHumanBodyPoseObservation.JointName] = [
+
+                .leftWrist,
+                .rightWrist,
+                .leftAnkle,
+                .rightAnkle
+            ]
+
+        var count = 0
+
+        for joint in requiredJoints {
+
+            guard
+                let point =
+                    person.joints[joint]
+            else {
+                continue
+            }
+
+            let converted =
+                convertPoint(
+                    point,
+                    viewSize: viewSize,
+                    videoSize: videoSize
+                )
+
+            if targetRect.contains(
+                converted
+            ) {
+
+                count += 1
+            }
+        }
+
+        return min(
+            count,
+            4
+        )
     }
 
-    private func convertPoint(_ point: CGPoint, viewSize: CGSize, videoSize: CGSize) -> CGPoint {
-        let videoWidth = videoSize.width > 0 ? videoSize.width : 1920
-        let videoHeight = videoSize.height > 0 ? videoSize.height : 1080
+    // =========================================================
+    // MARK: - Convert Vision Point To Screen
+    // =========================================================
 
-        let videoAspect = videoWidth / videoHeight
-        let viewAspect = viewSize.width / viewSize.height
+    private func convertPoint(
+        _ point: CGPoint,
+        viewSize: CGSize,
+        videoSize: CGSize
+    ) -> CGPoint {
+
+        let videoWidth =
+            videoSize.width > 0
+            ? videoSize.width
+            : 1920
+
+        let videoHeight =
+            videoSize.height > 0
+            ? videoSize.height
+            : 1080
+
+        let videoAspect =
+            videoWidth / videoHeight
+
+        let viewAspect =
+            viewSize.width / viewSize.height
 
         let scale: CGFloat
+
         var offsetX: CGFloat = 0
         var offsetY: CGFloat = 0
 
         if viewAspect > videoAspect {
-            scale = viewSize.width / videoWidth
-            let renderedHeight = videoHeight * scale
-            offsetY = (viewSize.height - renderedHeight) / 2
+
+            scale =
+                viewSize.width /
+                videoWidth
+
+            let renderedHeight =
+                videoHeight * scale
+
+            offsetY =
+                (
+                    viewSize.height -
+                    renderedHeight
+                ) / 2
+
         } else {
-            scale = viewSize.height / videoHeight
-            let renderedWidth = videoWidth * scale
-            offsetX = (viewSize.width - renderedWidth) / 2
+
+            scale =
+                viewSize.height /
+                videoHeight
+
+            let renderedWidth =
+                videoWidth * scale
+
+            offsetX =
+                (
+                    viewSize.width -
+                    renderedWidth
+                ) / 2
         }
 
-        let mirroredX = 1.0 - point.x
+        // Back camera is mirrored in the UI.
+        let mirroredX =
+            1.0 - point.x
+
         return CGPoint(
-            x: mirroredX * videoWidth * scale + offsetX,
-            y: point.y * videoHeight * scale + offsetY
+            x:
+                mirroredX *
+                videoWidth *
+                scale +
+                offsetX,
+
+            y:
+                point.y *
+                videoHeight *
+                scale +
+                offsetY
         )
     }
 }
+
+

@@ -88,20 +88,127 @@ enum TutorialStep: Int, CaseIterable, Equatable {
 
 // MARK: - Rectangle State
 
-enum TutorialRectangleState {
+// =============================================================
+// MARK: - Rectangle State
+// =============================================================
+
+enum TutorialRectangleState: Equatable {
 
     case waiting
-    case incorrect
+
+    /// 0/4, 1/4, 2/4, or 3/4 points are inside.
+    case incorrect(count: Int)
+
+    /// All four required points are inside.
     case correct
 
-    var color: Color {
+    // =========================================================
+    // MARK: Point Count
+    // =========================================================
+
+    var pointCount: Int {
+
         switch self {
+
         case .waiting:
-            return .blue
-        case .incorrect:
-            return .red
+            return 0
+
+        case .incorrect(let count):
+            return count
+
         case .correct:
-            return .green
+            return 4
+        }
+    }
+
+    // =========================================================
+    // MARK: Color
+    // =========================================================
+
+    var color: Color {
+
+        switch self {
+
+        case .waiting:
+            return .red
+
+        case .incorrect(let count):
+
+            switch count {
+
+            case 0:
+                return Color(hex: "FF3B30")
+
+            case 1:
+                return Color(hex: "FF5A36")
+
+            case 2:
+                return Color(hex: "FFB020")
+
+            case 3:
+                return Color(hex: "D6E82F")
+
+            default:
+                return Color(hex: "FF3B30")
+            }
+
+        case .correct:
+            return Color(hex: "34C759")
+        }
+    }
+
+    // =========================================================
+    // MARK: Prompt
+    // =========================================================
+
+    var prompt: String {
+
+        switch self {
+
+        case .waiting:
+            return "Pastikan seluruh tubuh kalian terlihat jelas."
+
+        case .incorrect(let count):
+
+            switch count {
+
+            case 0:
+                return "Berikan sedikit jarak lagi!"
+
+            case 1:
+                return "Berikan sedikit jarak lagi!"
+
+            case 2:
+                return "Sudah hampir tepat!"
+
+            case 3:
+                return "Sudah hampir tepat!"
+
+            default:
+                return "Sudah hampir tepat!"
+            }
+
+        case .correct:
+            return "Yeay, kalian sudah terlihat jelas di kamera!"
+        }
+    }
+
+    // =========================================================
+    // MARK: Icon
+    // =========================================================
+
+    var systemImage: String {
+
+        switch self {
+
+        case .waiting:
+            return "circle.dashed"
+
+        case .incorrect:
+            return "xmark.circle.fill"
+
+        case .correct:
+            return "checkmark.circle.fill"
         }
     }
 }
