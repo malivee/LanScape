@@ -23,9 +23,9 @@ struct PoseStatusHudView: View {
         HStack(alignment: .center, spacing: 12) {
             // Player 1 Pill
             playerPill(
-                title: "Player 1",
+                title: "Orang 1",
                 jointCount: p1JointCount,
-                color: .yellow,
+                color: Color(hex: "FFD84D"),
                 isDetected: isP1Detected
             )
 
@@ -38,9 +38,9 @@ struct PoseStatusHudView: View {
 
             // Player 2 Pill
             playerPill(
-                title: "Player 2",
+                title: "Orang 2",
                 jointCount: p2JointCount,
-                color: .blue,
+                color: Color(hex: "00D2FF"),
                 isDetected: isP2Detected
             )
         }

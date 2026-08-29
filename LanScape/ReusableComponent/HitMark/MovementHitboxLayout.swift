@@ -51,7 +51,7 @@ struct MovementHitboxLayout {
             // PLAYER 1 — LEFT SIDE
             // =====================================================
 
-            // LEFT HAND — YELLOW
+            // LEFT HAND — RED CIRCLE
 
             MovementHitbox(
                 id: 0,
@@ -70,7 +70,7 @@ struct MovementHitboxLayout {
             ),
 
 
-            // RIGHT HAND — ORANGE
+            // RIGHT HAND — YELLOW CIRCLE
 
             MovementHitbox(
                 id: 1,
@@ -89,7 +89,7 @@ struct MovementHitboxLayout {
             ),
 
 
-            // LEFT LEG — GREEN
+            // LEFT LEG — RED SQUARE
 
             MovementHitbox(
                 id: 2,
@@ -108,7 +108,7 @@ struct MovementHitboxLayout {
             ),
 
 
-            // RIGHT LEG — PURPLE
+            // RIGHT LEG — YELLOW SQUARE
 
             MovementHitbox(
                 id: 3,
@@ -131,7 +131,7 @@ struct MovementHitboxLayout {
             // PLAYER 2 — RIGHT SIDE
             // =====================================================
 
-            // LEFT HAND — BLUE
+            // LEFT HAND — GREEN CIRCLE
 
             MovementHitbox(
                 id: 4,
@@ -150,7 +150,7 @@ struct MovementHitboxLayout {
             ),
 
 
-            // RIGHT HAND — CYAN
+            // RIGHT HAND — CYAN CIRCLE
 
             MovementHitbox(
                 id: 5,
@@ -169,7 +169,7 @@ struct MovementHitboxLayout {
             ),
 
 
-            // LEFT LEG — PURPLE
+            // LEFT LEG — GREEN SQUARE
 
             MovementHitbox(
                 id: 6,
@@ -188,7 +188,7 @@ struct MovementHitboxLayout {
             ),
 
 
-            // RIGHT LEG — PINK
+            // RIGHT LEG — CYAN SQUARE
 
             MovementHitbox(
                 id: 7,
@@ -216,16 +216,16 @@ struct MovementHitboxLayout {
     // Based on the second movement image.
     //
     // PLAYER 1:
-    //   left hand  -> upper left
-    //   right hand -> middle left
-    //   left foot  -> far left
-    //   right foot -> center
+    //   left hand  (Red Circle)    -> upper left
+    //   right hand (Yellow Circle) -> middle left
+    //   left foot  (Red Square)    -> far left
+    //   right foot (Yellow Square) -> center
     //
     // PLAYER 2:
-    //   left hand  -> upper right
-    //   right hand -> middle right
-    //   left foot  -> center
-    //   right foot -> far right
+    //   left hand  (Green Circle)  -> upper right
+    //   right hand (Cyan Circle)   -> middle right
+    //   left foot  (Green Square)  -> center
+    //   right foot (Cyan Square)   -> far right
     // =========================================================
 
     private static func movement2()
@@ -237,7 +237,7 @@ struct MovementHitboxLayout {
             // PLAYER 1 — LEFT SIDE
             // =====================================================
 
-            // LEFT HAND — YELLOW
+            // LEFT HAND — RED CIRCLE
 
             MovementHitbox(
                 id: 0,
@@ -256,7 +256,7 @@ struct MovementHitboxLayout {
             ),
 
 
-            // RIGHT HAND — ORANGE
+            // RIGHT HAND — YELLOW CIRCLE
 
             MovementHitbox(
                 id: 1,
@@ -275,7 +275,7 @@ struct MovementHitboxLayout {
             ),
 
 
-            // LEFT LEG — GREEN
+            // LEFT LEG — RED SQUARE
 
             MovementHitbox(
                 id: 2,
@@ -294,7 +294,7 @@ struct MovementHitboxLayout {
             ),
 
 
-            // RIGHT LEG — PURPLE
+            // RIGHT LEG — YELLOW SQUARE
 
             MovementHitbox(
                 id: 3,
@@ -317,7 +317,7 @@ struct MovementHitboxLayout {
             // PLAYER 2 — RIGHT SIDE
             // =====================================================
 
-            // LEFT HAND — BLUE
+            // LEFT HAND — GREEN CIRCLE
 
             MovementHitbox(
                 id: 4,
@@ -336,7 +336,7 @@ struct MovementHitboxLayout {
             ),
 
 
-            // RIGHT HAND — CYAN
+            // RIGHT HAND — CYAN CIRCLE
 
             MovementHitbox(
                 id: 5,
@@ -355,7 +355,7 @@ struct MovementHitboxLayout {
             ),
 
 
-            // LEFT LEG — PURPLE
+            // LEFT LEG — GREEN SQUARE
 
             MovementHitbox(
                 id: 6,
@@ -374,7 +374,7 @@ struct MovementHitboxLayout {
             ),
 
 
-            // RIGHT LEG — PINK
+            // RIGHT LEG — CYAN SQUARE
 
             MovementHitbox(
                 id: 7,

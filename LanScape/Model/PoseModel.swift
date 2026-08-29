@@ -29,10 +29,10 @@ public enum PlayerRole: String, CaseIterable {
         switch self {
 
         case .player1:
-            return "Person 1 (Yellow)"
+            return "Orang 1"
 
         case .player2:
-            return "Person 2 (Blue)"
+            return "Orang 2"
         }
     }
 
@@ -44,7 +44,7 @@ public enum PlayerRole: String, CaseIterable {
             return Color(hex: "FFD84D")
 
         case .player2:
-            return Color(hex: "0088FF")
+            return Color(hex: "00D2FF")
         }
     }
 
@@ -66,16 +66,23 @@ public enum PlayerRole: String, CaseIterable {
     }
 }
 
+// MARK: - Joint Shape
+
+public enum JointShape {
+    case circle
+    case square
+}
+
 // MARK: - Pose Body Definitions
 
 public struct PoseBodyDefinitions {
 
     /// Only these four joints are used for gameplay.
     ///
-    /// leftWrist  = left hand
-    /// rightWrist = right hand
-    /// leftAnkle  = left leg
-    /// rightAnkle = right leg
+    /// leftWrist  = left hand (Circle)
+    /// rightWrist = right hand (Circle)
+    /// leftAnkle  = left leg (Square)
+    /// rightAnkle = right leg (Square)
 
     public static let trackedJoints:
         Set<VNHumanBodyPoseObservation.JointName> = [
@@ -92,6 +99,21 @@ public struct PoseBodyDefinitions {
         trackedJoints
     }
 
+    // MARK: - Joint Shape
+
+    public static func jointShape(
+        for joint: VNHumanBodyPoseObservation.JointName
+    ) -> JointShape {
+        switch joint {
+        case .leftWrist, .rightWrist:
+            return .circle
+        case .leftAnkle, .rightAnkle:
+            return .square
+        default:
+            return .circle
+        }
+    }
+
     // MARK: - Shared Joint Color
 
     /// IMPORTANT:
@@ -102,6 +124,13 @@ public struct PoseBodyDefinitions {
     /// 1. Vision skeleton points
     /// 2. Hitboxes
     ///
+    /// Player 1 (Orang 1):
+    ///   - Left (Kiri / Left Wrist & Left Ankle): RED (#FF3B30)
+    ///   - Right (Kanan / Right Wrist & Right Ankle): YELLOW (#FFD84D)
+    /// Player 2 (Orang 2):
+    ///   - Left (Kiri / Left Wrist & Left Ankle): GREEN (#34C759)
+    ///   - Right (Kanan / Right Wrist & Right Ankle): CYAN (#00D2FF)
+    ///
     public static func jointColor(
         for joint:
             VNHumanBodyPoseObservation.JointName,
@@ -109,58 +138,44 @@ public struct PoseBodyDefinitions {
     ) -> Color {
 
         // =====================================================
-        // PLAYER 1
+        // PLAYER 1 (Person 1 / Orang 1)
+        // Left = RED, Right = YELLOW
         // =====================================================
 
         if personIndex == 0 {
 
             switch joint {
 
-            // LEFT HAND
-            case .leftWrist:
+            // LEFT HAND & LEFT LEG -> RED
+            case .leftWrist, .leftAnkle:
+                return Color(hex: "FF3B30")
+
+            // RIGHT HAND & RIGHT LEG -> YELLOW
+            case .rightWrist, .rightAnkle:
                 return Color(hex: "FFD84D")
-
-            // RIGHT HAND
-            case .rightWrist:
-                return Color(hex: "FF9F1C")
-
-            // LEFT LEG
-            case .leftAnkle:
-                return Color(hex: "4CD964")
-
-            // RIGHT LEG
-            case .rightAnkle:
-                return Color(hex: "AF52DE")
 
             default:
-                return Color(hex: "FFD84D")
+                return Color(hex: "FF3B30")
             }
         }
 
         // =====================================================
-        // PLAYER 2
+        // PLAYER 2 (Person 2 / Orang 2)
+        // Left = GREEN, Right = CYAN / LIGHT BLUE
         // =====================================================
 
         switch joint {
 
-        // LEFT HAND
-        case .leftWrist:
-            return Color(hex: "0088FF")
+        // LEFT HAND & LEFT LEG -> GREEN
+        case .leftWrist, .leftAnkle:
+            return Color(hex: "34C759")
 
-        // RIGHT HAND
-        case .rightWrist:
-            return Color(hex: "33E0FF")
-
-        // LEFT LEG
-        case .leftAnkle:
-            return Color(hex: "8A5CFF")
-
-        // RIGHT LEG
-        case .rightAnkle:
-            return Color(hex: "FF4FA3")
+        // RIGHT HAND & RIGHT LEG -> CYAN
+        case .rightWrist, .rightAnkle:
+            return Color(hex: "00D2FF")
 
         default:
-            return Color(hex: "0088FF")
+            return Color(hex: "34C759")
         }
     }
 }
@@ -194,15 +209,19 @@ public struct JointPoint: Identifiable {
         self.confidence = confidence
     }
 
+    public var shape: JointShape {
+        PoseBodyDefinitions.jointShape(for: name)
+    }
+
     public var displayName: String {
 
         switch name {
 
         case .rightWrist:
-            return "Right Wrist"
+            return "Right Hand"
 
         case .leftWrist:
-            return "Left Wrist"
+            return "Left Hand"
 
         case .rightAnkle:
             return "Right Leg"
@@ -286,6 +305,16 @@ public struct DetectedPerson: Identifiable {
         return jointList.filter {
             allowedJoints.contains($0.name)
         }
+    }
+
+    public func jointShape(
+        for joint:
+            VNHumanBodyPoseObservation.JointName
+    ) -> JointShape {
+
+        PoseBodyDefinitions.jointShape(
+            for: joint
+        )
     }
 
     public func jointColor(

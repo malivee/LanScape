@@ -19,7 +19,7 @@ struct PoseSkeletonOverlayView: View {
     let videoSize: CGSize
     var isMatching: Bool = false
 
-    private let jointSize: CGFloat = 46
+    private let jointSize: CGFloat = 62
 
     var body: some View {
         GeometryReader { geometry in
@@ -28,49 +28,65 @@ struct PoseSkeletonOverlayView: View {
             ForEach(detectedPeople) { person in
                 let playerPrimary = person.role.primaryColor
 
-                // MARK: - 4 Distinctly Colored Joint Dots
+                // MARK: - 4 Distinctly Colored Joint Indicators (Circle for Hand, Square for Leg)
                 ForEach(person.filteredJointList) { joint in
                     let screenPoint = convertPoint(joint.location, viewSize: viewSize, videoSize: videoSize)
                     let jointColor = person.jointColor(for: joint.name)
+                    let isSquare = joint.shape == .square
 
                     ZStack {
-                        // 1. Ambient Outer Colored Glow
-                        Circle()
-                            .fill(jointColor)
-                            .frame(width: jointSize * 1.45, height: jointSize * 1.45)
-                            .blur(radius: jointSize * 0.28)
-                            .opacity(0.9)
+                        if isSquare {
+                            // SQUIRCLE / SQUARE FOR LEGS
 
-                        // 2. Vibrant Outer Ring
-                        Circle()
-                            .fill(jointColor)
-                            .frame(width: jointSize, height: jointSize)
-                            .shadow(color: jointColor.opacity(0.85), radius: jointSize * 0.15)
+                            // 1. Ambient Outer Colored Glow
+                            RoundedRectangle(cornerRadius: 18)
+                                .fill(jointColor.opacity(0.45))
+                                .frame(width: jointSize * 1.35, height: jointSize * 1.35)
+                                .blur(radius: 8)
 
-                        // 3. Inner Contrast Ring
-                        Circle()
-                            .stroke(Color.white.opacity(0.35), lineWidth: jointSize * 0.08)
-                            .frame(width: jointSize * 0.78, height: jointSize * 0.78)
+                            // 2. Translucent colored backing
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(jointColor.opacity(0.20))
+                                .frame(width: jointSize, height: jointSize)
 
-                        // 4. Glowing White Center Core
-                        Circle()
-                            .fill(Color.white)
-                            .frame(width: jointSize * 0.54, height: jointSize * 0.54)
-                            .shadow(color: Color.white.opacity(0.95), radius: jointSize * 0.08)
+                            // 3. Vibrant Colored Stroke Squircle
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(jointColor, lineWidth: 4.5)
+                                .frame(width: jointSize, height: jointSize)
+                                .shadow(color: jointColor.opacity(0.8), radius: 6)
 
-                        // 5. Joint Name Tag
-                        Text(joint.displayName)
-                            .font(.system(size: 10, weight: .bold, design: .rounded))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 7)
-                            .padding(.vertical, 3)
-                            .background(Color.black.opacity(0.75))
-                            .clipShape(Capsule())
-                            .overlay(
-                                Capsule().stroke(jointColor.opacity(0.9), lineWidth: 1.2)
-                            )
-                            .shadow(color: Color.black.opacity(0.4), radius: 3)
-                            .offset(y: jointSize * 0.55 + 12)
+                            // 4. Glowing Milky White Center Core
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(Color.white.opacity(0.88))
+                                .frame(width: jointSize * 0.58, height: jointSize * 0.58)
+                                .shadow(color: Color.white.opacity(0.9), radius: 6)
+
+                        } else {
+                            // CIRCLE FOR HANDS
+
+                            // 1. Ambient Outer Colored Glow
+                            Circle()
+                                .fill(jointColor.opacity(0.45))
+                                .frame(width: jointSize * 1.35, height: jointSize * 1.35)
+                                .blur(radius: 8)
+
+                            // 2. Translucent colored backing
+                            Circle()
+                                .fill(jointColor.opacity(0.20))
+                                .frame(width: jointSize, height: jointSize)
+
+                            // 3. Vibrant Colored Stroke Ring
+                            Circle()
+                                .stroke(jointColor, lineWidth: 4.5)
+                                .frame(width: jointSize, height: jointSize)
+                                .shadow(color: jointColor.opacity(0.8), radius: 6)
+
+                            // 4. Glowing Milky White Center Core
+                            Circle()
+                                .fill(Color.white.opacity(0.88))
+                                .frame(width: jointSize * 0.58, height: jointSize * 0.58)
+                                .shadow(color: Color.white.opacity(0.9), radius: 6)
+                        }
                     }
                     .position(screenPoint)
                 }
