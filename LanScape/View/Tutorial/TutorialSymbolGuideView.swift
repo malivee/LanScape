@@ -6,13 +6,14 @@
 import SwiftUI
 
 struct TutorialSymbolGuideView: View {
+    var onNext: (() -> Void)? = nil
 
     var body: some View {
         ZStack {
             // Background dim
-            Color.black.opacity(0.75).ignoresSafeArea()
+            Color.black.opacity(0.72).ignoresSafeArea()
 
-            VStack(spacing: 12) {
+            VStack(spacing: 10) {
                 // MARK: - Top Header
                 HStack {
                     Text("Tutorial #2")
@@ -32,7 +33,7 @@ struct TutorialSymbolGuideView: View {
                         .foregroundColor(.clear)
                 }
                 .padding(.horizontal, 40)
-                .padding(.top, 16)
+                .padding(.top, 14)
 
                 Spacer()
 
@@ -43,19 +44,23 @@ struct TutorialSymbolGuideView: View {
                 Spacer()
             }
         }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            onNext?()
+        }
     }
 
     // MARK: - Main Modal Card
     private var mainModalCard: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: 12) {
             // Title
             Text("Petunjuk Simbol dan Warna")
-                .font(.system(size: 30, weight: .bold, design: .rounded))
+                .font(.system(size: 28, weight: .bold, design: .rounded))
                 .foregroundColor(.black)
-                .padding(.top, 6)
+                .padding(.top, 4)
 
             // 2 Side-by-Side Cards
-            HStack(spacing: 18) {
+            HStack(spacing: 16) {
                 // Orang 1 Card
                 playerGuideCard(
                     playerTitle: "Orang 1",
@@ -81,9 +86,31 @@ struct TutorialSymbolGuideView: View {
                 )
             }
             .padding(.horizontal, 8)
-            .padding(.bottom, 6)
+
+            // Bottom Prompt Pill ("Sentuh layar untuk lanjut")
+            Button(action: {
+                onNext?()
+            }) {
+                HStack(spacing: 6) {
+                    Text("Sentuh layar untuk lanjut")
+                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                    Image(systemName: "hand.tap.fill")
+                        .font(.system(size: 14, weight: .semibold))
+                }
+                .foregroundColor(Color(hex: "1E4BA3"))
+                .padding(.horizontal, 20)
+                .padding(.vertical, 8)
+                .background(Color(hex: "F0F4FF"))
+                .clipShape(Capsule())
+                .overlay(
+                    Capsule().stroke(Color(hex: "1E4BA3").opacity(0.3), lineWidth: 1)
+                )
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 4)
+            .padding(.bottom, 2)
         }
-        .padding(.vertical, 20)
+        .padding(.vertical, 16)
         .padding(.horizontal, 20)
         .background(
             RoundedRectangle(cornerRadius: 28)
@@ -107,23 +134,23 @@ struct TutorialSymbolGuideView: View {
     ) -> some View {
         ZStack(alignment: .top) {
             // Card background & border
-            RoundedRectangle(cornerRadius: 22)
+            RoundedRectangle(cornerRadius: 20)
                 .fill(Color.white)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 22)
+                    RoundedRectangle(cornerRadius: 20)
                         .stroke(borderColor, lineWidth: 2.5)
                 )
 
             VStack(spacing: 4) {
                 // Top Badge Pill
                 Text(playerTitle)
-                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                    .font(.system(size: 15, weight: .bold, design: .rounded))
                     .foregroundColor(badgeTextColor)
-                    .padding(.horizontal, 22)
-                    .padding(.vertical, 5)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 4)
                     .background(badgeColor)
                     .clipShape(Capsule())
-                    .padding(.top, 10)
+                    .padding(.top, 8)
 
                 // Standing Figure with Indicator Overlays
                 figureContainer(
@@ -132,8 +159,8 @@ struct TutorialSymbolGuideView: View {
                     leftLegColor: leftLegColor,
                     rightLegColor: rightLegColor
                 )
-                .frame(height: 290)
-                .padding(.bottom, 6)
+                .frame(height: 270)
+                .padding(.bottom, 4)
             }
         }
         .frame(maxWidth: .infinity)
@@ -164,31 +191,31 @@ struct TutorialSymbolGuideView: View {
 
                 // 3. Side Labels: "Kiri" & "Kanan"
                 Text("Kiri")
-                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                    .font(.system(size: 16, weight: .bold, design: .rounded))
                     .foregroundColor(Color(white: 0.25))
                     .position(x: w * 0.12, y: h * 0.58)
 
                 Text("Kanan")
-                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                    .font(.system(size: 16, weight: .bold, design: .rounded))
                     .foregroundColor(Color(white: 0.25))
                     .position(x: w * 0.88, y: h * 0.58)
 
                 // 4. Hand Indicators (Circles)
                 // Left Hand (viewer's left)
-                circleJointIndicator(color: leftHandColor, size: 36)
+                circleJointIndicator(color: leftHandColor, size: 34)
                     .position(x: w * 0.29, y: h * 0.58)
 
                 // Right Hand (viewer's right)
-                circleJointIndicator(color: rightHandColor, size: 36)
+                circleJointIndicator(color: rightHandColor, size: 34)
                     .position(x: w * 0.71, y: h * 0.58)
 
                 // 5. Leg Indicators (Squares)
                 // Left Leg (viewer's left)
-                squareJointIndicator(color: leftLegColor, size: 36)
+                squareJointIndicator(color: leftLegColor, size: 34)
                     .position(x: w * 0.36, y: h * 0.90)
 
                 // Right Leg (viewer's right)
-                squareJointIndicator(color: rightLegColor, size: 36)
+                squareJointIndicator(color: rightLegColor, size: 34)
                     .position(x: w * 0.64, y: h * 0.90)
             }
         }

@@ -1,41 +1,41 @@
+//
+//  PoseCardView.swift
+//  LanScape
+//
+
 import SwiftUI
 
 struct PoseCardView: View {
-    
-    var title: String
-    var imageName: String
+    var title: String = "Pose Pertama"
+    var subtitle: String = "Pose Fusion"
+    var imageName: String = "pose 1"
+    var isCompact: Bool = false
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            
-            Text(title)
-                .font(.system(size: 18, weight: .medium))
-                .foregroundColor(Color(UIColor.lightGray))
-            
-            
-            ZStack {
-               
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(Color(red: 0.25, green: 0.25, blue: 0.27))
-                
-               
-                Image(imageName)
-                    .resizable()
-                    .scaledToFit()
-                    .padding(24)
-                RoundedRectangle(cornerRadius: 20)
-                    .stroke(Color.white.opacity(0.4), lineWidth: 1.5)
-            }
-            .frame(width: 260, height: 180)
+        if isCompact {
+            // Compact thumbnail for top-right corner
+            MiniPoseThumbnailBadge(imageName: imageName, size: 175)
+        } else {
+            // Full preview card before game/movement
+            PoseInstructionView(
+                mainTitle: title,
+                subTitle: subtitle,
+                imageName: imageName
+            )
         }
     }
 }
 
-
-#Preview {
+#Preview("Pose Card View - Full") {
     ZStack {
-        
-        Color.black.ignoresSafeArea()
-        PoseCardView(title: "Frame 13", imageName: "pose 1")
+        Color.black.opacity(0.7).ignoresSafeArea()
+        PoseCardView(title: "Pose Pertama", subtitle: "Pose Fusion", imageName: "pose 1")
+    }
+}
+
+#Preview("Pose Card View - Compact") {
+    ZStack {
+        Color.black.opacity(0.7).ignoresSafeArea()
+        PoseCardView(title: "Pose 1", imageName: "pose 1", isCompact: true)
     }
 }

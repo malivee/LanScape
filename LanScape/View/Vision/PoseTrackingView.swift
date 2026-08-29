@@ -41,6 +41,12 @@ struct PoseTrackingView: View {
     @State
     private var movementNumber = 1
 
+    @State
+    private var showingPoseInstructionPreview = false
+
+    @State
+    private var posePreviewTask: Task<Void, Never>? = nil
+
     private let totalMovements = 5
 
 
@@ -55,59 +61,62 @@ struct PoseTrackingView: View {
             ZStack {
 
                 // =================================================
-                // CAMERA
+                // BACKGROUND: LIVE CAMERA OR TUTORIAL ILLUSTRATION
                 // =================================================
 
-                CameraPreviewView(
-                    session: visionService.captureSession,
-                    onOrientationChanged: { orientation in
+                if isLiveCameraPhase {
+                    // 1. Live Camera Preview
+                    CameraPreviewView(
+                        session: visionService.captureSession,
+                        onOrientationChanged: { orientation in
+                            visionService.updateVideoOrientation(orientation)
+                        }
+                    )
+                    .frame(
+                        width: geometry.size.width,
+                        height: geometry.size.height
+                    )
+                    .clipped()
+                    .ignoresSafeArea()
 
-                        visionService.updateVideoOrientation(
-                            orientation
+                    // 2. Real-time Joint Skeleton Tracking
+                    PoseSkeletonOverlayView(
+                        detectedPeople:
+                            visionService
+                                .poseModel
+                                .detectedPeople,
+                        videoSize:
+                            visionService
+                                .poseModel
+                                .videoSize
+                    )
+                    .frame(
+                        width: geometry.size.width,
+                        height: geometry.size.height
+                    )
+                    .clipped()
+                    .ignoresSafeArea()
+
+                } else {
+                    // Tutorial Explanation Slides: Static Illustration Image
+                    Image("tutorial")
+                        .resizable()
+                        .scaledToFill()
+                        .frame(
+                            width: geometry.size.width,
+                            height: geometry.size.height
                         )
-                    }
-                )
-                .frame(
-                    width: geometry.size.width,
-                    height: geometry.size.height
-                )
-                .clipped()
-                .ignoresSafeArea()
-
+                        .clipped()
+                        .ignoresSafeArea()
+                }
 
                 // =================================================
-                // VISION JOINT OVERLAY
-                // =================================================
-
-                PoseSkeletonOverlayView(
-                    detectedPeople:
-                        visionService
-                            .poseModel
-                            .detectedPeople,
-
-                    videoSize:
-                        visionService
-                            .poseModel
-                            .videoSize
-                )
-                .frame(
-                    width: geometry.size.width,
-                    height: geometry.size.height
-                )
-                .clipped()
-                .ignoresSafeArea()
-
-
-                // =================================================
-                // GAME FLOW
+                // OVERLAY: TUTORIAL FLOW OR GAMEPLAY
                 // =================================================
 
                 if !tutorialController.hasStarted {
-
                     tutorialPhase
-
                 } else {
-
                     gameplayPhase
                 }
 
@@ -156,6 +165,12 @@ struct PoseTrackingView: View {
 
         .onDisappear {
             handleDisappear()
+        }
+
+        .onChange(of: tutorialController.hasStarted) { _, hasStarted in
+            if hasStarted {
+                triggerPosePreview()
+            }
         }
     }
 
@@ -218,24 +233,27 @@ struct PoseTrackingView: View {
                 // HITBOXES
                 // =================================================
 
-                MovementHitboxOverlayView(
-                    hitboxes:
-                        MovementHitboxLayout
-                            .hitboxes(
-                                for: movementNumber
-                            ),
+                if !showingPoseInstructionPreview {
+                    MovementHitboxOverlayView(
+                        hitboxes:
+                            MovementHitboxLayout
+                                .hitboxes(
+                                    for: movementNumber
+                                ),
 
-                    results:
-                        hitboxResults,
+                        results:
+                            hitboxResults,
 
-                    viewSize:
-                        geometry.size
-                )
-                .frame(
-                    width: geometry.size.width,
-                    height: geometry.size.height
-                )
-                .ignoresSafeArea()
+                        viewSize:
+                            geometry.size
+                    )
+                    .frame(
+                        width: geometry.size.width,
+                        height: geometry.size.height
+                    )
+                    .ignoresSafeArea()
+                    .transition(.opacity)
+                }
 
 
                 // =================================================
@@ -268,12 +286,7 @@ struct PoseTrackingView: View {
 
 
                 // =================================================
-                // HEADER
-                //
-                // IMPORTANT:
-                // This VStack pins the header to the top.
-                // Previously gameplayHeader was directly inside
-                // ZStack, which caused it to appear in the middle.
+                // HEADER & POSE THUMBNAIL BADGE
                 // =================================================
 
                 VStack(
@@ -282,6 +295,21 @@ struct PoseTrackingView: View {
 
                     gameplayHeader
 
+                    if !showingPoseInstructionPreview {
+                        HStack {
+                            Spacer()
+
+                            MiniPoseThumbnailBadge(
+                                imageName: currentPoseImageName,
+                                size: 175
+                            )
+                            .padding(.trailing, 28)
+                            .padding(.top, 6)
+                            .id(movementNumber)
+                            .transition(.scale.combined(with: .opacity))
+                        }
+                    }
+
                     Spacer()
                 }
                 .frame(
@@ -289,6 +317,37 @@ struct PoseTrackingView: View {
                     height: geometry.size.height,
                     alignment: .top
                 )
+
+
+                // =================================================
+                // 5-SECOND CENTER POSE PREVIEW MODAL
+                // =================================================
+
+                if showingPoseInstructionPreview {
+
+                    Color.black.opacity(0.35)
+                        .ignoresSafeArea()
+                        .transition(.opacity)
+
+                    VStack {
+                        Spacer()
+
+                        PoseInstructionView(
+                            mainTitle: currentPoseMainTitle,
+                            subTitle: currentPoseSubTitle,
+                            imageName: currentPoseImageName
+                        )
+                        .id(movementNumber)
+                        .transition(.scale.combined(with: .opacity))
+
+                        Spacer()
+                    }
+                    .frame(
+                        width: geometry.size.width,
+                        height: geometry.size.height
+                    )
+                    .zIndex(50)
+                }
             }
             .frame(
                 width: geometry.size.width,
@@ -497,11 +556,12 @@ struct PoseTrackingView: View {
     ) {
 
         // ---------------------------------------------------------
-        // Only validate during gameplay.
+        // Only validate during gameplay when preview has finished.
         // ---------------------------------------------------------
 
         guard
-            tutorialController.hasStarted
+            tutorialController.hasStarted,
+            !showingPoseInstructionPreview
         else {
             return
         }
@@ -822,6 +882,7 @@ struct PoseTrackingView: View {
                 movementNumber += 1
             }
 
+            triggerPosePreview()
 
             print(
                 "➡️ Movement:",
@@ -834,13 +895,8 @@ struct PoseTrackingView: View {
                 "🎉 SEQUENCE COMPLETE"
             )
 
-
-            // -----------------------------------------------------
-            // For now restart at 1.
-            // Replace this with your completion screen later.
-            // -----------------------------------------------------
-
             movementNumber = 1
+            triggerPosePreview()
         }
     }
 
@@ -979,91 +1035,78 @@ struct PoseTrackingView: View {
                     // Tutorial
                     // =================================================
 
-                    Button(
-                        "1. Player Setup"
-                    ) {
-
-                        tutorialController
-                            .debugSetStep(
-                                .playerSetup
-                            )
-
+                    Button("0. Persiapan Pemain") {
+                        tutorialController.debugSetStep(.playerSetup)
                         resetGameplay()
                     }
 
-
-                    Button(
-                        "2. Setup Countdown"
-                    ) {
-
-                        tutorialController
-                            .debugSetStep(
-                                .setupCountdown3
-                            )
-
+                    Button("1. Intro Tutorial") {
+                        tutorialController.debugSetStep(.tutorialIntro)
                         resetGameplay()
                     }
 
-
-                    Button(
-                        "3. Panduan Warna (8s)"
-                    ) {
-
-                        tutorialController
-                            .debugSetStep(
-                                .colorMatchingGuide
-                            )
-
+                    Button("2. Petunjuk Simbol & Warna") {
+                        tutorialController.debugSetStep(.symbolColorGuide)
                         resetGameplay()
                     }
 
-
-                    Button(
-                        "4. Latihan Tahan (5s)"
-                    ) {
-
-                        tutorialController
-                            .debugSetStep(
-                                .practiceHold
-                            )
-
+                    Button("4. Progress Header Guide") {
+                        tutorialController.debugSetStep(.progressHeaderGuide)
                         resetGameplay()
                     }
 
-
-                    Button(
-                        "5. Tutorial Selesai"
-                    ) {
-
-                        tutorialController
-                            .debugSetStep(
-                                .tutorialCompleted
-                            )
-
+                    Button("5. Kemunculan Pose") {
+                        tutorialController.debugSetStep(.poseAppearanceExplanation)
                         resetGameplay()
                     }
 
-
-                    Button(
-                        "6. Countdown Mulai"
-                    ) {
-
-                        tutorialController
-                            .debugSetStep(
-                                .readyCountdown3
-                            )
-
+                    Button("6. Kartu Pose Pertama") {
+                        tutorialController.debugSetStep(.poseInstructionCard)
                         resetGameplay()
                     }
 
+                    Button("7. Ikuti Posenya!") {
+                        tutorialController.debugSetStep(.followPoseIntro)
+                        resetGameplay()
+                    }
 
-                    Button(
-                        "7. Start Gameplay"
-                    ) {
+                    Button("8. Titik Target Hitbox") {
+                        tutorialController.debugSetStep(.hitboxTargetPreview)
+                        resetGameplay()
+                    }
 
-                        tutorialController
-                            .debugSkipToStarted()
+                    Button("9. Penjelasan Titik Target") {
+                        tutorialController.debugSetStep(.hitboxExplanation)
+                        resetGameplay()
+                    }
 
+                    Button("10. Cocokkan Titik Target") {
+                        tutorialController.debugSetStep(.matchPointsGuide)
+                        resetGameplay()
+                    }
+
+                    Button("11. Instruksi Tahan Posisi") {
+                        tutorialController.debugSetStep(.holdInstruction)
+                        resetGameplay()
+                    }
+
+                    Button("12. Countdown Tahan 5s") {
+                        tutorialController.debugSetStep(.practiceHoldCountdown)
+                        resetGameplay()
+                    }
+
+                    Button("13. Keren Banget!") {
+                        tutorialController.debugSetStep(.poseSuccess)
+                        resetGameplay()
+                    }
+
+                    Button("14. Tutorial Selesai") {
+                        tutorialController.debugSetStep(.tutorialCompleted)
+                        resetGameplay()
+                    }
+
+                    Button("Start Gameplay") {
+                        tutorialController.debugSkipToStarted()
                         resetGameplay()
                     }
 
@@ -1072,27 +1115,50 @@ struct PoseTrackingView: View {
 
 
                     // =================================================
-                    // Gameplay
+                    // Gameplay Controls & Movement Jumps
                     // =================================================
 
-                    Button(
-                        "Next Movement"
-                    ) {
-
+                    Button("Next Movement") {
                         advanceMovement()
                     }
 
-
-                    Button(
-                        "Simulate Success"
-                    ) {
-
+                    Button("Simulate Success") {
                         movementSucceeded()
                     }
 
-
                     Divider()
 
+                    Button("Pose 1 (pose 1)") {
+                        tutorialController.debugSkipToStarted()
+                        movementNumber = 1
+                        triggerPosePreview()
+                    }
+
+                    Button("Pose 2 (pose2)") {
+                        tutorialController.debugSkipToStarted()
+                        movementNumber = 2
+                        triggerPosePreview()
+                    }
+
+                    Button("Pose 3 (pose3)") {
+                        tutorialController.debugSkipToStarted()
+                        movementNumber = 3
+                        triggerPosePreview()
+                    }
+
+                    Button("Pose 4 (pose4)") {
+                        tutorialController.debugSkipToStarted()
+                        movementNumber = 4
+                        triggerPosePreview()
+                    }
+
+                    Button("Pose 5 (pose5)") {
+                        tutorialController.debugSkipToStarted()
+                        movementNumber = 5
+                        triggerPosePreview()
+                    }
+
+                    Divider()
 
                     Button(
                         "Reset Everything"
@@ -1162,10 +1228,69 @@ struct PoseTrackingView: View {
 
 
     // =============================================================
+    // MARK: - Current Pose Info
+    // =============================================================
+
+    private var currentPoseMainTitle: String {
+        switch movementNumber {
+        case 1: return "Pose Pertama"
+        case 2: return "Pose Kedua"
+        case 3: return "Pose Ketiga"
+        case 4: return "Pose Keempat"
+        case 5: return "Pose Kelima"
+        default: return "Pose \(movementNumber)"
+        }
+    }
+
+    private var currentPoseSubTitle: String {
+        switch movementNumber {
+        case 1: return "Pose Fusion"
+        default: return "Gerakan \(movementNumber)"
+        }
+    }
+
+    private var currentPoseImageName: String {
+        switch movementNumber {
+        case 1: return "pose 1"
+        case 2: return "pose2"
+        case 3: return "pose3"
+        case 4: return "pose4"
+        case 5: return "pose5"
+        default: return "pose 1"
+        }
+    }
+
+    private func triggerPosePreview() {
+        posePreviewTask?.cancel()
+        withAnimation(.easeInOut(duration: 0.25)) {
+            showingPoseInstructionPreview = true
+            hitboxResults = []
+            isMovementSuccessful = false
+        }
+
+        posePreviewTask = Task { @MainActor in
+            do {
+                try await Task.sleep(nanoseconds: 5_000_000_000)
+            } catch {
+                return
+            }
+            guard !Task.isCancelled else { return }
+
+            withAnimation(.easeInOut(duration: 0.35)) {
+                self.showingPoseInstructionPreview = false
+            }
+        }
+    }
+
+
+    // =============================================================
     // MARK: - Reset Gameplay
     // =============================================================
 
     private func resetGameplay() {
+
+        posePreviewTask?.cancel()
+        showingPoseInstructionPreview = false
 
         movementNumber =
             1
@@ -1197,7 +1322,54 @@ struct PoseTrackingView: View {
                 .title
     }
 
+    // =============================================================
+    // MARK: - Live Camera Phase Helper
+    // =============================================================
+
+    private var isLiveCameraPhase: Bool {
+        switch tutorialController.currentStep {
+        case .playerSetup,
+             .setupCountdown3,
+             .setupCountdown2,
+             .setupCountdown1,
+             .readyCountdown3,
+             .readyCountdown2,
+             .readyCountdown1,
+             .started:
+            return true
+        default:
+            return tutorialController.hasStarted
+        }
+    }
+
     #else
+
+    private var currentPoseImageName: String {
+        switch movementNumber {
+        case 1: return "pose 1"
+        case 2: return "pose2"
+        case 3: return "pose3"
+        case 4: return "pose4"
+        case 5: return "pose5"
+        default: return "pose 1"
+        }
+    }
+
+    private var isLiveCameraPhase: Bool {
+        switch tutorialController.currentStep {
+        case .playerSetup,
+             .setupCountdown3,
+             .setupCountdown2,
+             .setupCountdown1,
+             .readyCountdown3,
+             .readyCountdown2,
+             .readyCountdown1,
+             .started:
+            return true
+        default:
+            return tutorialController.hasStarted
+        }
+    }
 
     private var testControlsOverlay: some View {
 

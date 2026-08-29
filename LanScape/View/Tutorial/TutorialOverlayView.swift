@@ -28,27 +28,60 @@ struct TutorialOverlayView: View {
     // =========================================================
 
     var body: some View {
-
         ZStack {
-
             switch tutorial.currentStep {
-
             case .playerSetup:
                 playerSetupPhase
 
             case .setupCountdown3,
                  .setupCountdown2,
                  .setupCountdown1:
+                countdownOverlay(number: tutorial.countdown)
 
-                countdownOverlay(
-                    number: tutorial.countdown
+            case .tutorialIntro:
+                textBannerOverlay(
+                    stepNumber: "Tutorial #2",
+                    text: "Sebelum mulai, perhatikan\nlangkah-langkah berikut, yuk!",
+                    bottomCaption: "Perhatikan simbol dan warna"
                 )
 
-            case .colorMatchingGuide:
-                TutorialSymbolGuideView()
+            case .symbolColorGuide:
+                TutorialSymbolGuideView(onNext: {
+                    tutorial.nextStep()
+                })
 
-            case .practiceHold:
-                practiceHoldView
+            case .progressHeaderGuide:
+                progressHeaderGuideView
+
+            case .poseAppearanceExplanation:
+                textBannerOverlay(
+                    stepNumber: nil,
+                    text: "Setiap pose akan muncul di tengah layar\nselama beberapa detik."
+                )
+
+            case .poseInstructionCard:
+                poseInstructionCardView
+
+            case .followPoseIntro:
+                followPoseIntroView
+
+            case .hitboxTargetPreview:
+                hitboxTargetPreviewView
+
+            case .hitboxExplanation:
+                hitboxExplanationView
+
+            case .matchPointsGuide:
+                matchPointsGuideView
+
+            case .holdInstruction:
+                holdInstructionView
+
+            case .practiceHoldCountdown:
+                practiceHoldCountdownView
+
+            case .poseSuccess:
+                poseSuccessView
 
             case .tutorialCompleted:
                 tutorialCompletedView
@@ -56,245 +89,458 @@ struct TutorialOverlayView: View {
             case .readyCountdown3,
                  .readyCountdown2,
                  .readyCountdown1:
-
-                countdownOverlay(
-                    number: tutorial.countdown
-                )
+                countdownOverlay(number: tutorial.countdown)
 
             case .started:
                 startedView
             }
         }
-        .allowsHitTesting(false)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            switch tutorial.currentStep {
+            case .playerSetup,
+                 .setupCountdown3,
+                 .setupCountdown2,
+                 .setupCountdown1,
+                 .practiceHoldCountdown,
+                 .readyCountdown3,
+                 .readyCountdown2,
+                 .readyCountdown1,
+                 .started:
+                break
+            default:
+                tutorial.nextStep()
+            }
+        }
+        .allowsHitTesting(true)
     }
 
     // =========================================================
-    // MARK: - Practice Hold View
+    // MARK: - Storyboard Step Views
     // =========================================================
 
+    // Slide 1, 5: Clean Text Banner Overlay
     @ViewBuilder
-    private var practiceHoldView: some View {
-
+    private func textBannerOverlay(stepNumber: String? = nil, text: String, bottomCaption: String? = nil) -> some View {
         ZStack {
-
-            Color.black
-                .opacity(0.60)
-                .ignoresSafeArea()
-
-            Rectangle()
-                .fill(
-                    Color.white.opacity(0.35)
-                )
-                .frame(width: 2)
-                .ignoresSafeArea()
-
-            MovementHitboxOverlayView(
-                hitboxes:
-                    MovementHitboxLayout.hitboxes(
-                        for: 1
-                    ),
-                results: [],
-                viewSize: viewSize
-            )
-            .ignoresSafeArea()
-
-            ZStack {
-
-                Circle()
-                    .fill(
-                        Color(hex: "6A85B6")
-                            .opacity(0.88)
-                    )
-                    .frame(
-                        width: 150,
-                        height: 150
-                    )
-                    .shadow(
-                        color: Color.black.opacity(0.4),
-                        radius: 12
-                    )
-
-                Circle()
-                    .stroke(
-                        Color.white,
-                        lineWidth: 4.5
-                    )
-                    .frame(
-                        width: 150,
-                        height: 150
-                    )
-
-                Text(
-                    "\(tutorial.countdown)"
-                )
-                .id(tutorial.countdown)
-                .font(
-                    .system(
-                        size: 88,
-                        weight: .bold,
-                        design: .rounded
-                    )
-                )
-                .foregroundColor(.white)
-                .shadow(
-                    color: Color.black.opacity(0.3),
-                    radius: 4
-                )
-                .transition(
-                    .scale.combined(
-                        with: .opacity
-                    )
-                )
-            }
-            .animation(
-                .spring(
-                    response: 0.35,
-                    dampingFraction: 0.65
-                ),
-                value: tutorial.countdown
-            )
+            Color.black.opacity(0.68).ignoresSafeArea()
 
             VStack {
+                if let stepNumber {
+                    HStack {
+                        Text(stepNumber)
+                            .font(.system(size: 16, weight: .bold, design: .rounded))
+                            .foregroundColor(.white.opacity(0.75))
+                        Spacer()
+                    }
+                    .padding(.horizontal, 36)
+                    .padding(.top, 24)
+                }
 
-                Text(
-                    "Tahan posisimu selama 5 detik"
+                Spacer()
+
+                Text(text)
+                    .font(.system(size: 40, weight: .bold, design: .rounded))
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(8)
+                    .padding(.horizontal, 60)
+
+                Spacer()
+
+                if let bottomCaption {
+                    Text(bottomCaption)
+                        .font(.system(size: 14, weight: .medium, design: .rounded))
+                        .foregroundColor(.white.opacity(0.6))
+                        .padding(.bottom, 20)
+                }
+            }
+        }
+    }
+
+    // Slide 4: Progress Header Explanation with Header Spotlight
+    @ViewBuilder
+    private var progressHeaderGuideView: some View {
+        ZStack {
+            Color.black.opacity(0.72).ignoresSafeArea()
+
+            VStack {
+                // Top Header Preview with Highlight
+                PoseSessionHeaderView(
+                    currentStepIndex: 0,
+                    totalSteps: 5,
+                    onPause: {}
                 )
-                .font(
-                    .system(
-                        size: 34,
-                        weight: .bold,
-                        design: .rounded
-                    )
-                )
-                .foregroundColor(.white)
-                .padding(.horizontal, 36)
-                .padding(.vertical, 12)
-                .background(
-                    Color.black.opacity(0.55)
-                )
-                .clipShape(Capsule())
                 .overlay(
-                    Capsule()
-                        .stroke(
-                            Color.white.opacity(0.3),
-                            lineWidth: 1.5
-                        )
+                    RoundedRectangle(cornerRadius: 30)
+                        .stroke(Color.white.opacity(0.6), lineWidth: 2)
+                        .padding(.horizontal, 16)
+                        .padding(.top, 8)
                 )
-                .shadow(
-                    color: Color.black.opacity(0.5),
-                    radius: 8
-                )
-                .padding(.top, 40)
+
+                Spacer()
+
+                Text("Kalian bisa melihat progress dan jumlah pose di sini")
+                    .font(.system(size: 38, weight: .bold, design: .rounded))
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 60)
+                    .padding(.bottom, 120)
 
                 Spacer()
             }
         }
     }
 
-    // =========================================================
-    // MARK: - Tutorial Slide View
-    // =========================================================
-
+    // Slide 6: Pose Instruction Card Display
     @ViewBuilder
-    private func tutorialSlideView(
-        text: String
-    ) -> some View {
-
+    private var poseInstructionCardView: some View {
         ZStack {
+            Color.black.opacity(0.72).ignoresSafeArea()
 
-            Color.black
-                .opacity(0.70)
-                .ignoresSafeArea()
-
-            Rectangle()
-                .fill(
-                    Color.white.opacity(0.20)
+            VStack {
+                // Top Header
+                PoseSessionHeaderView(
+                    currentStepIndex: 0,
+                    totalSteps: 5,
+                    onPause: {}
                 )
-                .frame(width: 1.5)
+
+                Spacer()
+
+                // Center Reusable Card
+                PoseInstructionView(
+                    mainTitle: "Pose Pertama",
+                    subTitle: "Pose Fusion",
+                    imageName: "Fusion"
+                )
+
+                Spacer()
+            }
+        }
+    }
+
+    // Slide 7: Follow Pose Intro + Mini Thumbnail Badge
+    @ViewBuilder
+    private var followPoseIntroView: some View {
+        ZStack {
+            Color.black.opacity(0.72).ignoresSafeArea()
+
+            // Top Right Thumbnail Badge
+            VStack {
+                HStack {
+                    Spacer()
+                    MiniPoseThumbnailBadge(imageName: "Fusion", size: 175)
+                        .padding(.trailing, 28)
+                        .padding(.top, 20)
+                }
+                Spacer()
+            }
+
+            // Center Text
+            VStack {
+                Spacer()
+                Text("Ikuti posenya!")
+                    .font(.system(size: 46, weight: .heavy, design: .rounded))
+                    .foregroundColor(.white)
+                Spacer()
+            }
+        }
+    }
+
+    // Slide 8: Hitbox Target Preview
+    @ViewBuilder
+    private var hitboxTargetPreviewView: some View {
+        ZStack {
+            // Center Divider
+            CenterDividerLineView()
+                .frame(width: viewSize.width, height: viewSize.height)
                 .ignoresSafeArea()
 
+            // Hitboxes
             MovementHitboxOverlayView(
-                hitboxes:
-                    MovementHitboxLayout.hitboxes(
-                        for: 1
-                    ),
+                hitboxes: MovementHitboxLayout.hitboxes(for: 1),
                 results: [],
                 viewSize: viewSize
             )
             .ignoresSafeArea()
 
+            // Top Right Thumbnail Badge
             VStack {
+                HStack {
+                    Spacer()
+                    MiniPoseThumbnailBadge(imageName: "Fusion", size: 175)
+                        .padding(.trailing, 28)
+                        .padding(.top, 20)
+                }
+                Spacer()
+            }
+        }
+    }
 
-                Text(text)
-                    .font(
-                        .system(
-                            size: 44,
-                            weight: .heavy,
-                            design: .rounded
-                        )
-                    )
+    // Slide 9: Hitbox Explanation
+    @ViewBuilder
+    private var hitboxExplanationView: some View {
+        ZStack {
+            Color.black.opacity(0.60).ignoresSafeArea()
+
+            // Center Divider
+            CenterDividerLineView()
+                .frame(width: viewSize.width, height: viewSize.height)
+                .ignoresSafeArea()
+
+            // Hitboxes
+            MovementHitboxOverlayView(
+                hitboxes: MovementHitboxLayout.hitboxes(for: 1),
+                results: [],
+                viewSize: viewSize
+            )
+            .ignoresSafeArea()
+
+            // Top Right Thumbnail Badge
+            VStack {
+                HStack {
+                    Spacer()
+                    MiniPoseThumbnailBadge(imageName: "Fusion", size: 175)
+                        .padding(.trailing, 28)
+                        .padding(.top, 20)
+                }
+                Spacer()
+            }
+
+            // Center Text
+            VStack {
+                Spacer()
+                Text("Pastikan tangan dan kaki kalian mengenai masing-masing titiknya.")
+                    .font(.system(size: 38, weight: .bold, design: .rounded))
                     .foregroundColor(.white)
                     .multilineTextAlignment(.center)
                     .lineSpacing(6)
                     .padding(.horizontal, 60)
-                    .padding(.top, 45)
+                Spacer()
+            }
+        }
+    }
+
+    // Slide 10: Match Points Guide
+    @ViewBuilder
+    private var matchPointsGuideView: some View {
+        ZStack {
+            // Center Divider
+            CenterDividerLineView()
+                .frame(width: viewSize.width, height: viewSize.height)
+                .ignoresSafeArea()
+
+            // Hitboxes
+            MovementHitboxOverlayView(
+                hitboxes: MovementHitboxLayout.hitboxes(for: 1),
+                results: [],
+                viewSize: viewSize
+            )
+            .ignoresSafeArea()
+
+            // Top Left Helper Badge & Top Right Thumbnail
+            VStack {
+                HStack {
+                    HStack(spacing: 8) {
+                        Text("Contoh Gerakan Benar")
+                            .font(.system(size: 20, weight: .bold, design: .rounded))
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 22, weight: .bold))
+                    }
+                    .foregroundColor(Color(hex: "1E4BA3"))
+                    .padding(.horizontal, 22)
+                    .padding(.vertical, 12)
+                    .background(Color.white)
+                    .clipShape(Capsule())
+                    .overlay(
+                        Capsule().stroke(Color(hex: "1E4BA3").opacity(0.8), lineWidth: 2)
+                    )
+                    .shadow(color: Color.black.opacity(0.25), radius: 10, x: 0, y: 4)
+                    .padding(.leading, 28)
+                    .padding(.top, 20)
+
+                    Spacer()
+
+                    MiniPoseThumbnailBadge(imageName: "Fusion", size: 175)
+                        .padding(.trailing, 28)
+                        .padding(.top, 20)
+                }
+                Spacer()
+            }
+        }
+    }
+
+    // Slide 11: Hold Instruction
+    @ViewBuilder
+    private var holdInstructionView: some View {
+        ZStack {
+            Color.black.opacity(0.60).ignoresSafeArea()
+
+            // Center Divider
+            CenterDividerLineView()
+                .frame(width: viewSize.width, height: viewSize.height)
+                .ignoresSafeArea()
+
+            // Hitboxes
+            MovementHitboxOverlayView(
+                hitboxes: MovementHitboxLayout.hitboxes(for: 1),
+                results: [],
+                viewSize: viewSize
+            )
+            .ignoresSafeArea()
+
+            // Top Right Thumbnail Badge
+            VStack {
+                HStack {
+                    Spacer()
+                    MiniPoseThumbnailBadge(imageName: "Fusion", size: 175)
+                        .padding(.trailing, 28)
+                        .padding(.top, 20)
+                }
+                Spacer()
+            }
+
+            // Center Text
+            VStack {
+                Spacer()
+                Text("Tahan posisi kalian selama 5 detik!")
+                    .font(.system(size: 42, weight: .bold, design: .rounded))
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 60)
+                Spacer()
+            }
+        }
+    }
+
+    // Slide 12: Practice Hold Countdown
+    @ViewBuilder
+    private var practiceHoldCountdownView: some View {
+        ZStack {
+            Color.black.opacity(0.55).ignoresSafeArea()
+
+            // Center Divider
+            CenterDividerLineView()
+                .frame(width: viewSize.width, height: viewSize.height)
+                .ignoresSafeArea()
+
+            // Hitboxes
+            MovementHitboxOverlayView(
+                hitboxes: MovementHitboxLayout.hitboxes(for: 1),
+                results: [],
+                viewSize: viewSize
+            )
+            .ignoresSafeArea()
+
+            // Top Right Thumbnail Badge
+            VStack {
+                HStack {
+                    Spacer()
+                    MiniPoseThumbnailBadge(imageName: "Fusion", size: 175)
+                        .padding(.trailing, 28)
+                        .padding(.top, 20)
+                }
+                Spacer()
+            }
+
+            // Center Countdown Circle
+            ZStack {
+                Circle()
+                    .fill(Color(hex: "6A85B6").opacity(0.88))
+                    .frame(width: 150, height: 150)
+                    .shadow(color: Color.black.opacity(0.4), radius: 12)
+
+                Circle()
+                    .stroke(Color.white, lineWidth: 4.5)
+                    .frame(width: 150, height: 150)
+
+                Text("\(tutorial.countdown)")
+                    .id(tutorial.countdown)
+                    .font(.system(size: 88, weight: .bold, design: .rounded))
+                    .foregroundColor(.white)
+                    .shadow(color: Color.black.opacity(0.3), radius: 4)
+                    .transition(.scale.combined(with: .opacity))
+            }
+            .animation(.spring(response: 0.35, dampingFraction: 0.65), value: tutorial.countdown)
+
+            // Top Banner
+            VStack {
+                Text("Tahan posisimu selama 5 detik")
+                    .font(.system(size: 34, weight: .bold, design: .rounded))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 36)
+                    .padding(.vertical, 12)
+                    .background(Color.black.opacity(0.55))
+                    .clipShape(Capsule())
+                    .overlay(
+                        Capsule().stroke(Color.white.opacity(0.3), lineWidth: 1.5)
+                    )
+                    .shadow(color: Color.black.opacity(0.5), radius: 8)
+                    .padding(.top, 35)
 
                 Spacer()
             }
         }
     }
 
-    // =========================================================
-    // MARK: - Tutorial Completed
-    // =========================================================
+    // Slide 13: Pose Success ("BERHASIL!")
+    @ViewBuilder
+    private var poseSuccessView: some View {
+        ZStack {
+            Color.black.opacity(0.50).ignoresSafeArea()
 
+            // Top Right Thumbnail Badge
+            VStack {
+                HStack {
+                    Spacer()
+                    MiniPoseThumbnailBadge(imageName: "Fusion", size: 175)
+                        .padding(.trailing, 28)
+                        .padding(.top, 20)
+                }
+                Spacer()
+            }
+
+            // Center Celebratory Text
+            VStack {
+                Spacer()
+                Text("BERHASIL!")
+                    .font(.system(size: 58, weight: .heavy, design: .rounded))
+                    .foregroundColor(.white)
+                    .shadow(color: Color.black.opacity(0.4), radius: 10)
+                    .transition(.scale.combined(with: .opacity))
+                Spacer()
+            }
+        }
+    }
+
+    // Slide 14: Tutorial Completed
     @ViewBuilder
     private var tutorialCompletedView: some View {
-
         ZStack {
-
-            Color.black
-                .opacity(0.75)
-                .ignoresSafeArea()
+            Color.black.opacity(0.68).ignoresSafeArea()
 
             VStack(spacing: 16) {
-
                 Spacer()
 
-                Text(
-                    "Keren Tutorial Selesai!"
-                )
-                .font(
-                    .system(
-                        size: 52,
-                        weight: .heavy,
-                        design: .rounded
-                    )
-                )
-                .foregroundColor(.white)
-                .multilineTextAlignment(.center)
+                Text("Tutorial selesai.\nMari kita lanjut!")
+                    .font(.system(size: 46, weight: .heavy, design: .rounded))
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(8)
 
-                Text(
-                    "Bersiap masuk ke game"
-                )
-                .font(
-                    .system(
-                        size: 26,
-                        weight: .semibold,
-                        design: .rounded
-                    )
-                )
-                .foregroundColor(
-                    .white.opacity(0.9)
-                )
+                Text("Ketuk layar untuk bersiap")
+                    .font(.system(size: 20, weight: .semibold, design: .rounded))
+                    .foregroundColor(.white.opacity(0.75))
+                    .padding(.top, 4)
 
                 Spacer()
             }
-            .transition(
-                .scale.combined(
-                    with: .opacity
-                )
-            )
+            .transition(.scale.combined(with: .opacity))
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            tutorial.startReadyCountdown()
         }
     }
 
@@ -320,8 +566,8 @@ struct TutorialOverlayView: View {
                 Text("Bersiap dalam...")
                     .font(
                         .system(
-                            size: 26,
-                            weight: .medium,
+                            size: 28,
+                            weight: .bold,
                             design: .rounded
                         )
                     )
@@ -340,7 +586,7 @@ struct TutorialOverlayView: View {
 
                     Circle()
                         .stroke(
-                            Color.white.opacity(0.5),
+                            Color.white.opacity(0.6),
                             lineWidth: 4
                         )
                         .frame(
