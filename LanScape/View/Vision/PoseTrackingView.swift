@@ -49,6 +49,15 @@ struct PoseTrackingView: View {
     @State
     private var posePreviewTask: Task<Void, Never>? = nil
 
+    @State
+    private var sessionStartTime: Date? = nil
+
+    @State
+    private var sessionDuration: TimeInterval = 0
+
+    @State
+    private var showCompletionView = false
+
     private let totalMovements = 5
 
 
@@ -171,8 +180,27 @@ struct PoseTrackingView: View {
 
         .onChange(of: tutorialController.hasStarted) { _, hasStarted in
             if hasStarted {
+                sessionStartTime = Date()
                 triggerPosePreview()
             }
+        }
+        .fullScreenCover(isPresented: $showCompletionView) {
+            CompletionView(
+                durationSeconds: sessionDuration > 0 ? sessionDuration : 243,
+                onRestart: {
+                    showCompletionView = false
+                    restartGameDirectly()
+                },
+                onSelectMusic: {
+                    showCompletionView = false
+                    dismiss()
+                },
+                onMainMenu: {
+                    showCompletionView = false
+                    dismiss()
+                    NotificationCenter.default.post(name: NSNotification.Name("PopToRoot"), object: nil)
+                }
+            )
         }
     }
 
@@ -892,17 +920,24 @@ struct PoseTrackingView: View {
             )
 
         } else {
-
             print(
                 "🎉 SEQUENCE COMPLETE"
-            )
-            
+            )            
             gameplayMusic.stop()
 
             movementNumber = 1
             triggerPosePreview()
             
+            sessionDuration = Date().timeIntervalSince(sessionStartTime ?? Date())
+            showCompletionView = true
         }
+    }
+
+    private func restartGameDirectly() {
+        movementNumber = 1
+        hitboxResults = []
+        isMovementSuccessful = false
+        tutorialController.startReadyCountdown()
     }
 
 

@@ -1,8 +1,10 @@
 import SwiftUI
 
 struct SelectMusicView: View {
+    @Environment(\.dismiss) private var dismiss
     @State private var selectedMusic: MusicData?
     @State private var selectedIndex: Int? = 1
+    @State private var navigateToPoseTracking = false
     
     private let musicItems = MusicData.sample
     private let cardSpacing: CGFloat = 20
@@ -13,7 +15,6 @@ struct SelectMusicView: View {
                 musicSelectionView
                     .frame(width: selectionWidth(for: geometry.size.width))
                 
-                
                 if let music = selectedMusic {
                     movementSequencePanel(for: music)
                         .frame(width: geometry.size.width * 0.28)
@@ -21,6 +22,10 @@ struct SelectMusicView: View {
                 }
             }
             .ignoresSafeArea(edges: .bottom)
+        }
+        .navigationBarBackButtonHidden(true)
+        .fullScreenCover(isPresented: $navigateToPoseTracking) {
+            PoseTrackingView()
         }
     }
     
@@ -52,6 +57,23 @@ struct SelectMusicView: View {
                     .allowsHitTesting(false)
                 
                 VStack(spacing: 40) {
+                    HStack {
+                        Button {
+                            dismiss()
+                        } label: {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 20, weight: .bold))
+                                .foregroundColor(.darkBlue)
+                                .frame(width: 44, height: 44)
+                                .background(Color.white.opacity(0.9))
+                                .clipShape(Circle())
+                                .shadow(color: .black.opacity(0.12), radius: 4, y: 2)
+                        }
+                        Spacer()
+                    }
+                    .padding(.horizontal, 32)
+                    .padding(.top, 16)
+
                     Spacer()
                     
                     VStack(spacing: 8) {
@@ -73,7 +95,6 @@ struct SelectMusicView: View {
                     
                     Spacer()
                 }
-                .padding(.top, 10)
                 .padding(.bottom, 20)
             }
         }
@@ -158,7 +179,7 @@ struct SelectMusicView: View {
                 }
                 
                 GradientStartButton(title: "Mulai", fontSize: 22, fontWeight: .bold) {
-                    // mulai movement
+                    navigateToPoseTracking = true
                 }
                 .padding(.bottom, 10)
                 .frame(width: 280, height: 60)

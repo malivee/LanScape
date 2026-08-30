@@ -91,10 +91,13 @@ struct ContentView: View {
             .navigationDestination(isPresented: $navigateToSelectMusic) {
                 SelectMusicView()
             }
-            .navigationDestination(isPresented: $navigateToGallery) { GalleryView()
+            .navigationDestination(isPresented: $navigateToGallery) {
+                GalleryView()
             }
-            
-            
+            .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("PopToRoot"))) { _ in
+                navigateToSelectMusic = false
+                navigateToGallery = false
+            }
             .ignoresSafeArea()
         }
     }

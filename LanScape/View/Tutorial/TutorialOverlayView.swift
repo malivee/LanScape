@@ -590,69 +590,69 @@ struct TutorialOverlayView: View {
     ) -> some View {
 
         ZStack {
-
             Color.black
-                .opacity(0.65)
+                .opacity(0.60)
                 .ignoresSafeArea()
 
             VStack(spacing: 24) {
-
                 Spacer()
 
-                Text("Bersiap dalam...")
-                    .font(
-                        .system(
-                            size: 28,
-                            weight: .bold,
-                            design: .rounded
-                        )
-                    )
-                    .foregroundColor(.white)
-
-                ZStack {
-
-                    Circle()
-                        .fill(
-                            Color(hex: "1E4BA3")
-                        )
-                        .frame(
-                            width: 140,
-                            height: 140
-                        )
-
-                    Circle()
-                        .stroke(
-                            Color.white.opacity(0.6),
-                            lineWidth: 4
-                        )
-                        .frame(
-                            width: 140,
-                            height: 140
-                        )
-
-                    Text("\(number)")
-                        .id(number)
+                if number > 0 {
+                    Text("Bersiap dalam...")
                         .font(
                             .system(
-                                size: 84,
+                                size: 30,
                                 weight: .bold,
                                 design: .rounded
                             )
                         )
                         .foregroundColor(.white)
-                        .transition(
-                            .scale.combined(
-                                with: .opacity
+                        .shadow(color: .black.opacity(0.5), radius: 6)
+
+                    ZStack {
+                        Circle()
+                            .fill(Color(hex: "1E4BA3"))
+                            .frame(width: 140, height: 140)
+                            .shadow(color: Color(hex: "1E4BA3").opacity(0.8), radius: 16)
+
+                        Circle()
+                            .stroke(Color.white.opacity(0.7), lineWidth: 4.5)
+                            .frame(width: 140, height: 140)
+
+                        Text("\(number)")
+                            .id(number)
+                            .font(
+                                .system(
+                                    size: 84,
+                                    weight: .heavy,
+                                    design: .rounded
+                                )
+                            )
+                            .foregroundColor(.white)
+                            .transition(.scale.combined(with: .opacity))
+                    }
+                    .animation(
+                        .spring(
+                            response: 0.35,
+                            dampingFraction: 0.65
+                        ),
+                        value: number
+                    )
+                } else {
+                    // Ayo Berpose! (Matches storyboard screenshot)
+                    Text("Ayo Berpose!")
+                        .font(
+                            .system(
+                                size: 64,
+                                weight: .heavy,
+                                design: .rounded
                             )
                         )
+                        .foregroundColor(.white)
+                        .shadow(color: Color(hex: "1E4BA3"), radius: 12, x: 0, y: 4)
+                        .shadow(color: Color.blue.opacity(0.8), radius: 24, x: 0, y: 0)
+                        .transition(.scale.combined(with: .opacity))
                 }
-                .animation(
-                    .spring(
-                        response: 0.35,
-                        dampingFraction: 0.65
-                    ),
-                    value: number
-                )
 
                 Spacer()
             }
@@ -665,35 +665,7 @@ struct TutorialOverlayView: View {
 
     @ViewBuilder
     private var startedView: some View {
-
-        ZStack {
-
-            Color.black
-                .opacity(0.5)
-                .ignoresSafeArea()
-
-            VStack {
-
-                Spacer()
-
-                Text("Mulai!")
-                    .font(
-                        .system(
-                            size: 80,
-                            weight: .bold,
-                            design: .rounded
-                        )
-                    )
-                    .foregroundColor(.white)
-                    .transition(
-                        .scale.combined(
-                            with: .opacity
-                        )
-                    )
-
-                Spacer()
-            }
-        }
+        countdownOverlay(number: 0)
     }
 
     // =========================================================
