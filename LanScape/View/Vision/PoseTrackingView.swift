@@ -921,6 +921,8 @@ struct PoseTrackingView: View {
             print(
                 "🎉 SEQUENCE COMPLETE"
             )
+            movementNumber = 1
+            triggerPosePreview()
             sessionDuration = Date().timeIntervalSince(sessionStartTime ?? Date())
             showCompletionView = true
         }
