@@ -243,6 +243,8 @@ struct TutorialPlayerZone {
 
 @MainActor
 final class TutorialController: ObservableObject {
+    
+    private var gameplayMusic = GameplayMusicManager.shared
 
     // MARK: Published State
 
@@ -612,6 +614,7 @@ final class TutorialController: ObservableObject {
                 self.hasStarted = true
                 self.countdownTask = nil
             }
+            self.gameplayMusic.play()
         }
     }
 
@@ -845,6 +848,7 @@ final class TutorialController: ObservableObject {
         case .started:
             countdown = 0
             hasStarted = true
+            gameplayMusic.play()
         }
     }
 

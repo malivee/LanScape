@@ -12,6 +12,8 @@ struct PoseTrackingView: View {
     // =========================================================
     // MARK: - Services
     // =========================================================
+    
+    private var gameplayMusic = GameplayMusicManager.shared
 
     @StateObject
     private var visionService = VisionService()
@@ -894,9 +896,12 @@ struct PoseTrackingView: View {
             print(
                 "🎉 SEQUENCE COMPLETE"
             )
+            
+            gameplayMusic.stop()
 
             movementNumber = 1
             triggerPosePreview()
+            
         }
     }
 
