@@ -1375,6 +1375,8 @@ private var testControlsOverlay: some View {
              .readyCountdown3,
              .readyCountdown2,
              .readyCountdown1,
+             .prePlayerSetup1,
+             .prePlayerSetup2,
              .started:
             return true
         default:

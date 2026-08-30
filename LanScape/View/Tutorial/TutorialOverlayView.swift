@@ -85,6 +85,13 @@ struct TutorialOverlayView: View {
 
             case .tutorialCompleted:
                 tutorialCompletedView
+                
+            case .prePlayerSetup1:
+                prePlayerSetupView(text: tutorial.currentStep.instruction)
+            
+            case .prePlayerSetup2:
+                prePlayerSetupView(text: tutorial.currentStep.instruction)
+                
 
             case .readyCountdown3,
                  .readyCountdown2,
@@ -259,7 +266,7 @@ struct TutorialOverlayView: View {
 
             // Hitboxes
             MovementHitboxOverlayView(
-                hitboxes: MovementHitboxLayout.hitboxes(for: 1),
+                hitboxes: MovementHitboxLayout.hitboxes(for: 6),
                 results: [],
                 viewSize: viewSize
             )
@@ -291,7 +298,7 @@ struct TutorialOverlayView: View {
 
             // Hitboxes
             MovementHitboxOverlayView(
-                hitboxes: MovementHitboxLayout.hitboxes(for: 1),
+                hitboxes: MovementHitboxLayout.hitboxes(for: 6),
                 results: [],
                 viewSize: viewSize
             )
@@ -333,7 +340,7 @@ struct TutorialOverlayView: View {
 
             // Hitboxes
             MovementHitboxOverlayView(
-                hitboxes: MovementHitboxLayout.hitboxes(for: 1),
+                hitboxes: MovementHitboxLayout.hitboxes(for: 6),
                 results: [],
                 viewSize: viewSize
             )
@@ -384,7 +391,7 @@ struct TutorialOverlayView: View {
 
             // Hitboxes
             MovementHitboxOverlayView(
-                hitboxes: MovementHitboxLayout.hitboxes(for: 1),
+                hitboxes: MovementHitboxLayout.hitboxes(for: 6),
                 results: [],
                 viewSize: viewSize
             )
@@ -427,7 +434,7 @@ struct TutorialOverlayView: View {
 
             // Hitboxes
             MovementHitboxOverlayView(
-                hitboxes: MovementHitboxLayout.hitboxes(for: 1),
+                hitboxes: MovementHitboxLayout.hitboxes(for: 6),
                 results: [],
                 viewSize: viewSize
             )
@@ -540,7 +547,36 @@ struct TutorialOverlayView: View {
         }
         .contentShape(Rectangle())
         .onTapGesture {
-            tutorial.startPlayerSetup()
+            tutorial.nextStep()
+        }
+    }
+    
+    // =========================================================
+    // MARK: - Duduk di kursi
+    // =========================================================
+    
+    @ViewBuilder
+    private func prePlayerSetupView(text: String) -> some View {
+        ZStack {
+            Color.black
+                .opacity(0.50)
+                .ignoresSafeArea()
+
+            VStack {
+                Spacer()
+
+                Text(text)
+                    .font(
+                        .system(
+                            size: 28,
+                            weight: .regular,
+                            design: .rounded
+                        )
+                    )
+                    .foregroundColor(.white)
+
+                Spacer()
+            }
         }
     }
 

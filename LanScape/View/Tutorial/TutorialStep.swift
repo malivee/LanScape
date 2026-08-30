@@ -32,10 +32,15 @@ enum TutorialStep: Int, CaseIterable, Equatable {
     case poseSuccess                // Slide 13: "KEREN BANGET!"
     case tutorialCompleted          // Slide 14: "Tutorial selesai. Mari kita mulai!"
     
+    case prePlayerSetup1
+    case prePlayerSetup2
+
+    
     case readyCountdown3
     case readyCountdown2
     case readyCountdown1
     case started
+    
 
     // Backward compatibility aliases
     static var colorMatchingGuide: TutorialStep { .symbolColorGuide }
@@ -80,6 +85,10 @@ enum TutorialStep: Int, CaseIterable, Equatable {
             return "Keren Banget!"
         case .tutorialCompleted:
             return "Tutorial Selesai!"
+        case .prePlayerSetup1:
+            return "Persiapan Posisi"
+        case .prePlayerSetup2:
+            return "Persiapan Posisi"
         case .readyCountdown3:
             return "Mulai: 3"
         case .readyCountdown2:
@@ -117,6 +126,10 @@ enum TutorialStep: Int, CaseIterable, Equatable {
             return "Cocokkan semua titik target sesuai warna tubuhmu"
         case .holdInstruction:
             return "Tahan posisi kalian selama 5 detik!"
+        case .prePlayerSetup1:
+            return "Saatnya atur posisi!"
+        case .prePlayerSetup2:
+            return "Yuk, duduk di kursi."
         case .practiceHoldCountdown:
             return "Tahan posisimu selama 5 detik"
         case .poseSuccess:
@@ -503,6 +516,64 @@ final class TutorialController: ObservableObject {
             currentStep = .tutorialCompleted
         }
     }
+    
+    //MARK: - pre player setup
+    func startPrePlayerSetup1() {
+        
+        cancelAllTasks()
+        
+        withAnimation(.easeInOut(duration: 0.3)) {
+            currentStep = .prePlayerSetup1
+        }
+        
+        slideTimerTask = Task { @MainActor [weak self] in
+            
+            guard let self else { return }
+            
+            do {
+                try await Task.sleep(
+                    nanoseconds: 2_000_000_000
+                )
+            } catch {
+                return
+            }
+            
+            guard !Task.isCancelled else {
+                return
+            }
+            
+            self.startPrePlayerSetup2()
+        }
+    }
+
+    func startPrePlayerSetup2() {
+        
+        cancelAllTasks()
+        
+        withAnimation(.easeInOut(duration: 0.3)) {
+            currentStep = .prePlayerSetup2
+        }
+        
+        slideTimerTask = Task { @MainActor [weak self] in
+            
+            guard let self else { return }
+            
+            do {
+                try await Task.sleep(
+                    nanoseconds: 5_000_000_000
+                )
+            } catch {
+                return
+            }
+            
+            guard !Task.isCancelled else {
+                return
+            }
+            
+            // Setelah 5 detik BARU masuk Player Setup
+            self.startPlayerSetup()
+        }
+    }
 
     // MARK: - Ready Countdown (3.. 2.. 1.. Mulai!)
 
@@ -639,6 +710,12 @@ final class TutorialController: ObservableObject {
         // =====================================================
 
         case .tutorialCompleted:
+            startPrePlayerSetup1()
+            
+        case .prePlayerSetup1:
+            startPrePlayerSetup2()
+            
+        case .prePlayerSetup2:
             startPlayerSetup()
 
         // =====================================================
@@ -752,6 +829,14 @@ final class TutorialController: ObservableObject {
         case .tutorialCompleted:
             hasStarted = false
             startTutorialCompleted()
+            
+        case .prePlayerSetup1:
+            hasStarted = false
+            startPrePlayerSetup1()
+
+        case .prePlayerSetup2:
+            hasStarted = false
+            startPrePlayerSetup2()
 
         case .readyCountdown3, .readyCountdown2, .readyCountdown1:
             countdown = step == .readyCountdown3 ? 3 : (step == .readyCountdown2 ? 2 : 1)

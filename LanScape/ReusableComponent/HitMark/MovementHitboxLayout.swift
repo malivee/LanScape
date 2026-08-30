@@ -32,6 +32,9 @@ struct MovementHitboxLayout {
         case 5:
             return movement5()
             
+        case 6:
+            return movement6()
+            
         default:
             return movement1()
         }
@@ -628,7 +631,7 @@ struct MovementHitboxLayout {
             // =====================================================
             // PLAYER 1 — LEFT SIDE
             // =====================================================
-
+            
             // LEFT HAND — RED
             MovementHitbox(
                 id: 0,
@@ -639,7 +642,7 @@ struct MovementHitboxLayout {
                 ),
                 normalizedRadius: 0.065
             ),
-
+            
             // RIGHT HAND — YELLOW
             MovementHitbox(
                 id: 1,
@@ -647,11 +650,11 @@ struct MovementHitboxLayout {
                 normalizedPosition: CGPoint(
                     x: 0.410,
                     y: 0.430
-              
+                    
                 ),
                 normalizedRadius: 0.065
             ),
-
+            
             // LEFT FOOT — RED
             MovementHitbox(
                 id: 2,
@@ -662,24 +665,24 @@ struct MovementHitboxLayout {
                 ),
                 normalizedRadius: 0.065
             ),
-
+            
             // RIGHT FOOT — YELLOW
             MovementHitbox(
                 id: 3,
                 type: .player1RightFoot,
                 normalizedPosition: CGPoint(
- 
+                    
                     x: 0.390,
                     y: 0.790
                 ),
                 normalizedRadius: 0.065
             ),
-
-
+            
+            
             // =====================================================
             // PLAYER 2 — RIGHT SIDE
             // =====================================================
-
+            
             // LEFT HAND — GREEN
             MovementHitbox(
                 id: 4,
@@ -690,7 +693,7 @@ struct MovementHitboxLayout {
                 ),
                 normalizedRadius: 0.065
             ),
-
+            
             // RIGHT HAND — CYAN
             MovementHitbox(
                 id: 5,
@@ -698,11 +701,11 @@ struct MovementHitboxLayout {
                 normalizedPosition: CGPoint(
                     x: 0.815,
                     y: 0.335
-
+                    
                 ),
                 normalizedRadius: 0.065
             ),
-
+            
             // LEFT FOOT — GREEN
             MovementHitbox(
                 id: 6,
@@ -713,17 +716,193 @@ struct MovementHitboxLayout {
                 ),
                 normalizedRadius: 0.065
             ),
-
+            
             // RIGHT FOOT — CYAN
             MovementHitbox(
                 id: 7,
                 type: .player2RightFoot,
                 normalizedPosition: CGPoint(
-
+                    
                     x: 0.840,
                     y: 0.790
                 ),
                 normalizedRadius: 0.065
             )
         ]
-    }}
+    }
+
+    // =========================================================
+    // MARK: - Movement 6
+    // =========================================================
+    //
+    // Special movement used by hitboxTargetPreview.
+    // This is independent from Movement 1–5.
+    //
+    //
+    
+    private static func movement6()
+    -> [MovementHitbox]
+    {
+        
+        [
+            // =====================================================
+            // PLAYER 1 — LEFT SIDE
+            // =====================================================
+            
+            // LEFT HAND — RED CIRCLE
+            
+            MovementHitbox(
+                id: 0,
+                
+                type:
+                        .player1LeftHand,
+                
+                normalizedPosition:
+                    CGPoint(
+                        x: 0.470,
+                        y: 0.255
+                    ),
+                
+                normalizedRadius:
+                    0.065
+            ),
+            
+            
+            // RIGHT HAND — YELLOW CIRCLE
+            
+            MovementHitbox(
+                id: 1,
+                
+                type:
+                        .player1RightHand,
+                
+                normalizedPosition:
+                    CGPoint(
+                        x: 0.470,
+                        y: 0.515
+                    ),
+                
+                normalizedRadius:
+                    0.065
+            ),
+            
+            
+            // LEFT LEG — RED SQUARE
+            
+            MovementHitbox(
+                id: 2,
+                
+                type:
+                        .player1LeftFoot,
+                
+                normalizedPosition:
+                    CGPoint(
+                        x: 0.185,
+                        y: 0.875
+                    ),
+                
+                normalizedRadius:
+                    0.065
+            ),
+            
+            
+            // RIGHT LEG — YELLOW SQUARE
+            
+            MovementHitbox(
+                id: 3,
+                
+                type:
+                        .player1RightFoot,
+                
+                normalizedPosition:
+                    CGPoint(
+                        x: 0.470,
+                        y: 0.875
+                    ),
+                
+                normalizedRadius:
+                    0.065
+            ),
+            
+            
+            // =====================================================
+            // PLAYER 2 — RIGHT SIDE
+            // =====================================================
+            
+            // LEFT HAND — GREEN CIRCLE
+            
+            MovementHitbox(
+                id: 4,
+                
+                type:
+                        .player2LeftHand,
+                
+                normalizedPosition:
+                    CGPoint(
+                        x: 0.525,
+                        y: 0.255
+                    ),
+                
+                normalizedRadius:
+                    0.065
+            ),
+            
+            
+            // RIGHT HAND — CYAN CIRCLE
+            
+            MovementHitbox(
+                id: 5,
+                
+                type:
+                        .player2RightHand,
+                
+                normalizedPosition:
+                    CGPoint(
+                        x: 0.525,
+                        y: 0.515
+                    ),
+                
+                normalizedRadius:
+                    0.065
+            ),
+            
+            
+            // LEFT LEG — GREEN SQUARE
+            
+            MovementHitbox(
+                id: 6,
+                
+                type:
+                        .player2LeftFoot,
+                
+                normalizedPosition:
+                    CGPoint(
+                        x: 0.525,
+                        y: 0.875
+                    ),
+                
+                normalizedRadius:
+                    0.065
+            ),
+            
+            
+            // RIGHT LEG — CYAN SQUARE
+            
+            MovementHitbox(
+                id: 7,
+                
+                type:
+                        .player2RightFoot,
+                
+                normalizedPosition:
+                    CGPoint(
+                        x: 0.845,
+                        y: 0.875
+                    ),
+                
+                normalizedRadius:
+                    0.065
+            )
+        ]
+    }
+}
