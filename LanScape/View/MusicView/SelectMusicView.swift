@@ -157,10 +157,11 @@ struct SelectMusicView: View {
                     }
                 }
                 
-                GradientStartButton(title: "Mulai") {
+                GradientStartButton(title: "Mulai", fontSize: 22, fontWeight: .bold) {
                     // mulai movement
                 }
                 .padding(.bottom, 10)
+                .frame(width: 280, height: 60)
             }
             .frame(maxHeight: .infinity)
         }

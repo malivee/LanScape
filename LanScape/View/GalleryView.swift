@@ -46,6 +46,7 @@ struct WaveShape: Shape {
 
 // Main View
 struct GalleryView: View {
+    @Environment(\.dismiss) private var dismiss
 
     @State private var wavePhase: CGFloat = 0
 
@@ -79,9 +80,10 @@ struct GalleryView: View {
             }
         }
         .background(Color(.systemBackground))
+        .navigationBarBackButtonHidden(true)
         .onAppear {
-            withAnimation(.linear(duration: 5).repeatForever(autoreverses: false)) {
-                wavePhase = .pi * 2
+                    withAnimation(.linear(duration: 5).repeatForever(autoreverses: false)) {
+                        wavePhase = .pi * 2
             }
         }
     }
@@ -102,12 +104,21 @@ struct GalleryView: View {
 
     // Top Bar (Home dan Sorting)
     var topBar: some View {
-        HStack {
-            circleIconButton(systemName: "house.fill")
-            Spacer()
-            circleIconButton(systemName: "arrow.up.arrow.down")
+            HStack {
+                Button {
+                    dismiss()
+                } label: {
+                    circleIconButton(systemName: "house.fill")
+                }
+
+                Spacer()
+                
+                Button {
+                } label: {
+                    circleIconButton(systemName: "arrow.up.arrow.down")
+                }
+            }
         }
-    }
 
     func circleIconButton(systemName: String) -> some View {
         Image(systemName: systemName)

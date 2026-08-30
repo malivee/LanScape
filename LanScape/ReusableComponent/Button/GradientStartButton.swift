@@ -2,14 +2,18 @@ import SwiftUI
 
 struct GradientStartButton: View {
     let title: String
+    
+    var fontSize: CGFloat = 22
+    var fontWeight: Font.Weight = .bold
+    
     let action: () -> Void
     
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(.system(size: 22, weight: .semibold))
+                .font(.system(size: fontSize, weight: fontWeight))
                 .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .padding(.vertical, 14)
                 .background(
                     LinearGradient(
@@ -25,6 +29,6 @@ struct GradientStartButton: View {
 }
 
 #Preview("Start Button") {
-    GradientStartButton(title: "Mulai", action: {})
+    GradientStartButton(title: "Mulai", fontSize: 22, fontWeight: .bold, action: {})
         .padding()
 }
