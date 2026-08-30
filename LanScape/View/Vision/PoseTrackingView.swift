@@ -1014,217 +1014,257 @@ struct PoseTrackingView: View {
     // MARK: - Debug
     // =============================================================
 
-    #if DEBUG
 
-    @ViewBuilder
-    private var testControlsOverlay: some View {
+#if DEBUG
 
-        VStack {
+@ViewBuilder
+private var testControlsOverlay: some View {
+
+    VStack {
+
+        Spacer()
+
+        HStack {
 
             Spacer()
 
+            Menu {
 
-            HStack {
+                // =================================================
+                // TUTORIAL DEBUG
+                // =================================================
 
-                Spacer()
+                Button("0. Persiapan Pemain") {
 
+                    tutorialController.debugSetStep(.playerSetup)
+                    resetGameplay()
+                }
 
-                Menu {
+                Button("1. Intro Tutorial") {
 
-                    // =================================================
-                    // Tutorial
-                    // =================================================
+                    tutorialController.debugSetStep(.tutorialIntro)
+                    resetGameplay()
+                }
 
-                    Button("0. Persiapan Pemain") {
-                        tutorialController.debugSetStep(.playerSetup)
-                        resetGameplay()
-                    }
+                Button("2. Petunjuk Simbol & Warna") {
 
-                    Button("1. Intro Tutorial") {
-                        tutorialController.debugSetStep(.tutorialIntro)
-                        resetGameplay()
-                    }
+                    tutorialController.debugSetStep(.symbolColorGuide)
+                    resetGameplay()
+                }
 
-                    Button("2. Petunjuk Simbol & Warna") {
-                        tutorialController.debugSetStep(.symbolColorGuide)
-                        resetGameplay()
-                    }
+                Button("4. Progress Header Guide") {
 
-                    Button("4. Progress Header Guide") {
-                        tutorialController.debugSetStep(.progressHeaderGuide)
-                        resetGameplay()
-                    }
+                    tutorialController.debugSetStep(.progressHeaderGuide)
+                    resetGameplay()
+                }
 
-                    Button("5. Kemunculan Pose") {
-                        tutorialController.debugSetStep(.poseAppearanceExplanation)
-                        resetGameplay()
-                    }
+                Button("5. Kemunculan Pose") {
 
-                    Button("6. Kartu Pose Pertama") {
-                        tutorialController.debugSetStep(.poseInstructionCard)
-                        resetGameplay()
-                    }
+                    tutorialController.debugSetStep(.poseAppearanceExplanation)
+                    resetGameplay()
+                }
 
-                    Button("7. Ikuti Posenya!") {
-                        tutorialController.debugSetStep(.followPoseIntro)
-                        resetGameplay()
-                    }
+                Button("6. Kartu Pose Pertama") {
 
-                    Button("8. Titik Target Hitbox") {
-                        tutorialController.debugSetStep(.hitboxTargetPreview)
-                        resetGameplay()
-                    }
+                    tutorialController.debugSetStep(.poseInstructionCard)
+                    resetGameplay()
+                }
 
-                    Button("9. Penjelasan Titik Target") {
-                        tutorialController.debugSetStep(.hitboxExplanation)
-                        resetGameplay()
-                    }
+                Button("7. Ikuti Posenya!") {
 
-                    Button("10. Cocokkan Titik Target") {
-                        tutorialController.debugSetStep(.matchPointsGuide)
-                        resetGameplay()
-                    }
+                    tutorialController.debugSetStep(.followPoseIntro)
+                    resetGameplay()
+                }
 
-                    Button("11. Instruksi Tahan Posisi") {
-                        tutorialController.debugSetStep(.holdInstruction)
-                        resetGameplay()
-                    }
+                Button("8. Titik Target Hitbox") {
 
-                    Button("12. Countdown Tahan 5s") {
-                        tutorialController.debugSetStep(.practiceHoldCountdown)
-                        resetGameplay()
-                    }
+                    tutorialController.debugSetStep(.hitboxTargetPreview)
+                    resetGameplay()
+                }
 
-                    Button("13. Keren Banget!") {
-                        tutorialController.debugSetStep(.poseSuccess)
-                        resetGameplay()
-                    }
+                Button("9. Penjelasan Titik Target") {
 
-                    Button("14. Tutorial Selesai") {
-                        tutorialController.debugSetStep(.tutorialCompleted)
-                        resetGameplay()
-                    }
+                    tutorialController.debugSetStep(.hitboxExplanation)
+                    resetGameplay()
+                }
 
-                    Button("Start Gameplay") {
-                        tutorialController.debugSkipToStarted()
-                        resetGameplay()
-                    }
+                Button("10. Cocokkan Titik Target") {
 
+                    tutorialController.debugSetStep(.matchPointsGuide)
+                    resetGameplay()
+                }
 
-                    Divider()
+                Button("11. Instruksi Tahan Posisi") {
 
+                    tutorialController.debugSetStep(.holdInstruction)
+                    resetGameplay()
+                }
 
-                    // =================================================
-                    // Gameplay Controls & Movement Jumps
-                    // =================================================
+                Button("12. Countdown Tahan 5s") {
 
-                    Button("Next Movement") {
-                        advanceMovement()
-                    }
+                    tutorialController.debugSetStep(.practiceHoldCountdown)
+                    resetGameplay()
+                }
 
-                    Button("Simulate Success") {
-                        movementSucceeded()
-                    }
+                Button("13. Keren Banget!") {
 
-                    Divider()
+                    tutorialController.debugSetStep(.poseSuccess)
+                    resetGameplay()
+                }
 
-                    Button("Pose 1 (pose 1)") {
-                        tutorialController.debugSkipToStarted()
-                        movementNumber = 1
+                Button("14. Tutorial Selesai") {
+
+                    tutorialController.debugSetStep(.tutorialCompleted)
+                    resetGameplay()
+                }
+
+                Divider()
+
+                // =================================================
+                // GAMEPLAY
+                // =================================================
+
+                Button("Gerakan Selanjutnya") {
+
+                    advanceMovement()
+                }
+
+                Button("Lanjut ke Gameplay") {
+
+                    tutorialController.debugSkipToStarted()
+
+                    resetGameplay()
+
+                    // Setelah masuk gameplay,
+                    // tampilkan kartu pose pertama.
+                    DispatchQueue.main.async {
                         triggerPosePreview()
                     }
+                }
 
-                    Button("Pose 2 (pose2)") {
-                        tutorialController.debugSkipToStarted()
-                        movementNumber = 2
-                        triggerPosePreview()
-                    }
+                Button("Simulasikan Berhasil") {
 
-                    Button("Pose 3 (pose3)") {
-                        tutorialController.debugSkipToStarted()
-                        movementNumber = 3
-                        triggerPosePreview()
-                    }
+                    movementSucceeded()
+                }
 
-                    Button("Pose 4 (pose4)") {
-                        tutorialController.debugSkipToStarted()
-                        movementNumber = 4
-                        triggerPosePreview()
-                    }
+                Divider()
 
-                    Button("Pose 5 (pose5)") {
-                        tutorialController.debugSkipToStarted()
-                        movementNumber = 5
-                        triggerPosePreview()
-                    }
+                // =================================================
+                // DIRECT POSE TEST
+                // =================================================
 
-                    Divider()
+                Button("Pose 1 (pose 1)") {
 
-                    Button(
-                        "Reset Everything"
-                    ) {
+                    tutorialController.debugSkipToStarted()
 
-                        tutorialController.reset()
+                    movementNumber = 1
 
-                        resetGameplay()
-                    }
+                    triggerPosePreview()
+                }
 
-                } label: {
+                Button("Pose 2 (pose2)") {
 
-                    HStack(
-                        spacing: 6
-                    ) {
+                    tutorialController.debugSkipToStarted()
 
-                        Image(
-                            systemName:
-                                "ladybug"
-                        )
+                    movementNumber = 2
 
-                        Text(
-                            debugPhaseName
-                        )
-                    }
-                    .font(
-                        .system(
-                            size: 12,
-                            weight: .bold,
-                            design: .rounded
-                        )
+                    triggerPosePreview()
+                }
+
+                Button("Pose 3 (pose3)") {
+
+                    tutorialController.debugSkipToStarted()
+
+                    movementNumber = 3
+
+                    triggerPosePreview()
+                }
+
+                Button("Pose 4 (pose4)") {
+
+                    tutorialController.debugSkipToStarted()
+
+                    movementNumber = 4
+
+                    triggerPosePreview()
+                }
+
+                Button("Pose 5 (pose5)") {
+
+                    tutorialController.debugSkipToStarted()
+
+                    movementNumber = 5
+
+                    triggerPosePreview()
+                }
+
+                Divider()
+
+                // =================================================
+                // RESET
+                // =================================================
+
+                Button("Reset Everything") {
+
+                    tutorialController.reset()
+                    resetGameplay()
+                }
+
+            } label: {
+
+                HStack(
+                    spacing: 6
+                ) {
+
+                    Image(
+                        systemName: "ladybug"
                     )
-                    .foregroundColor(.white)
-                    .padding(
-                        .horizontal,
-                        12
-                    )
-                    .padding(
-                        .vertical,
-                        7
-                    )
-                    .background(
-                        Color.black
-                            .opacity(0.75)
-                    )
-                    .clipShape(
-                        Capsule()
-                    )
-                    .contentShape(
-                        Capsule()
+
+                    Text(
+                        debugPhaseName
                     )
                 }
-                .buttonStyle(.plain)
+                .font(
+                    .system(
+                        size: 12,
+                        weight: .bold,
+                        design: .rounded
+                    )
+                )
+                .foregroundColor(.white)
                 .padding(
-                    .trailing,
-                    20
+                    .horizontal,
+                    12
                 )
                 .padding(
-                    .bottom,
-                    20
+                    .vertical,
+                    7
+                )
+                .background(
+                    Color.black
+                        .opacity(0.75)
+                )
+                .clipShape(
+                    Capsule()
+                )
+                .contentShape(
+                    Capsule()
                 )
             }
+            .buttonStyle(.plain)
+            .padding(
+                .trailing,
+                20
+            )
+            .padding(
+                .bottom,
+                20
+            )
         }
-        .allowsHitTesting(true)
-        .zIndex(999)
     }
+    .allowsHitTesting(true)
+    .zIndex(999)
+}
 
 
     // =============================================================

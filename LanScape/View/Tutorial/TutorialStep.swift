@@ -263,13 +263,17 @@ final class TutorialController: ObservableObject {
     func reset() {
         cancelAllTasks()
 
-        currentStep = .playerSetup
+        // Tutorial harus selesai terlebih dahulu.
+        // Player setup baru muncul setelah seluruh tutorial selesai.
+        currentStep = .tutorialIntro
+
         player1State = .waiting
         player2State = .waiting
         countdown = 3
         hasStarted = false
     }
-
+    
+    
     private func cancelAllTasks() {
         holdTask?.cancel()
         holdTask = nil
@@ -354,8 +358,23 @@ final class TutorialController: ObservableObject {
             }
 
             withAnimation(.easeInOut(duration: 0.35)) {
-                self.startTutorialIntro()
+                self.startReadyCountdown()
             }
+        }
+    }
+    
+    // MARK: - Player Setup
+
+    func startPlayerSetup() {
+        cancelAllTasks()
+
+        player1State = .waiting
+        player2State = .waiting
+        countdown = 3
+        hasStarted = false
+
+        withAnimation(.easeInOut(duration: 0.35)) {
+            currentStep = .playerSetup
         }
     }
 
@@ -477,7 +496,9 @@ final class TutorialController: ObservableObject {
 
     // MARK: - Slide 14: Tutorial Completed ("Tutorial selesai. Mari kita lanjut!")
     func startTutorialCompleted() {
+
         cancelAllTasks()
+
         withAnimation(.easeInOut(duration: 0.3)) {
             currentStep = .tutorialCompleted
         }
@@ -526,39 +547,137 @@ final class TutorialController: ObservableObject {
     // MARK: - Skip / Next (On Click / Tap)
     func nextStep() {
         switch currentStep {
-        case .playerSetup, .setupCountdown3, .setupCountdown2, .setupCountdown1:
-            startTutorialIntro()
+
+        // =====================================================
+        // 1. TUTORIAL INTRO
+        // =====================================================
+
         case .tutorialIntro:
             startSymbolColorGuide()
+
+        // =====================================================
+        // 2. SYMBOL & COLOR
+        // =====================================================
+
         case .symbolColorGuide:
             startProgressHeaderGuide()
+
+        // =====================================================
+        // 3. PROGRESS HEADER
+        // =====================================================
+
         case .progressHeaderGuide:
             startPoseAppearanceExplanation()
+
+        // =====================================================
+        // 4. POSE APPEARANCE
+        // =====================================================
+
         case .poseAppearanceExplanation:
             startPoseInstructionCard()
+
+        // =====================================================
+        // 5. POSE INSTRUCTION
+        // =====================================================
+
         case .poseInstructionCard:
             startFollowPoseIntro()
+
+        // =====================================================
+        // 6. FOLLOW POSE
+        // =====================================================
+
         case .followPoseIntro:
             startHitboxTargetPreview()
+
+        // =====================================================
+        // 7. HITBOX TARGET
+        // =====================================================
+
         case .hitboxTargetPreview:
             startHitboxExplanation()
+
+        // =====================================================
+        // 8. HITBOX EXPLANATION
+        // =====================================================
+
         case .hitboxExplanation:
             startMatchPointsGuide()
+
+        // =====================================================
+        // 9. MATCH POINTS
+        // =====================================================
+
         case .matchPointsGuide:
             startHoldInstruction()
+
+        // =====================================================
+        // 10. HOLD INSTRUCTION
+        // =====================================================
+
         case .holdInstruction:
             startPracticeHoldCountdown()
+
+        // =====================================================
+        // 11. PRACTICE HOLD
+        // =====================================================
+
         case .practiceHoldCountdown:
             startPoseSuccess()
+
+        // =====================================================
+        // 12. POSE SUCCESS
+        // =====================================================
+
         case .poseSuccess:
             startTutorialCompleted()
+
+        // =====================================================
+        // 13. TUTORIAL COMPLETED
+        //
+        // BARU SEKARANG masuk Player Setup
+        // =====================================================
+
         case .tutorialCompleted:
-            startReadyCountdown()
-        case .readyCountdown3, .readyCountdown2, .readyCountdown1, .started:
-            skipToStarted()
+            startPlayerSetup()
+
+        // =====================================================
+        // 14. PLAYER SETUP
+        //
+        // Jangan pindah manual dari sini.
+        // Player setup berpindah otomatis setelah kedua
+        // pemain berada di posisi yang benar.
+        // =====================================================
+
+        case .playerSetup:
+            break
+
+        // =====================================================
+        // 15. SETUP COUNTDOWN
+        // =====================================================
+
+        case .setupCountdown3,
+             .setupCountdown2,
+             .setupCountdown1:
+            break
+
+        // =====================================================
+        // 16. READY COUNTDOWN
+        // =====================================================
+
+        case .readyCountdown3,
+             .readyCountdown2,
+             .readyCountdown1:
+            break
+
+        // =====================================================
+        // 17. STARTED
+        // =====================================================
+
+        case .started:
+            break
         }
     }
-
     func skipToStarted() {
         cancelAllTasks()
         currentStep = .started

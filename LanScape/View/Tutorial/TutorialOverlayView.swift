@@ -540,7 +540,7 @@ struct TutorialOverlayView: View {
         }
         .contentShape(Rectangle())
         .onTapGesture {
-            tutorial.startReadyCountdown()
+            tutorial.startPlayerSetup()
         }
     }
 
