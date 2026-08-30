@@ -4,7 +4,7 @@ import SwiftUI
 struct LanScapeApp: App {
     var body: some Scene {
         WindowGroup {
-            PoseTrackingView()
+            ContentView()
         }
     }
 }

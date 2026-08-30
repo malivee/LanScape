@@ -370,8 +370,22 @@ final class TutorialController: ObservableObject {
                 guard !Task.isCancelled else { return }
             }
 
-            withAnimation(.easeInOut(duration: 0.35)) {
-                self.startReadyCountdown()
+            // Ayo Berpose!
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.65)) {
+                self.countdown = 0
+                self.currentStep = .started
+            }
+
+            do {
+                try await Task.sleep(nanoseconds: 1_000_000_000)
+            } catch {
+                return
+            }
+            guard !Task.isCancelled else { return }
+
+            withAnimation(.easeInOut(duration: 0.15)) {
+                self.hasStarted = true
+                self.countdownTask = nil
             }
         }
     }
@@ -582,6 +596,7 @@ final class TutorialController: ObservableObject {
 
         currentStep = .readyCountdown3
         countdown = 3
+        hasStarted = false
 
         countdownTask = Task { @MainActor [weak self] in
             guard let self else { return }
@@ -605,10 +620,20 @@ final class TutorialController: ObservableObject {
                 guard !Task.isCancelled else { return }
             }
 
-            // Immediately start gameplay upon countdown completion!
-            withAnimation(.easeInOut(duration: 0.15)) {
-                self.currentStep = .started
+            // Immediately show "Ayo Berpose!" (countdown = 0)
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.65)) {
                 self.countdown = 0
+                self.currentStep = .started
+            }
+
+            do {
+                try await Task.sleep(nanoseconds: 1_000_000_000)
+            } catch {
+                return
+            }
+            guard !Task.isCancelled else { return }
+
+            withAnimation(.easeInOut(duration: 0.15)) {
                 self.hasStarted = true
                 self.countdownTask = nil
             }

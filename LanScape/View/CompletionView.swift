@@ -3,11 +3,27 @@
 import SwiftUI
 
 struct CompletionView: View {
-    let photos: [String] = ["markHaechan", "markHaechan", "markHaechan", "markHaechan", "markHaechan"] // example
-    
+    var durationSeconds: TimeInterval = 243
+    var photos: [String] = ["markHaechan", "markHaechan", "markHaechan", "markHaechan", "markHaechan"]
+    var onRestart: (() -> Void)? = nil
+    var onSelectMusic: (() -> Void)? = nil
+    var onMainMenu: (() -> Void)? = nil
+
+    @Environment(\.dismiss) private var dismiss
     @State private var showGalleryModal = false
     @State private var navigateToMainView = false
     @State private var navigateToSelectMusicView = false
+    
+    private var formattedDuration: String {
+        let total = Int(durationSeconds)
+        let m = total / 60
+        let s = total % 60
+        if m > 0 {
+            return "\(m) menit \(s) detik"
+        } else {
+            return "\(s) detik"
+        }
+    }
     
     var body: some View {
         ZStack {
@@ -45,7 +61,7 @@ struct CompletionView: View {
                             HStack(spacing: 6) {
                                 Image(systemName: "hourglass")
                                     .font(.system(size: 26, weight: .bold))
-                                Text("4 menit 3 detik") // menyesuaikan dengan durasi main
+                                Text(formattedDuration)
                                     .font(.system(size: 26, weight: .bold))
                             }
                             .foregroundColor(Color.darkBlue)
@@ -60,15 +76,27 @@ struct CompletionView: View {
                 // action buttons
                 HStack(spacing: 24) {
                     CompletionActionButton(title: "Ulangi", systemIcon: "arrow.counterclockwise") {
-                        // ke page awal setup player?
+                        if let onRestart {
+                            onRestart()
+                        } else {
+                            dismiss()
+                        }
                     }
                     
                     CompletionActionButton(title: "Menu Utama", systemIcon: "house.fill") {
-                        navigateToMainView = true
+                        if let onMainMenu {
+                            onMainMenu()
+                        } else {
+                            navigateToMainView = true
+                        }
                     }
                     
                     CompletionActionButton(title: "Pilih Lagu", systemIcon: "play.fill", isPrimary: true) {
-                        navigateToSelectMusicView = true
+                        if let onSelectMusic {
+                            onSelectMusic()
+                        } else {
+                            navigateToSelectMusicView = true
+                        }
                     }
                 }
             }
