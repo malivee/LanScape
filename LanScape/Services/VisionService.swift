@@ -205,6 +205,60 @@ final class VisionService: NSObject,
         }
     }
     
+    // =========================================================
+    // MARK: - Change Locked Player
+    // =========================================================
+
+    /// Start searching for a new person for Player 1.
+    func changePlayer1() {
+        
+        sessionQueue.async { [weak self] in
+            
+            guard let self else {
+                return
+            }
+            
+            self.changingPlayerIndex = 0
+            
+            // Unlock ONLY Player 1.
+            self.player1AnchorX = nil
+            
+            // Remove Player 1 smoothing data.
+            self.smoothedJointPositions = self.smoothedJointPositions.filter {
+                !$0.key.hasPrefix("0_")
+            }
+            
+            DispatchQueue.main.async {
+                self.debugStatus = "Searching for new Player 1..."
+            }
+        }
+    }
+
+
+    /// Start searching for a new person for Player 2.
+    func changePlayer2() {
+        
+        sessionQueue.async { [weak self] in
+            
+            guard let self else {
+                return
+            }
+            
+            self.changingPlayerIndex = 1
+            
+            // Unlock ONLY Player 2.
+            self.player2AnchorX = nil
+            
+            // Remove Player 2 smoothing data.
+            self.smoothedJointPositions = self.smoothedJointPositions.filter {
+                !$0.key.hasPrefix("1_")
+            }
+            
+            DispatchQueue.main.async {
+                self.debugStatus = "Searching for new Player 2..."
+            }
+        }
+    }
     
     // =========================================================
     // MARK: - Camera Permission
@@ -860,6 +914,64 @@ final class VisionService: NSObject,
             return []
         }
         
+        // =====================================================
+        // MANUAL PLAYER CHANGE
+        // =====================================================
+
+        if let changingPlayer = changingPlayerIndex {
+
+            // -------------------------------------------------
+            // Find the person closest to the requested side
+            // -------------------------------------------------
+
+            let selectedPerson: PlayerCandidate?
+            
+            if changingPlayer == 0 {
+                
+                // Player 1 normally occupies the left side
+                // of the mirrored preview.
+                selectedPerson = people.min {
+                    abs($0.avgX - 0.75) <
+                    abs($1.avgX - 0.75)
+                }
+                
+            } else {
+                
+                // Player 2 normally occupies the right side.
+                selectedPerson = people.min {
+                    abs($0.avgX - 0.25) <
+                    abs($1.avgX - 0.25)
+                }
+            }
+            
+            guard let selectedPerson else {
+                return []
+            }
+            
+            // -------------------------------------------------
+            // Lock the newly selected person
+            // -------------------------------------------------
+            
+            if changingPlayer == 0 {
+                
+                player1AnchorX = selectedPerson.avgX
+                
+            } else {
+                
+                player2AnchorX = selectedPerson.avgX
+            }
+            
+            // Stop manual selection mode.
+            changingPlayerIndex = nil
+            
+            return [
+                PlayerAssignment(
+                    person: selectedPerson,
+                    playerIndex: changingPlayer
+                )
+            ]
+        }
+        
         
         // =====================================================
         // ONE PERSON
@@ -1464,6 +1576,20 @@ final class VisionService: NSObject,
             )
             *
             anchorUpdateFactor
+    }
+    
+    // =========================================================
+    // MARK: - Manual Player Change
+    // =========================================================
+
+    private var changingPlayerIndex: Int? = nil
+
+    private var player1Locked: Bool {
+        player1AnchorX != nil
+    }
+
+    private var player2Locked: Bool {
+        player2AnchorX != nil
     }
     
     

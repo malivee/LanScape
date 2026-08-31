@@ -711,7 +711,31 @@ struct TutorialOverlayView: View {
             // -------------------------------------------------
 
             playerRectangles()
-        }
+
+            // =================================================
+            // GANTI ORANG — TENGAH ANTARA PLAYER 1 & PLAYER 2
+            // =================================================
+
+            VStack {
+                Spacer()
+
+                Button {
+                    // aksi ganti player
+                    // panggil fungsi changePlayer di sini
+                } label: {
+                    Text("Ubah orang")
+                        .font(
+                            .system(
+                                size: 22,
+                                weight: .bold,
+                                design: .rounded
+                            )
+                        )
+                        .foregroundColor(.white)
+                }
+
+                Spacer()
+            }        }
     }
     // =========================================================
     // MARK: - Setup Instruction

@@ -1188,6 +1188,17 @@ private var testControlsOverlay: some View {
                 }
 
                 Divider()
+                
+                
+                Button("Ganti Player 1") {
+                    visionService.changePlayer1()
+                }
+
+                Button("Ganti Player 2") {
+                    visionService.changePlayer2()
+                }
+
+                Divider()
 
                 // =================================================
                 // DIRECT POSE TEST
