@@ -15,6 +15,9 @@ struct TutorialOverlayView: View {
     let videoSize: CGSize
     let viewSize: CGSize
 
+    let onChangePlayer1: () -> Void
+    let onChangePlayer2: () -> Void
+
     // =========================================================
     // MARK: - Player Rectangle Configuration
     // =========================================================
@@ -722,11 +725,28 @@ struct TutorialOverlayView: View {
                 Button {
                     // aksi ganti player
                     // panggil fungsi changePlayer di sini
+                    onChangePlayer1()
                 } label: {
-                    Text("Ubah orang")
+                    Label("Ubah Player 1", systemImage: "repeat")
                         .font(
                             .system(
-                                size: 22,
+                                size: 12,
+                                weight: .bold,
+                                design: .rounded
+                            )
+                        )
+                        .foregroundColor(.white)
+                }
+                
+                Button {
+                    // aksi ganti player
+                    // panggil fungsi changePlayer di sini
+                    onChangePlayer2()
+                } label: {
+                    Label("Ubah Player 2", systemImage: "repeat")
+                        .font(
+                            .system(
+                                size: 12,
                                 weight: .bold,
                                 design: .rounded
                             )

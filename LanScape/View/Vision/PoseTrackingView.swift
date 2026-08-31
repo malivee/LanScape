@@ -229,7 +229,12 @@ struct PoseTrackingView: View {
                         .videoSize,
 
                 viewSize:
-                    geometry.size
+                    geometry.size,
+                onChangePlayer1: { visionService.changePlayer1()
+                },
+                onChangePlayer2: {
+                    visionService.changePlayer2()
+                }
             )
         }
         .ignoresSafeArea()
