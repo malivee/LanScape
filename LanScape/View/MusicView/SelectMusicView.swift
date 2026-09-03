@@ -3,8 +3,10 @@ import SwiftUI
 struct SelectMusicView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var selectedMusic: MusicData?
-    @State private var selectedIndex: Int? = 1
+    @State private var selectedIndex: Int? = 0
     @State private var navigateToPoseTracking = false
+    
+    @ObservedObject private var musicService = BackgroundMusicService.shared
     
     private let musicItems = MusicData.sample
     private let cardSpacing: CGFloat = 20
@@ -25,11 +27,15 @@ struct SelectMusicView: View {
         }
         .navigationBarBackButtonHidden(true)
         .fullScreenCover(isPresented: $navigateToPoseTracking) {
-            PoseTrackingView()
+            PoseTrackingView(selectedMusic: selectedMusic ?? musicItems.first)
+        }
+        .onDisappear {
+            // Stop preview when popping back to main menu
+            if !navigateToPoseTracking {
+                musicService.stop()
+            }
         }
     }
-    
-    
     
     private var musicSelectionView: some View {
         GeometryReader { geometry in
@@ -59,6 +65,7 @@ struct SelectMusicView: View {
                 VStack(spacing: 40) {
                     HStack {
                         Button {
+                            musicService.stop()
                             dismiss()
                         } label: {
                             Image(systemName: "chevron.left")
@@ -81,7 +88,7 @@ struct SelectMusicView: View {
                             .font(.system(size: 40, weight: .bold))
                             .foregroundStyle(.black)
                         
-                        Text("Pilih musik favoritmu dan bergerak bersama")
+                        Text("Pilih musik favoritmu dan dengarkan cuplikannya!")
                             .font(.system(size: 20, weight: .medium))
                             .foregroundStyle(.secondary)
                     }
@@ -105,9 +112,7 @@ struct SelectMusicView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(spacing: cardSpacing) {
                     ForEach(Array(musicItems.enumerated()), id: \.element.id) { index, music in
-                        
                         let isSelected = selectedIndex == index
-                        
                         
                         MusicCarouselCard(music: music, isSelected: isSelected)
                             .id(index)
@@ -135,7 +140,7 @@ struct SelectMusicView: View {
                 selectMusic(at: newIndex)
             }
             .onAppear {
-                guard let index = selectedIndex else { return }
+                let index = selectedIndex ?? 0
                 DispatchQueue.main.async {
                     proxy.scrollTo(index, anchor: .center)
                     selectMusic(at: index)
@@ -144,19 +149,22 @@ struct SelectMusicView: View {
         }
     }
     
-   
-    
     @ViewBuilder
     private func movementSequencePanel(for music: MusicData) -> some View {
-        VStack(alignment: .leading, spacing: 30) {
-            
+        VStack(alignment: .leading, spacing: 24) {
             HStack {
-                Text("List Gerakan")
-                    .font(.system(size: 30, weight: .bold))
-                    .foregroundColor(.white)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(music.title)
+                        .font(.system(size: 26, weight: .bold))
+                        .foregroundColor(.white)
+                        .lineLimit(1)
+                    
+                    Text("4 Gerakan Pose")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.white.opacity(0.8))
+                }
                 
                 Spacer()
-                
                 
                 CloseIconButton {
                     withAnimation(.easeInOut) {
@@ -165,20 +173,20 @@ struct SelectMusicView: View {
                 } 
             }
             
-            ZStack (alignment:.bottom){
+            ZStack(alignment: .bottom) {
                 ScrollView(.vertical, showsIndicators: false) {
-                    VStack(spacing: 30) {
+                    VStack(spacing: 20) {
+                        MovementItemCard(imageName: "pose 1", title: "Pose Pertama")
+                        MovementItemCard(imageName: "pose2", title: "Pose Kedua")
+                        MovementItemCard(imageName: "pose3", title: "Pose Ketiga")
+                        MovementItemCard(imageName: "pose4", title: "Pose Keempat")
                         
-                        MovementItemCard(imageName: "Fusion", title: "Pose Fusion")
-                        MovementItemCard(imageName: "Fusion", title: "Pose Fusion")
-                        MovementItemCard(imageName: "Fusion", title: "Pose Fusion")
-                        MovementItemCard(imageName: "Fusion", title: "Pose Fusion")
                         Spacer()
-                            .frame(height: 60)
+                            .frame(height: 70)
                     }
                 }
                 
-                GradientStartButton(title: "Mulai", fontSize: 22, fontWeight: .bold) {
+                GradientStartButton(title: "Mulai Bergerak", fontSize: 22, fontWeight: .bold) {
                     navigateToPoseTracking = true
                 }
                 .padding(.bottom, 10)
@@ -187,20 +195,20 @@ struct SelectMusicView: View {
             .frame(maxHeight: .infinity)
         }
         .padding(20)
-      
         .background(Color.darkBlue)
         .clipShape(.rect(cornerRadius: 20))
         .padding(.vertical, 10)
         .padding(.trailing, 10)
     }
     
-    
-    
     private func selectMusic(at index: Int) {
         guard musicItems.indices.contains(index) else { return }
+        let music = musicItems[index]
         withAnimation(.easeInOut) {
-            selectedMusic = musicItems[index]
+            selectedMusic = music
         }
+        // Preview the newly selected song immediately
+        musicService.play(assetName: music.assetName, isLooping: true, volume: 0.85)
     }
     
     private func cardZIndex(for index: Int, isSelected: Bool) -> Double {
@@ -219,7 +227,6 @@ struct SelectMusicView: View {
     }
 }
 
-#Preview("Main Music Selection") {
+#Preview("Main Music Selection", traits: .landscapeRight) {
     SelectMusicView()
-        .previewInterfaceOrientation(.landscapeRight)
 }

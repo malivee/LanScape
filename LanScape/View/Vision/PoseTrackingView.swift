@@ -18,14 +18,34 @@ struct PoseTrackingView: View {
         case countdown(number: Int)
         case flashShutter
         case photoCaptured
+        case interactionChallenge(interactionIndex: Int)
+        case challengeSuccess
+        case challengeFailure(penalty: PenaltyStickerType)
     }
 
     // =========================================================
     // MARK: - Services & Environment
     // =========================================================
 
+    var selectedMusic: MusicData? = nil
+
+    @ObservedObject
+    private var musicService = BackgroundMusicService.shared
+
     @StateObject
     private var cameraService = CameraService()
+
+    @StateObject
+    private var audioMonitor = AudioLevelMonitor()
+
+    @StateObject
+    private var motionService = MotionDetectionService()
+
+    @StateObject
+    private var penaltyService = FacePenaltyService()
+
+    @StateObject
+    private var visionHandTracker = VisionHandTrackingService()
 
     @Environment(\.dismiss)
     private var dismiss
@@ -37,7 +57,7 @@ struct PoseTrackingView: View {
     @State
     private var movementNumber: Int = 1
 
-    private let totalMovements: Int = 5
+    private let totalMovements: Int = 4
 
     @State
     private var captureState: PoseCaptureState = .showingPosePreview(secondsRemaining: 3)
@@ -86,14 +106,15 @@ struct PoseTrackingView: View {
                     .frame(width: geometry.size.width, height: geometry.size.height)
                     .ignoresSafeArea()
 
+                // 2.5 Live Face Penalty Overlay (renders stickers over faces when penalty is active)
+                FacePenaltyLiveOverlay(penaltyService: penaltyService, geometry: geometry)
+
                 // 3. Header & Mini Badge
                 VStack(spacing: 0) {
                     gameplayHeader
 
-                    if case .showingPosePreview = captureState {
-                        // Main instruction card is shown in center
-                    } else {
-                        // Top-right mini pose thumbnail badge during countdown
+                    if case .countdown = captureState {
+                        // Top-right mini pose thumbnail badge during countdown only
                         HStack {
                             Spacer()
                             MiniPoseThumbnailBadge(
@@ -125,6 +146,15 @@ struct PoseTrackingView: View {
 
                 case .photoCaptured:
                     photoCapturedOverlay
+
+                case .interactionChallenge(let interactionIndex):
+                    interactionOverlay(for: interactionIndex)
+
+                case .challengeSuccess:
+                    ChallengeSuccessOverlay()
+
+                case .challengeFailure(let penalty):
+                    ChallengeFailureOverlay(penaltySticker: penalty)
                 }
 
                 // 5. White flash effect overlay
@@ -296,6 +326,64 @@ struct PoseTrackingView: View {
         .allowsHitTesting(false)
     }
 
+    // State 4: Post-Photo Interactive Mini-Game Overlay
+    @ViewBuilder
+    private func interactionOverlay(for index: Int) -> some View {
+        switch index {
+        case 1:
+            HandClapChallengeView(
+                audioMonitor: audioMonitor,
+                visionHandTracker: visionHandTracker,
+                onSuccess: {
+                    handleChallengeSuccess()
+                },
+                onFailure: {
+                    handleChallengeFailure()
+                }
+            )
+            .transition(.opacity)
+
+        case 2:
+            FastTapChallengeView(
+                visionHandTracker: visionHandTracker,
+                onSuccess: {
+                    handleChallengeSuccess()
+                },
+                onFailure: {
+                    handleChallengeFailure()
+                }
+            )
+            .transition(.opacity)
+
+        case 3:
+            ScreamMeterChallengeView(
+                audioMonitor: audioMonitor,
+                onSuccess: {
+                    handleChallengeSuccess()
+                },
+                onFailure: {
+                    handleChallengeFailure()
+                }
+            )
+            .transition(.opacity)
+
+        case 4:
+            FastMoveChallengeView(
+                motionService: motionService,
+                onSuccess: {
+                    handleChallengeSuccess()
+                },
+                onFailure: {
+                    handleChallengeFailure()
+                }
+            )
+            .transition(.opacity)
+
+        default:
+            EmptyView()
+        }
+    }
+
     // =========================================================
     // MARK: - Header
     // =========================================================
@@ -306,6 +394,7 @@ struct PoseTrackingView: View {
             HStack {
                 // Pause / Exit button
                 Button {
+                    musicService.stop()
                     activeTimerTask?.cancel()
                     dismiss()
                 } label: {
@@ -339,7 +428,8 @@ struct PoseTrackingView: View {
             GeometryReader { geometry in
                 let spacing: CGFloat = 8
                 let totalWidth = geometry.size.width
-                let segmentWidth = (totalWidth - (spacing * CGFloat(totalMovements - 1))) / CGFloat(totalMovements)
+                let calculatedWidth = (totalWidth - (spacing * CGFloat(totalMovements - 1))) / CGFloat(totalMovements)
+                let segmentWidth = max(0, calculatedWidth)
 
                 HStack(spacing: spacing) {
                     ForEach(0..<totalMovements, id: \.self) { index in
@@ -413,11 +503,15 @@ struct PoseTrackingView: View {
         let capturedImage = await cameraService.capturePhoto()
         guard !Task.isCancelled else { return }
 
-        if let image = capturedImage {
-            self.capturedPhotos.append(image)
-        } else if let fallback = UIImage(named: self.currentPoseImageName) {
-            self.capturedPhotos.append(fallback)
+        // If penalty is active, bake penalty stickers onto this captured photo!
+        let baseImage = capturedImage ?? UIImage(named: self.currentPoseImageName)
+        if let image = baseImage {
+            let finalImage = penaltyService.isPenaltyActive ? penaltyService.bakePenaltyOntoImage(image) : image
+            self.capturedPhotos.append(finalImage)
         }
+
+        // Clear active penalty now that it has been applied to this photo
+        penaltyService.clearPenalty()
 
         // Fade out flash
         do {
@@ -438,7 +532,66 @@ struct PoseTrackingView: View {
 
         guard !Task.isCancelled else { return }
 
-        advanceToNextPose()
+        advanceToPostPhotoFlow()
+    }
+
+    private func advanceToPostPhotoFlow() {
+        guard !Task.isCancelled else { return }
+
+        if movementNumber <= totalMovements {
+            // Interactive challenges:
+            // 1: Clapping hands (shrink giant hand)
+            // 2: Fast circle touch with Vision hand tracking
+            // 3: Scream meter in middle
+            // 4: Fast movement
+            withAnimation(.easeInOut(duration: 0.3)) {
+                captureState = .interactionChallenge(interactionIndex: movementNumber)
+            }
+        } else {
+            // Sequence completed
+            sessionDuration = Date().timeIntervalSince(sessionStartTime ?? Date())
+            showCompletionView = true
+        }
+    }
+
+    private func handleChallengeSuccess() {
+        activeTimerTask?.cancel()
+        activeTimerTask = Task { @MainActor in
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                captureState = .challengeSuccess
+            }
+
+            // Celebratory display: 2 seconds
+            do {
+                try await Task.sleep(nanoseconds: 2_000_000_000)
+            } catch { return }
+
+            guard !Task.isCancelled else { return }
+
+            advanceToNextPose()
+        }
+    }
+
+    private func handleChallengeFailure() {
+        activeTimerTask?.cancel()
+
+        let penalty = PenaltyStickerType.allCases.randomElement() ?? .banana
+        penaltyService.activatePenalty(sticker: penalty)
+
+        activeTimerTask = Task { @MainActor in
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                captureState = .challengeFailure(penalty: penalty)
+            }
+
+            // Penalty notification display: 2.4 seconds
+            do {
+                try await Task.sleep(nanoseconds: 2_400_000_000)
+            } catch { return }
+
+            guard !Task.isCancelled else { return }
+
+            advanceToNextPose()
+        }
     }
 
     private func advanceToNextPose() {
@@ -458,9 +611,17 @@ struct PoseTrackingView: View {
 
     private func restartSession() {
         activeTimerTask?.cancel()
+        audioMonitor.stopMonitoring()
+        motionService.reset()
+        visionHandTracker.reset()
+        penaltyService.clearPenalty()
         movementNumber = 1
         capturedPhotos = []
         sessionStartTime = Date()
+        
+        let songAsset = selectedMusic?.assetName ?? MusicData.sample.first?.assetName ?? "JarangPulang.mp3"
+        musicService.play(assetName: songAsset, isLooping: true, volume: 0.75)
+        
         startCurrentPoseCycle()
     }
 
@@ -471,6 +632,17 @@ struct PoseTrackingView: View {
     private func handleAppear() {
         forceLandscape()
         cameraService.startSession()
+
+        cameraService.onPixelBufferAvailable = { [weak motionService, weak penaltyService, weak visionHandTracker] buffer in
+            if penaltyService?.isPenaltyActive == true {
+                penaltyService?.processLiveBuffer(buffer)
+            }
+            visionHandTracker?.processPixelBuffer(buffer)
+            motionService?.processPixelBuffer(buffer)
+        }
+
+        let songAsset = selectedMusic?.assetName ?? MusicData.sample.first?.assetName ?? "JarangPulang.mp3"
+        musicService.play(assetName: songAsset, isLooping: true, volume: 0.75)
 
         if !hasInitialized {
             hasInitialized = true
@@ -484,25 +656,21 @@ struct PoseTrackingView: View {
     private func handleDisappear() {
         activeTimerTask?.cancel()
         cameraService.stopSession()
+        cameraService.onPixelBufferAvailable = nil
+        audioMonitor.stopMonitoring()
+        visionHandTracker.reset()
+        penaltyService.clearPenalty()
+        musicService.stop()
         hasInitialized = false
     }
 
     private func forceLandscape() {
-        UIDevice.current.setValue(
-            UIInterfaceOrientation.landscapeLeft.rawValue,
-            forKey: "orientation"
-        )
-
         if let windowScene = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first {
             if #available(iOS 16.0, *) {
                 let preferences = UIWindowScene.GeometryPreferences.iOS(interfaceOrientations: .landscape)
-                windowScene.requestGeometryUpdate(preferences) { error in
-                    print("Landscape error: \(error.localizedDescription)")
-                }
+                windowScene.requestGeometryUpdate(preferences) { _ in }
             }
         }
-
-        UIViewController.attemptRotationToDeviceOrientation()
     }
 
     // =========================================================
@@ -570,11 +738,55 @@ struct PoseTrackingView: View {
                         }
                     }
 
-                    Button("Gerakan Selanjutnya") {
-                        advanceToNextPose()
+                    Divider()
+
+                    Button("Test Interaksi 1: Tepukan Tangan") {
+                        activeTimerTask?.cancel()
+                        withAnimation {
+                            captureState = .interactionChallenge(interactionIndex: 1)
+                        }
+                    }
+
+                    Button("Test Interaksi 2: Sentuh Cepat") {
+                        activeTimerTask?.cancel()
+                        withAnimation {
+                            captureState = .interactionChallenge(interactionIndex: 2)
+                        }
+                    }
+
+                    Button("Test Interaksi 3: Meteran Teriakan") {
+                        activeTimerTask?.cancel()
+                        withAnimation {
+                            captureState = .interactionChallenge(interactionIndex: 3)
+                        }
+                    }
+
+                    Button("Test Interaksi 4: Gerak Cepat") {
+                        activeTimerTask?.cancel()
+                        withAnimation {
+                            captureState = .interactionChallenge(interactionIndex: 4)
+                        }
+                    }
+
+                    Button("Test Efek Berhasil (Hore!)") {
+                        handleChallengeSuccess()
+                    }
+
+                    Button("Test Gagal & Beri Hukuman Wajah") {
+                        handleChallengeFailure()
+                    }
+
+                    if penaltyService.isPenaltyActive {
+                        Button("Hapus Hukuman Wajah") {
+                            penaltyService.clearPenalty()
+                        }
                     }
 
                     Divider()
+
+                    Button("Gerakan Selanjutnya") {
+                        advanceToNextPose()
+                    }
 
                     Button("Ke Halaman Hasil") {
                         activeTimerTask?.cancel()
@@ -612,7 +824,6 @@ struct PoseTrackingView: View {
 // MARK: - Preview
 // =============================================================
 
-#Preview("Pose Tracking View") {
+#Preview("Pose Tracking View", traits: .landscapeLeft) {
     PoseTrackingView()
-        .previewInterfaceOrientation(.landscapeLeft)
 }

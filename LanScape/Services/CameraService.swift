@@ -4,12 +4,12 @@
 //
 
 import Foundation
-import AVFoundation
+@preconcurrency import AVFoundation
 import UIKit
 import Combine
 import CoreImage
 
-final class CameraService: NSObject, ObservableObject, AVCapturePhotoCaptureDelegate, AVCaptureVideoDataOutputSampleBufferDelegate {
+final class CameraService: NSObject, ObservableObject {
 
     // MARK: - Published State
     @Published var isCameraRunning: Bool = false
@@ -24,12 +24,14 @@ final class CameraService: NSObject, ObservableObject, AVCapturePhotoCaptureDele
     private let videoBufferQueue = DispatchQueue(label: "cameraVideoBufferQueue", qos: .userInteractive)
 
     private var isConfigured = false
-    private var photoCaptureCompletion: ((UIImage?) -> Void)?
+    nonisolated(unsafe) private var photoCaptureCompletion: ((UIImage?) -> Void)?
     
     // Efficient persistent CIContext (reused, never reallocated per frame)
     private let ciContext = CIContext(options: [.useSoftwareRenderer: false])
-    private var latestPixelBuffer: CVPixelBuffer?
+    nonisolated(unsafe) private var latestPixelBuffer: CVPixelBuffer?
     private let bufferLock = NSLock()
+    
+    nonisolated(unsafe) var onPixelBufferAvailable: ((CVPixelBuffer) -> Void)?
 
     // MARK: - Init
     override init() {
@@ -94,8 +96,14 @@ final class CameraService: NSObject, ObservableObject, AVCapturePhotoCaptureDele
                 self.videoOutput.setSampleBufferDelegate(self, queue: self.videoBufferQueue)
 
                 if let connection = self.videoOutput.connection(with: .video) {
-                    if connection.isVideoOrientationSupported {
-                        connection.videoOrientation = .landscapeLeft
+                    if #available(iOS 17.0, *) {
+                        if connection.isVideoRotationAngleSupported(0) {
+                            connection.videoRotationAngle = 0
+                        }
+                    } else {
+                        if connection.isVideoOrientationSupported {
+                            connection.videoOrientation = .landscapeLeft
+                        }
                     }
                     if connection.isVideoMirroringSupported {
                         connection.automaticallyAdjustsVideoMirroring = false
@@ -108,8 +116,14 @@ final class CameraService: NSObject, ObservableObject, AVCapturePhotoCaptureDele
             if self.captureSession.canAddOutput(self.photoOutput) {
                 self.captureSession.addOutput(self.photoOutput)
                 if let photoConnection = self.photoOutput.connection(with: .video) {
-                    if photoConnection.isVideoOrientationSupported {
-                        photoConnection.videoOrientation = .landscapeLeft
+                    if #available(iOS 17.0, *) {
+                        if photoConnection.isVideoRotationAngleSupported(0) {
+                            photoConnection.videoRotationAngle = 0
+                        }
+                    } else {
+                        if photoConnection.isVideoOrientationSupported {
+                            photoConnection.videoOrientation = .landscapeLeft
+                        }
                     }
                     if photoConnection.isVideoMirroringSupported {
                         photoConnection.automaticallyAdjustsVideoMirroring = false
@@ -152,16 +166,30 @@ final class CameraService: NSObject, ObservableObject, AVCapturePhotoCaptureDele
         sessionQueue.async { [weak self] in
             guard let self = self else { return }
 
-            if let connection = self.videoOutput.connection(with: .video),
-               connection.isVideoOrientationSupported,
-               connection.videoOrientation != orientation {
-                connection.videoOrientation = orientation
+            if let connection = self.videoOutput.connection(with: .video) {
+                if #available(iOS 17.0, *) {
+                    let angle: CGFloat = (orientation == .landscapeRight) ? 180 : 0
+                    if connection.isVideoRotationAngleSupported(angle) {
+                        connection.videoRotationAngle = angle
+                    }
+                } else {
+                    if connection.isVideoOrientationSupported && connection.videoOrientation != orientation {
+                        connection.videoOrientation = orientation
+                    }
+                }
             }
 
-            if let photoConnection = self.photoOutput.connection(with: .video),
-               photoConnection.isVideoOrientationSupported,
-               photoConnection.videoOrientation != orientation {
-                photoConnection.videoOrientation = orientation
+            if let photoConnection = self.photoOutput.connection(with: .video) {
+                if #available(iOS 17.0, *) {
+                    let angle: CGFloat = (orientation == .landscapeRight) ? 180 : 0
+                    if photoConnection.isVideoRotationAngleSupported(angle) {
+                        photoConnection.videoRotationAngle = angle
+                    }
+                } else {
+                    if photoConnection.isVideoOrientationSupported && photoConnection.videoOrientation != orientation {
+                        photoConnection.videoOrientation = orientation
+                    }
+                }
             }
         }
     }
@@ -205,7 +233,25 @@ final class CameraService: NSObject, ObservableObject, AVCapturePhotoCaptureDele
         }
     }
 
-    // MARK: - AVCapturePhotoCaptureDelegate
+    // Only render to UIImage on demand (not on every 60fps frame)
+    private func renderLatestFrame() -> UIImage? {
+        bufferLock.lock()
+        guard let pixelBuffer = latestPixelBuffer else {
+            bufferLock.unlock()
+            return nil
+        }
+        bufferLock.unlock()
+
+        let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
+        if let cgImage = ciContext.createCGImage(ciImage, from: ciImage.extent) {
+            return UIImage(cgImage: cgImage, scale: 1.0, orientation: .up)
+        }
+        return nil
+    }
+}
+
+// MARK: - Delegates
+extension CameraService: AVCapturePhotoCaptureDelegate, AVCaptureVideoDataOutputSampleBufferDelegate {
     func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
         var resultImage: UIImage? = nil
 
@@ -223,28 +269,13 @@ final class CameraService: NSObject, ObservableObject, AVCapturePhotoCaptureDele
         }
     }
 
-    // MARK: - AVCaptureVideoDataOutputSampleBufferDelegate
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
         guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
 
         bufferLock.lock()
         self.latestPixelBuffer = pixelBuffer
         bufferLock.unlock()
-    }
-
-    // Only render to UIImage on demand (not on every 60fps frame)
-    private func renderLatestFrame() -> UIImage? {
-        bufferLock.lock()
-        guard let pixelBuffer = latestPixelBuffer else {
-            bufferLock.unlock()
-            return nil
-        }
-        bufferLock.unlock()
-
-        let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
-        if let cgImage = ciContext.createCGImage(ciImage, from: ciImage.extent) {
-            return UIImage(cgImage: cgImage, scale: 1.0, orientation: .up)
-        }
-        return nil
+        
+        onPixelBufferAvailable?(pixelBuffer)
     }
 }

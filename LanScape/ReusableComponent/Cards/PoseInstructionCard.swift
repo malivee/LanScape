@@ -12,36 +12,61 @@ struct PoseInstructionView: View {
     var imageName: String = "pose 1"
     
     var body: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 8) {
+            // Cheerful pill tag
+            HStack(spacing: 6) {
+                Image(systemName: "sparkles")
+                    .foregroundColor(Color.orange)
+                    .font(.system(size: 13, weight: .bold))
+                Text("IKUTI GAYA POSE")
+                    .font(.system(size: 14, weight: .black, design: .rounded))
+                    .foregroundColor(Color.darkBlue)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 6)
+            .background(Color.white)
+            .clipShape(Capsule())
+            .shadow(color: Color.black.opacity(0.08), radius: 4)
+            .padding(.top, 4)
+            
             Text(mainTitle)
-                .font(.system(size: 38, weight: .bold, design: .rounded))
+                .font(.system(size: 36, weight: .heavy, design: .rounded))
                 .foregroundColor(.black)
-                .padding(.top, 4)
             
             Text(subTitle)
-                .font(.system(size: 22, weight: .medium, design: .rounded))
-                .foregroundColor(Color(hex: "707C91"))
-                .padding(.bottom, 8)
+                .font(.system(size: 20, weight: .semibold, design: .rounded))
+                .foregroundColor(Color(hex: "5A6E85"))
+                .padding(.bottom, 6)
             
             Image(imageName)
                 .resizable()
                 .scaledToFit()
-                .frame(maxHeight: 320)
-                .padding(.horizontal, 24)
+                .frame(maxHeight: 300)
+                .padding(.horizontal, 20)
                 .padding(.bottom, 6)
         }
-        .padding(.vertical, 28)
-        .padding(.horizontal, 48)
+        .padding(.vertical, 24)
+        .padding(.horizontal, 44)
         .background(
-            RoundedRectangle(cornerRadius: 26)
-                .fill(Color(hex: "EEF5FF"))
-                .shadow(color: Color.black.opacity(0.28), radius: 24, x: 0, y: 10)
+            RoundedRectangle(cornerRadius: 32)
+                .fill(
+                    LinearGradient(
+                        colors: [Color(hex: "FFFFFF"), Color(hex: "F0F6FF")],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 32)
+                        .stroke(Color.white.opacity(0.9), lineWidth: 3)
+                )
+                .shadow(color: Color.black.opacity(0.22), radius: 24, x: 0, y: 8)
         )
-        .frame(maxWidth: 720)
+        .frame(maxWidth: 680)
     }
 }
 
-/// Mini thumbnail badge positioned at the top-right corner during gameplay/tutorial.
+/// Mini thumbnail badge positioned at the top-right corner during gameplay.
 struct MiniPoseThumbnailBadge: View {
     var imageName: String = "pose 1"
     var width: CGFloat = 175
@@ -60,21 +85,28 @@ struct MiniPoseThumbnailBadge: View {
     }
     
     var body: some View {
-        ZStack {
-            // Translucent rounded container matching reference design
-            RoundedRectangle(cornerRadius: 18)
-                .fill(Color(hex: "E2E8F0").opacity(0.85))
+        ZStack(alignment: .topLeading) {
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color.white.opacity(0.92))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 18)
-                        .stroke(Color.white.opacity(0.8), lineWidth: 2)
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(Color.blue.opacity(0.35), lineWidth: 2.5)
                 )
-                .shadow(color: Color.black.opacity(0.20), radius: 10, x: 0, y: 5)
+                .shadow(color: Color.black.opacity(0.18), radius: 10, x: 0, y: 4)
             
-            // Mannequin pose image
             Image(imageName)
                 .resizable()
                 .scaledToFit()
-                .padding(10)
+                .padding(8)
+            
+            Text("Target")
+                .font(.system(size: 11, weight: .heavy, design: .rounded))
+                .foregroundColor(.white)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
+                .background(Color.blue)
+                .clipShape(Capsule())
+                .padding(8)
         }
         .frame(width: width, height: height)
     }
