@@ -2,9 +2,9 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key></key>
-	<string></string>
-	<key>Requires full screen</key>
+	<key>NSCameraUsageDescription</key>
+	<string>Akses kamera diperlukan untuk mengambil foto pose bersama.</string>
+	<key>UIRequiresFullScreen</key>
 	<true/>
 </dict>
 </plist>

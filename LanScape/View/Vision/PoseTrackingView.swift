@@ -10,42 +10,43 @@ import AVFoundation
 struct PoseTrackingView: View {
 
     // =========================================================
-    // MARK: - Services
+    // MARK: - Enums
+    // =========================================================
+
+    enum PoseCaptureState: Equatable {
+        case showingPosePreview(secondsRemaining: Int)
+        case countdown(number: Int)
+        case flashShutter
+        case photoCaptured
+    }
+
+    // =========================================================
+    // MARK: - Services & Environment
     // =========================================================
 
     @StateObject
-    private var visionService = VisionService()
-
-    @StateObject
-    private var tutorialController = TutorialController()
-
-
-    // =========================================================
-    // MARK: - Environment
-    // =========================================================
+    private var cameraService = CameraService()
 
     @Environment(\.dismiss)
     private var dismiss
 
-
     // =========================================================
-    // MARK: - Gameplay
+    // MARK: - State
     // =========================================================
 
     @State
-    private var hitboxResults: [HitboxResult] = []
+    private var movementNumber: Int = 1
+
+    private let totalMovements: Int = 5
 
     @State
-    private var isMovementSuccessful = false
+    private var captureState: PoseCaptureState = .showingPosePreview(secondsRemaining: 3)
 
     @State
-    private var movementNumber = 1
+    private var capturedPhotos: [UIImage] = []
 
     @State
-    private var showingPoseInstructionPreview = false
-
-    @State
-    private var posePreviewTask: Task<Void, Never>? = nil
+    private var activeTimerTask: Task<Void, Never>? = nil
 
     @State
     private var sessionStartTime: Date? = nil
@@ -54,140 +55,108 @@ struct PoseTrackingView: View {
     private var sessionDuration: TimeInterval = 0
 
     @State
-    private var showCompletionView = false
+    private var showCompletionView: Bool = false
 
-    private let totalMovements = 5
+    @State
+    private var shutterFlashOpacity: Double = 0.0
 
+    @State
+    private var hasInitialized: Bool = false
 
     // =========================================================
     // MARK: - Body
     // =========================================================
 
     var body: some View {
-
         GeometryReader { geometry in
-
             ZStack {
-
-                // =================================================
-                // BACKGROUND: LIVE CAMERA OR TUTORIAL ILLUSTRATION
-                // =================================================
-
-                if isLiveCameraPhase {
-                    // 1. Live Camera Preview
-                    CameraPreviewView(
-                        session: visionService.captureSession,
-                        onOrientationChanged: { orientation in
-                            visionService.updateVideoOrientation(orientation)
-                        }
-                    )
-                    .frame(
-                        width: geometry.size.width,
-                        height: geometry.size.height
-                    )
-                    .clipped()
-                    .ignoresSafeArea()
-
-                    // 2. Real-time Joint Skeleton Tracking
-                    PoseSkeletonOverlayView(
-                        detectedPeople:
-                            visionService
-                                .poseModel
-                                .detectedPeople,
-                        videoSize:
-                            visionService
-                                .poseModel
-                                .videoSize
-                    )
-                    .frame(
-                        width: geometry.size.width,
-                        height: geometry.size.height
-                    )
-                    .clipped()
-                    .ignoresSafeArea()
-
-                } else {
-                    // Tutorial Explanation Slides: Static Illustration Image
-                    Image("tutorial")
-                        .resizable()
-                        .scaledToFill()
-                        .frame(
-                            width: geometry.size.width,
-                            height: geometry.size.height
-                        )
-                        .clipped()
-                        .ignoresSafeArea()
-                }
-
-                // =================================================
-                // OVERLAY: TUTORIAL FLOW OR GAMEPLAY
-                // =================================================
-
-                if !tutorialController.hasStarted {
-                    tutorialPhase
-                } else {
-                    gameplayPhase
-                }
-
-
-                // =================================================
-                // DEBUG CONTROLS
-                // =================================================
-
-                testControlsOverlay
-                    .zIndex(999)
-            }
-            .frame(
-                width: geometry.size.width,
-                height: geometry.size.height
-            )
-            .ignoresSafeArea()
-
-            // =====================================================
-            // IMPORTANT:
-            //
-            // Use the actual SwiftUI geometry size for hitbox
-            // validation.
-            // =====================================================
-
-            .onReceive(
-                visionService
-                    .poseModel
-                    .$detectedPeople
-            ) { people in
-
-                updateHitboxes(
-                    people: people,
-                    viewSize: geometry.size
+                // 1. Live Camera Preview
+                CameraPreviewView(
+                    session: cameraService.captureSession,
+                    onOrientationChanged: { orientation in
+                        cameraService.updateVideoOrientation(orientation)
+                    }
                 )
+                .frame(width: geometry.size.width, height: geometry.size.height)
+                .clipped()
+                .ignoresSafeArea()
+
+                // 2. Center Divider Line
+                CenterDividerLineView()
+                    .frame(width: geometry.size.width, height: geometry.size.height)
+                    .ignoresSafeArea()
+
+                // 3. Header & Mini Badge
+                VStack(spacing: 0) {
+                    gameplayHeader
+
+                    if case .showingPosePreview = captureState {
+                        // Main instruction card is shown in center
+                    } else {
+                        // Top-right mini pose thumbnail badge during countdown
+                        HStack {
+                            Spacer()
+                            MiniPoseThumbnailBadge(
+                                imageName: currentPoseImageName,
+                                size: 175
+                            )
+                            .padding(.trailing, 28)
+                            .padding(.top, 6)
+                            .transition(.scale.combined(with: .opacity))
+                        }
+                    }
+
+                    Spacer()
+                }
+                .frame(width: geometry.size.width, height: geometry.size.height, alignment: .top)
+
+                // 4. Overlays according to state
+                switch captureState {
+                case .showingPosePreview(let secondsRemaining):
+                    posePreviewOverlay(secondsRemaining: secondsRemaining)
+
+                case .countdown(let number):
+                    countdownOverlay(number: number)
+
+                case .flashShutter:
+                    Color.white
+                        .opacity(shutterFlashOpacity)
+                        .ignoresSafeArea()
+
+                case .photoCaptured:
+                    photoCapturedOverlay
+                }
+
+                // 5. White flash effect overlay
+                if shutterFlashOpacity > 0 {
+                    Color.white
+                        .opacity(shutterFlashOpacity)
+                        .ignoresSafeArea()
+                        .allowsHitTesting(false)
+                }
+
+                // 6. Debug Menu
+                #if DEBUG
+                testControlsOverlay
+                #endif
             }
+            .frame(width: geometry.size.width, height: geometry.size.height)
+            .ignoresSafeArea()
         }
         .ignoresSafeArea()
-
-        // =========================================================
-        // LIFECYCLE
-        // =========================================================
-
         .onAppear {
             handleAppear()
         }
-
         .onDisappear {
             handleDisappear()
         }
-
-        .onChange(of: tutorialController.hasStarted) { _, hasStarted in
-            if hasStarted {
-                sessionStartTime = Date()
-                triggerPosePreview()
-            }
-        }
         .fullScreenCover(isPresented: $showCompletionView) {
             CompletionView(
-                durationSeconds: sessionDuration > 0 ? sessionDuration : 243,
+                durationSeconds: sessionDuration > 0 ? sessionDuration : 180,
+                capturedPhotos: capturedPhotos,
                 onRestart: {
                     showCompletionView = false
-                    restartGameDirectly()
+                    restartSession()
                 },
                 onSelectMusic: {
                     showCompletionView = false
@@ -202,1109 +171,343 @@ struct PoseTrackingView: View {
         }
     }
 
+    // =========================================================
+    // MARK: - State Overlays
+    // =========================================================
 
-    // =============================================================
-    // MARK: - Tutorial
-    // =============================================================
-
+    // State 1: 3-Second Pose Preview Card
     @ViewBuilder
-    private var tutorialPhase: some View {
+    private func posePreviewOverlay(secondsRemaining: Int) -> some View {
+        ZStack {
+            Color.black.opacity(0.40)
+                .ignoresSafeArea()
 
-        GeometryReader { geometry in
+            VStack(spacing: 16) {
+                Spacer()
 
-            TutorialOverlayView(
-                tutorial:
-                    tutorialController,
-
-                detectedPeople:
-                    visionService
-                        .poseModel
-                        .detectedPeople,
-
-                videoSize:
-                    visionService
-                        .poseModel
-                        .videoSize,
-
-                viewSize:
-                    geometry.size
-            )
-        }
-        .ignoresSafeArea()
-    }
-
-
-    // =============================================================
-    // MARK: - Gameplay
-    // =============================================================
-
-    @ViewBuilder
-    private var gameplayPhase: some View {
-
-        GeometryReader { geometry in
-
-            ZStack {
-
-                // =================================================
-                // CENTER DIVIDER
-                // =================================================
-
-                CenterDividerLineView()
-                    .frame(
-                        width: geometry.size.width,
-                        height: geometry.size.height
-                    )
-                    .ignoresSafeArea()
-
-
-                // =================================================
-                // HITBOXES
-                // =================================================
-
-                if !showingPoseInstructionPreview {
-                    MovementHitboxOverlayView(
-                        hitboxes:
-                            MovementHitboxLayout
-                                .hitboxes(
-                                    for: movementNumber
-                                ),
-
-                        results:
-                            hitboxResults,
-
-                        viewSize:
-                            geometry.size
-                    )
-                    .frame(
-                        width: geometry.size.width,
-                        height: geometry.size.height
-                    )
-                    .ignoresSafeArea()
-                    .transition(.opacity)
-                }
-
-
-                // =================================================
-                // SUCCESS
-                // =================================================
-
-                if isMovementSuccessful {
-
-                    Text("PERFECT!")
-                        .font(
-                            .system(
-                                size: 64,
-                                weight: .black,
-                                design: .rounded
-                            )
-                        )
-                        .foregroundColor(.white)
-                        .shadow(
-                            color:
-                                .black.opacity(0.7),
-                            radius: 12
-                        )
-                        .transition(
-                            .scale
-                                .combined(
-                                    with: .opacity
-                                )
-                        )
-                }
-
-
-                // =================================================
-                // HEADER & POSE THUMBNAIL BADGE
-                // =================================================
-
-                VStack(
-                    spacing: 0
-                ) {
-
-                    gameplayHeader
-
-                    if !showingPoseInstructionPreview {
-                        HStack {
-                            Spacer()
-
-                            MiniPoseThumbnailBadge(
-                                imageName: currentPoseImageName,
-                                size: 175
-                            )
-                            .padding(.trailing, 28)
-                            .padding(.top, 6)
-                            .id(movementNumber)
-                            .transition(.scale.combined(with: .opacity))
-                        }
-                    }
-
-                    Spacer()
-                }
-                .frame(
-                    width: geometry.size.width,
-                    height: geometry.size.height,
-                    alignment: .top
+                PoseInstructionView(
+                    mainTitle: currentPoseMainTitle,
+                    subTitle: currentPoseSubTitle,
+                    imageName: currentPoseImageName
                 )
+                .id(movementNumber)
 
-
-                // =================================================
-                // 5-SECOND CENTER POSE PREVIEW MODAL
-                // =================================================
-
-                if showingPoseInstructionPreview {
-
-                    Color.black.opacity(0.35)
-                        .ignoresSafeArea()
-                        .transition(.opacity)
-
-                    VStack {
-                        Spacer()
-
-                        PoseInstructionView(
-                            mainTitle: currentPoseMainTitle,
-                            subTitle: currentPoseSubTitle,
-                            imageName: currentPoseImageName
-                        )
-                        .id(movementNumber)
-                        .transition(.scale.combined(with: .opacity))
-
-                        Spacer()
-                    }
-                    .frame(
-                        width: geometry.size.width,
-                        height: geometry.size.height
-                    )
-                    .zIndex(50)
+                // Countdown badge for preview
+                HStack(spacing: 8) {
+                    Image(systemName: "eye.fill")
+                        .font(.system(size: 18, weight: .bold))
+                    Text("Perhatikan pose: \(secondsRemaining)s")
+                        .font(.system(size: 20, weight: .bold, design: .rounded))
                 }
+                .foregroundColor(.white)
+                .padding(.horizontal, 22)
+                .padding(.vertical, 10)
+                .background(Color.black.opacity(0.70))
+                .clipShape(Capsule())
+                .shadow(color: .black.opacity(0.3), radius: 6)
+
+                Spacer()
             }
-            .frame(
-                width: geometry.size.width,
-                height: geometry.size.height
-            )
         }
-        .ignoresSafeArea()
+        .transition(.opacity)
     }
 
+    // State 2: 5.. 4.. 3.. 2.. 1.. Countdown
+    @ViewBuilder
+    private func countdownOverlay(number: Int) -> some View {
+        ZStack {
+            VStack {
+                Spacer()
 
-    // =============================================================
-    // MARK: - Gameplay Header
-    // =============================================================
+                // Circular glowing countdown badge
+                ZStack {
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [Color(hex: "1E4BA3"), Color(hex: "00D2FF")],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 150, height: 150)
+                        .shadow(color: Color(hex: "00D2FF").opacity(0.6), radius: 18)
+
+                    Circle()
+                        .stroke(Color.white, lineWidth: 5)
+                        .frame(width: 150, height: 150)
+
+                    Text("\(number)")
+                        .id(number)
+                        .font(.system(size: 88, weight: .heavy, design: .rounded))
+                        .foregroundColor(.white)
+                        .shadow(color: Color.black.opacity(0.4), radius: 4)
+                        .transition(.scale.combined(with: .opacity))
+                }
+                .animation(.spring(response: 0.35, dampingFraction: 0.65), value: number)
+
+                Text("Tahan gaya kalian!")
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 28)
+                    .padding(.vertical, 10)
+                    .background(Color.black.opacity(0.65))
+                    .clipShape(Capsule())
+                    .padding(.top, 16)
+                    .shadow(color: .black.opacity(0.4), radius: 6)
+
+                Spacer()
+            }
+        }
+        .allowsHitTesting(false)
+        .transition(.opacity)
+    }
+
+    // State 3: Captured Photo Flash & Feedback
+    @ViewBuilder
+    private var photoCapturedOverlay: some View {
+        ZStack {
+            VStack {
+                Spacer()
+
+                HStack(spacing: 12) {
+                    Image(systemName: "camera.fill")
+                        .font(.system(size: 32, weight: .bold))
+                    Text("FOTO TERCATAT!")
+                        .font(.system(size: 36, weight: .black, design: .rounded))
+                }
+                .foregroundColor(.white)
+                .padding(.horizontal, 36)
+                .padding(.vertical, 16)
+                .background(
+                    LinearGradient(
+                        colors: [Color.green.opacity(0.9), Color.blue.opacity(0.9)],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .clipShape(Capsule())
+                .shadow(color: Color.green.opacity(0.7), radius: 16)
+                .scaleEffect(1.05)
+                .transition(.scale.combined(with: .opacity))
+
+                Spacer()
+            }
+        }
+        .allowsHitTesting(false)
+    }
+
+    // =========================================================
+    // MARK: - Header
+    // =========================================================
 
     @ViewBuilder
     private var gameplayHeader: some View {
-
-        VStack(
-            spacing: 12
-        ) {
-
-            // =====================================================
-            // TOP ROW
-            // =====================================================
-
+        VStack(spacing: 12) {
             HStack {
-
-                // -------------------------------------------------
-                // Pause button
-                // -------------------------------------------------
-
+                // Pause / Exit button
                 Button {
-
+                    activeTimerTask?.cancel()
                     dismiss()
-
                 } label: {
-
                     ZStack {
-
                         Circle()
-                            .fill(
-                                Color.white.opacity(0.92)
-                            )
-                            .frame(
-                                width: 52,
-                                height: 52
-                            )
+                            .fill(Color.white.opacity(0.92))
+                            .frame(width: 52, height: 52)
+                            .shadow(color: .black.opacity(0.2), radius: 4)
 
-                        Image(
-                            systemName:
-                                "pause.fill"
-                        )
-                        .font(
-                            .system(
-                                size: 18,
-                                weight: .bold
-                            )
-                        )
-                        .foregroundColor(.black)
+                        Image(systemName: "xmark")
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundColor(.black)
                     }
                 }
                 .buttonStyle(.plain)
 
-
                 Spacer()
 
-
-                // -------------------------------------------------
-                // Movement number
-                // -------------------------------------------------
-
-                Text(
-                    "\(movementNumber)/\(totalMovements) Gerakan"
-                )
-                .font(
-                    .system(
-                        size: 26,
-                        weight: .bold,
-                        design: .rounded
-                    )
-                )
-                .foregroundColor(.white)
-                .shadow(
-                    color: .black.opacity(0.8),
-                    radius: 4,
-                    x: 0,
-                    y: 2
-                )
-
+                Text("\(movementNumber)/\(totalMovements) Gerakan")
+                    .font(.system(size: 26, weight: .bold, design: .rounded))
+                    .foregroundColor(.white)
+                    .shadow(color: .black.opacity(0.8), radius: 4, x: 0, y: 2)
 
                 Spacer()
-
-
-                // -------------------------------------------------
-                // Invisible spacer
-                // -------------------------------------------------
 
                 Color.clear
-                    .frame(
-                        width: 52,
-                        height: 52
-                    )
+                    .frame(width: 52, height: 52)
             }
 
-
-            // =====================================================
-            // PROGRESS BAR
-            // =====================================================
-
+            // Progress Bar
             GeometryReader { geometry in
-
                 let spacing: CGFloat = 8
+                let totalWidth = geometry.size.width
+                let segmentWidth = (totalWidth - (spacing * CGFloat(totalMovements - 1))) / CGFloat(totalMovements)
 
-                let totalWidth =
-                    geometry.size.width
-
-                let segmentWidth =
-                    (
-                        totalWidth
-                        -
-                        (
-                            spacing
-                            *
-                            CGFloat(
-                                totalMovements - 1
-                            )
-                        )
-                    )
-                    /
-                    CGFloat(
-                        totalMovements
-                    )
-
-
-                HStack(
-                    spacing: spacing
-                ) {
-
-                    ForEach(
-                        0..<totalMovements,
-                        id: \.self
-                    ) { index in
-
-                        RoundedRectangle(
-                            cornerRadius: 5
-                        )
-                        .fill(
-
-                            index < movementNumber
-
-                            ? Color.blue
-
-                            : Color.white.opacity(0.35)
-                        )
-                        .frame(
-                            width:
-                                segmentWidth,
-                            height: 7
-                        )
-                        .animation(
-                            .easeInOut(
-                                duration: 0.25
-                            ),
-                            value:
-                                movementNumber
-                        )
+                HStack(spacing: spacing) {
+                    ForEach(0..<totalMovements, id: \.self) { index in
+                        RoundedRectangle(cornerRadius: 5)
+                            .fill(index < movementNumber ? Color.blue : Color.white.opacity(0.35))
+                            .frame(width: segmentWidth, height: 7)
+                            .animation(.easeInOut(duration: 0.25), value: movementNumber)
                     }
                 }
             }
-            .frame(
-                height: 7
-            )
+            .frame(height: 7)
         }
-
-        .padding(
-            .horizontal,
-            30
-        )
-
-        .padding(
-            .top,
-            18
-        )
-
-        .padding(
-            .bottom,
-            18
-        )
-
-        // =========================================================
-        // IMPORTANT:
-        //
-        // NO .background()
-        //
-        // The camera is now visible behind the header.
-        // =========================================================
+        .padding(.horizontal, 30)
+        .padding(.top, 18)
+        .padding(.bottom, 18)
     }
 
-    // =============================================================
-    // MARK: - Hitbox Processing
-    // =============================================================
+    // =========================================================
+    // MARK: - Flow & Timers
+    // =========================================================
 
-    private func updateHitboxes(
-        people: [DetectedPerson],
-        viewSize: CGSize
-    ) {
+    private func startCurrentPoseCycle() {
+        activeTimerTask?.cancel()
 
-        // ---------------------------------------------------------
-        // Only validate during gameplay when preview has finished.
-        // ---------------------------------------------------------
-
-        guard
-            tutorialController.hasStarted,
-            !showingPoseInstructionPreview
-        else {
-            return
-        }
-
-
-        // ---------------------------------------------------------
-        // Hitbox layout
-        // ---------------------------------------------------------
-
-        let hitboxes =
-            MovementHitboxLayout
-                .hitboxes(
-                    for: movementNumber
-                )
-
-
-        // ---------------------------------------------------------
-        // Video size
-        // ---------------------------------------------------------
-
-        let videoSize =
-            visionService
-                .poseModel
-                .videoSize
-
-
-        guard
-            videoSize.width > 0,
-            videoSize.height > 0
-        else {
-            return
-        }
-
-
-        // ---------------------------------------------------------
-        // View size
-        // ---------------------------------------------------------
-
-        guard
-            viewSize.width > 0,
-            viewSize.height > 0
-        else {
-            return
-        }
-
-
-        // ---------------------------------------------------------
-        // Validate all hitboxes
-        // ---------------------------------------------------------
-
-        let results =
-            MovementHitboxValidator.validate(
-
-                people:
-                    people,
-
-                hitboxes:
-                    hitboxes,
-
-                viewSize:
-                    viewSize,
-
-                videoSize:
-                    videoSize,
-
-                convert: {
-                    point,
-                    size,
-                    video
-                    in
-
-                    convertPoint(
-                        point,
-                        viewSize: size,
-                        videoSize: video
-                    )
+        activeTimerTask = Task { @MainActor in
+            // 1. Wait 3 seconds showing the pose preview
+            for remaining in (1...3).reversed() {
+                guard !Task.isCancelled else { return }
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    captureState = .showingPosePreview(secondsRemaining: remaining)
                 }
-            )
-
-
-        // ---------------------------------------------------------
-        // Update UI
-        // ---------------------------------------------------------
-
-        DispatchQueue.main.async {
-
-            hitboxResults =
-                results
-
-
-            // -----------------------------------------------------
-            // Every required hitbox must be hit.
-            // -----------------------------------------------------
-
-            let allHit =
-                !results.isEmpty
-                &&
-                results.allSatisfy {
-                    $0.isHit
+                do {
+                    try await Task.sleep(nanoseconds: 1_000_000_000)
+                } catch {
+                    return
                 }
-
-
-            if allHit {
-
-                movementSucceeded()
             }
+
+            guard !Task.isCancelled else { return }
+
+            // 2. Countdown 5, 4, 3, 2, 1
+            for num in (1...5).reversed() {
+                guard !Task.isCancelled else { return }
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.65)) {
+                    captureState = .countdown(number: num)
+                }
+                do {
+                    try await Task.sleep(nanoseconds: 1_000_000_000)
+                } catch {
+                    return
+                }
+            }
+
+            guard !Task.isCancelled else { return }
+
+            // 3. Trigger Flash Shutter & Capture Photo (strictly awaited)
+            await triggerCapture()
         }
     }
 
+    @MainActor
+    private func triggerCapture() async {
+        guard !Task.isCancelled else { return }
 
-    // =============================================================
-    // MARK: - Coordinate Conversion
-    // =============================================================
-
-    private func convertPoint(
-        _ point: CGPoint,
-        viewSize: CGSize,
-        videoSize: CGSize
-    ) -> CGPoint {
-
-        guard
-            videoSize.width > 0,
-            videoSize.height > 0,
-            viewSize.width > 0,
-            viewSize.height > 0
-        else {
-            return .zero
+        // Flash animation
+        withAnimation(.easeIn(duration: 0.08)) {
+            shutterFlashOpacity = 0.95
         }
 
+        // Await actual photo capture asynchronously
+        let capturedImage = await cameraService.capturePhoto()
+        guard !Task.isCancelled else { return }
 
-        let videoWidth =
-            videoSize.width
-
-        let videoHeight =
-            videoSize.height
-
-
-        // =========================================================
-        // Aspect ratios
-        // =========================================================
-
-        let videoAspect =
-            videoWidth /
-            videoHeight
-
-        let viewAspect =
-            viewSize.width /
-            viewSize.height
-
-
-        var scale: CGFloat
-
-        var offsetX: CGFloat = 0
-
-        var offsetY: CGFloat = 0
-
-
-        // =========================================================
-        // AVCaptureVideoPreviewLayer uses resizeAspectFill
-        //
-        // We must reproduce the same crop here.
-        // =========================================================
-
-        if viewAspect > videoAspect {
-
-            scale =
-                viewSize.width /
-                videoWidth
-
-
-            let renderedHeight =
-                videoHeight * scale
-
-
-            offsetY =
-                (
-                    viewSize.height
-                    -
-                    renderedHeight
-                )
-                /
-                2
-
-        } else {
-
-            scale =
-                viewSize.height /
-                videoHeight
-
-
-            let renderedWidth =
-                videoWidth * scale
-
-
-            offsetX =
-                (
-                    viewSize.width
-                    -
-                    renderedWidth
-                )
-                /
-                2
+        if let image = capturedImage {
+            self.capturedPhotos.append(image)
+        } else if let fallback = UIImage(named: self.currentPoseImageName) {
+            self.capturedPhotos.append(fallback)
         }
 
+        // Fade out flash
+        do {
+            try await Task.sleep(nanoseconds: 120_000_000)
+        } catch { return }
 
-        // =========================================================
-        // FRONT CAMERA MIRROR
-        // =========================================================
+        guard !Task.isCancelled else { return }
 
-        let mirroredX =
-            1.0 - point.x
+        withAnimation(.easeOut(duration: 0.25)) {
+            shutterFlashOpacity = 0.0
+            captureState = .photoCaptured
+        }
 
+        // Show photo captured confirmation badge briefly
+        do {
+            try await Task.sleep(nanoseconds: 800_000_000)
+        } catch { return }
 
-        // =========================================================
-        // Y POSITION
-        // point.y is already normalized with top-left origin by VisionService
-        // =========================================================
+        guard !Task.isCancelled else { return }
 
-        let y =
-            point.y
-            *
-            videoHeight
-            *
-            scale
-            +
-            offsetY
-
-
-        // =========================================================
-        // Final screen position
-        // =========================================================
-
-        return CGPoint(
-            x:
-                mirroredX
-                *
-                videoWidth
-                *
-                scale
-                +
-                offsetX,
-
-            y:
-                y
-        )
+        advanceToNextPose()
     }
 
+    private func advanceToNextPose() {
+        guard !Task.isCancelled else { return }
 
-    // =============================================================
-    // MARK: - Movement Success
-    // =============================================================
-
-    private func movementSucceeded() {
-
-        guard
-            !isMovementSuccessful
-        else {
-            return
-        }
-
-
-        // ---------------------------------------------------------
-        // Success animation
-        // ---------------------------------------------------------
-
-        withAnimation(
-            .spring(
-                response: 0.35,
-                dampingFraction: 0.7
-            )
-        ) {
-
-            isMovementSuccessful =
-                true
-        }
-
-
-        print(
-            "🔥 ALL 8 HITBOXES HIT"
-        )
-
-
-        // ---------------------------------------------------------
-        // Wait before next movement
-        // ---------------------------------------------------------
-
-        DispatchQueue.main.asyncAfter(
-            deadline:
-                .now() + 1.0
-        ) {
-
-            advanceMovement()
-        }
-    }
-
-
-    // =============================================================
-    // MARK: - Next Movement
-    // =============================================================
-
-    private func advanceMovement() {
-
-        hitboxResults = []
-
-        isMovementSuccessful =
-            false
-
-
-        if movementNumber <
-            totalMovements {
-
-            withAnimation(
-                .easeInOut(
-                    duration: 0.25
-                )
-            ) {
-
+        if movementNumber < totalMovements {
+            withAnimation(.easeInOut(duration: 0.25)) {
                 movementNumber += 1
             }
-
-            triggerPosePreview()
-
-            print(
-                "➡️ Movement:",
-                movementNumber
-            )
-
+            startCurrentPoseCycle()
         } else {
-            print(
-                "🎉 SEQUENCE COMPLETE"
-            )
-            movementNumber = 1
-            triggerPosePreview()
+            // Sequence completed
             sessionDuration = Date().timeIntervalSince(sessionStartTime ?? Date())
             showCompletionView = true
         }
     }
 
-    private func restartGameDirectly() {
+    private func restartSession() {
+        activeTimerTask?.cancel()
         movementNumber = 1
-        hitboxResults = []
-        isMovementSuccessful = false
-        tutorialController.startReadyCountdown()
+        capturedPhotos = []
+        sessionStartTime = Date()
+        startCurrentPoseCycle()
     }
 
-
-    // =============================================================
+    // =========================================================
     // MARK: - Lifecycle
-    // =============================================================
+    // =========================================================
 
     private func handleAppear() {
-
         forceLandscape()
+        cameraService.startSession()
 
-
-        // ---------------------------------------------------------
-        // Reset tutorial
-        // ---------------------------------------------------------
-
-        tutorialController.reset()
-
-
-        // ---------------------------------------------------------
-        // Reset gameplay
-        // ---------------------------------------------------------
-
-        movementNumber =
-            1
-
-        hitboxResults =
-            []
-
-        isMovementSuccessful =
-            false
-
-
-        // ---------------------------------------------------------
-        // Start camera
-        // ---------------------------------------------------------
-
-        visionService.startSession()
+        if !hasInitialized {
+            hasInitialized = true
+            movementNumber = 1
+            capturedPhotos = []
+            sessionStartTime = Date()
+            startCurrentPoseCycle()
+        }
     }
-
 
     private func handleDisappear() {
-
-        visionService.stopSession()
+        activeTimerTask?.cancel()
+        cameraService.stopSession()
+        hasInitialized = false
     }
-
-
-    // =============================================================
-    // MARK: - Landscape
-    // =============================================================
 
     private func forceLandscape() {
-
-        // ---------------------------------------------------------
-        // Force device orientation
-        // ---------------------------------------------------------
-
         UIDevice.current.setValue(
-            UIInterfaceOrientation
-                .landscapeLeft
-                .rawValue,
-            forKey:
-                "orientation"
+            UIInterfaceOrientation.landscapeLeft.rawValue,
+            forKey: "orientation"
         )
 
-
-        // ---------------------------------------------------------
-        // iOS 16+
-        // ---------------------------------------------------------
-
-        if let windowScene =
-            UIApplication.shared
-                .connectedScenes
-                .compactMap({
-                    $0 as? UIWindowScene
-                })
-                .first {
-
-            if #available(
-                iOS 16.0,
-                *
-            ) {
-
-                let preferences =
-                    UIWindowScene
-                        .GeometryPreferences
-                        .iOS(
-                            interfaceOrientations:
-                                .landscape
-                        )
-
-
-                windowScene
-                    .requestGeometryUpdate(
-                        preferences
-                    ) { error in
-
-                        print(
-                            "Landscape error:",
-                            error
-                                .localizedDescription
-                        )
-                    }
+        if let windowScene = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first {
+            if #available(iOS 16.0, *) {
+                let preferences = UIWindowScene.GeometryPreferences.iOS(interfaceOrientations: .landscape)
+                windowScene.requestGeometryUpdate(preferences) { error in
+                    print("Landscape error: \(error.localizedDescription)")
+                }
             }
         }
 
-
-        UIViewController
-            .attemptRotationToDeviceOrientation()
+        UIViewController.attemptRotationToDeviceOrientation()
     }
 
-
-    // =============================================================
-    // MARK: - Debug
-    // =============================================================
-
-
-#if DEBUG
-
-@ViewBuilder
-private var testControlsOverlay: some View {
-
-    VStack {
-
-        Spacer()
-
-        HStack {
-
-            Spacer()
-
-            Menu {
-
-                // =================================================
-                // TUTORIAL DEBUG
-                // =================================================
-
-                Button("0. Persiapan Pemain") {
-
-                    tutorialController.debugSetStep(.playerSetup)
-                    resetGameplay()
-                }
-
-                Button("1. Intro Tutorial") {
-
-                    tutorialController.debugSetStep(.tutorialIntro)
-                    resetGameplay()
-                }
-
-                Button("2. Petunjuk Simbol & Warna") {
-
-                    tutorialController.debugSetStep(.symbolColorGuide)
-                    resetGameplay()
-                }
-
-                Button("4. Progress Header Guide") {
-
-                    tutorialController.debugSetStep(.progressHeaderGuide)
-                    resetGameplay()
-                }
-
-                Button("5. Kemunculan Pose") {
-
-                    tutorialController.debugSetStep(.poseAppearanceExplanation)
-                    resetGameplay()
-                }
-
-                Button("6. Kartu Pose Pertama") {
-
-                    tutorialController.debugSetStep(.poseInstructionCard)
-                    resetGameplay()
-                }
-
-                Button("7. Ikuti Posenya!") {
-
-                    tutorialController.debugSetStep(.followPoseIntro)
-                    resetGameplay()
-                }
-
-                Button("8. Titik Target Hitbox") {
-
-                    tutorialController.debugSetStep(.hitboxTargetPreview)
-                    resetGameplay()
-                }
-
-                Button("9. Penjelasan Titik Target") {
-
-                    tutorialController.debugSetStep(.hitboxExplanation)
-                    resetGameplay()
-                }
-
-                Button("10. Cocokkan Titik Target") {
-
-                    tutorialController.debugSetStep(.matchPointsGuide)
-                    resetGameplay()
-                }
-
-                Button("11. Instruksi Tahan Posisi") {
-
-                    tutorialController.debugSetStep(.holdInstruction)
-                    resetGameplay()
-                }
-
-                Button("12. Countdown Tahan 5s") {
-
-                    tutorialController.debugSetStep(.practiceHoldCountdown)
-                    resetGameplay()
-                }
-
-                Button("13. Keren Banget!") {
-
-                    tutorialController.debugSetStep(.poseSuccess)
-                    resetGameplay()
-                }
-
-                Button("14. Tutorial Selesai") {
-
-                    tutorialController.debugSetStep(.tutorialCompleted)
-                    resetGameplay()
-                }
-
-                Divider()
-
-                // =================================================
-                // GAMEPLAY
-                // =================================================
-
-                Button("Gerakan Selanjutnya") {
-
-                    advanceMovement()
-                }
-
-                Button("Lanjut ke Gameplay") {
-
-                    tutorialController.debugSkipToStarted()
-
-                    resetGameplay()
-
-                    // Setelah masuk gameplay,
-                    // tampilkan kartu pose pertama.
-                    DispatchQueue.main.async {
-                        triggerPosePreview()
-                    }
-                }
-
-                Button("Simulasikan Berhasil") {
-
-                    movementSucceeded()
-                }
-
-                Divider()
-
-                // =================================================
-                // DIRECT POSE TEST
-                // =================================================
-
-                Button("Pose 1 (pose 1)") {
-
-                    tutorialController.debugSkipToStarted()
-
-                    movementNumber = 1
-
-                    triggerPosePreview()
-                }
-
-                Button("Pose 2 (pose2)") {
-
-                    tutorialController.debugSkipToStarted()
-
-                    movementNumber = 2
-
-                    triggerPosePreview()
-                }
-
-                Button("Pose 3 (pose3)") {
-
-                    tutorialController.debugSkipToStarted()
-
-                    movementNumber = 3
-
-                    triggerPosePreview()
-                }
-
-                Button("Pose 4 (pose4)") {
-
-                    tutorialController.debugSkipToStarted()
-
-                    movementNumber = 4
-
-                    triggerPosePreview()
-                }
-
-                Button("Pose 5 (pose5)") {
-
-                    tutorialController.debugSkipToStarted()
-
-                    movementNumber = 5
-
-                    triggerPosePreview()
-                }
-
-                Divider()
-
-                // =================================================
-                // RESET
-                // =================================================
-
-                Button("Reset Everything") {
-
-                    tutorialController.reset()
-                    resetGameplay()
-                }
-
-            } label: {
-
-                HStack(
-                    spacing: 6
-                ) {
-
-                    Image(
-                        systemName: "ladybug"
-                    )
-
-                    Text(
-                        debugPhaseName
-                    )
-                }
-                .font(
-                    .system(
-                        size: 12,
-                        weight: .bold,
-                        design: .rounded
-                    )
-                )
-                .foregroundColor(.white)
-                .padding(
-                    .horizontal,
-                    12
-                )
-                .padding(
-                    .vertical,
-                    7
-                )
-                .background(
-                    Color.black
-                        .opacity(0.75)
-                )
-                .clipShape(
-                    Capsule()
-                )
-                .contentShape(
-                    Capsule()
-                )
-            }
-            .buttonStyle(.plain)
-            .padding(
-                .trailing,
-                20
-            )
-            .padding(
-                .bottom,
-                20
-            )
-        }
-    }
-    .allowsHitTesting(true)
-    .zIndex(999)
-}
-
-
-    // =============================================================
-    // MARK: - Current Pose Info
-    // =============================================================
+    // =========================================================
+    // MARK: - Pose Info Helpers
+    // =========================================================
 
     private var currentPoseMainTitle: String {
         switch movementNumber {
@@ -1335,136 +538,81 @@ private var testControlsOverlay: some View {
         }
     }
 
-    private func triggerPosePreview() {
-        posePreviewTask?.cancel()
-        withAnimation(.easeInOut(duration: 0.25)) {
-            showingPoseInstructionPreview = true
-            hitboxResults = []
-            isMovementSuccessful = false
-        }
+    // =========================================================
+    // MARK: - Debug
+    // =========================================================
 
-        posePreviewTask = Task { @MainActor in
-            do {
-                try await Task.sleep(nanoseconds: 5_000_000_000)
-            } catch {
-                return
-            }
-            guard !Task.isCancelled else { return }
-
-            withAnimation(.easeInOut(duration: 0.35)) {
-                self.showingPoseInstructionPreview = false
-            }
-        }
-    }
-
-
-    // =============================================================
-    // MARK: - Reset Gameplay
-    // =============================================================
-
-    private func resetGameplay() {
-
-        posePreviewTask?.cancel()
-        showingPoseInstructionPreview = false
-
-        movementNumber =
-            1
-
-        hitboxResults =
-            []
-
-        isMovementSuccessful =
-            false
-    }
-
-
-    // =============================================================
-    // MARK: - Debug Phase
-    // =============================================================
-
-    private var debugPhaseName: String {
-
-        if tutorialController.hasStarted {
-
-            return
-                "Gameplay \(movementNumber)/\(totalMovements)"
-        }
-
-
-        return
-            tutorialController
-                .currentStep
-                .title
-    }
-
-    // =============================================================
-    // MARK: - Live Camera Phase Helper
-    // =============================================================
-
-    private var isLiveCameraPhase: Bool {
-        switch tutorialController.currentStep {
-        case .playerSetup,
-             .setupCountdown3,
-             .setupCountdown2,
-             .setupCountdown1,
-             .readyCountdown3,
-             .readyCountdown2,
-             .readyCountdown1,
-             .prePlayerSetup1,
-             .prePlayerSetup2,
-             .started:
-            return true
-        default:
-            return tutorialController.hasStarted
-        }
-    }
-
-    #else
-
-    private var currentPoseImageName: String {
-        switch movementNumber {
-        case 1: return "pose 1"
-        case 2: return "pose2"
-        case 3: return "pose3"
-        case 4: return "pose4"
-        case 5: return "pose5"
-        default: return "pose 1"
-        }
-    }
-
-    private var isLiveCameraPhase: Bool {
-        switch tutorialController.currentStep {
-        case .playerSetup,
-             .setupCountdown3,
-             .setupCountdown2,
-             .setupCountdown1,
-             .readyCountdown3,
-             .readyCountdown2,
-             .readyCountdown1,
-             .started:
-            return true
-        default:
-            return tutorialController.hasStarted
-        }
-    }
-
+    #if DEBUG
+    @ViewBuilder
     private var testControlsOverlay: some View {
+        VStack {
+            Spacer()
+            HStack {
+                Spacer()
+                Menu {
+                    Button("Ambil Foto Sekarang") {
+                        Task { @MainActor in
+                            await triggerCapture()
+                        }
+                    }
 
-        EmptyView()
+                    Button("Lewati ke Hitung Mundur") {
+                        activeTimerTask?.cancel()
+                        activeTimerTask = Task { @MainActor in
+                            for num in (1...5).reversed() {
+                                guard !Task.isCancelled else { return }
+                                withAnimation {
+                                    captureState = .countdown(number: num)
+                                }
+                                try? await Task.sleep(nanoseconds: 1_000_000_000)
+                            }
+                            await triggerCapture()
+                        }
+                    }
+
+                    Button("Gerakan Selanjutnya") {
+                        advanceToNextPose()
+                    }
+
+                    Divider()
+
+                    Button("Ke Halaman Hasil") {
+                        activeTimerTask?.cancel()
+                        sessionDuration = 180
+                        showCompletionView = true
+                    }
+
+                    Button("Reset Sesi") {
+                        restartSession()
+                    }
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "camera.badge.ellipsis")
+                        Text("Pose \(movementNumber)/\(totalMovements)")
+                    }
+                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 7)
+                    .background(Color.black.opacity(0.75))
+                    .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .padding(.trailing, 20)
+                .padding(.bottom, 20)
+            }
+        }
+        .allowsHitTesting(true)
+        .zIndex(999)
     }
-
     #endif
 }
-
 
 // =============================================================
 // MARK: - Preview
 // =============================================================
 
 #Preview("Pose Tracking View") {
-
     PoseTrackingView()
-        .previewInterfaceOrientation(
-            .landscapeLeft
-        )
+        .previewInterfaceOrientation(.landscapeLeft)
 }

@@ -5,6 +5,7 @@ import SwiftUI
 struct CompletionView: View {
     var durationSeconds: TimeInterval = 243
     var photos: [String] = ["markHaechan", "markHaechan", "markHaechan", "markHaechan", "markHaechan"]
+    var capturedPhotos: [UIImage] = []
     var onRestart: (() -> Void)? = nil
     var onSelectMusic: (() -> Void)? = nil
     var onMainMenu: (() -> Void)? = nil
@@ -39,7 +40,7 @@ struct CompletionView: View {
                 // card utama
                 HStack(spacing: 44) {
                     // stack foto di sebelah kiri
-                    PhotoStackView(photos: photos) {
+                    PhotoStackView(photos: photos, capturedPhotos: capturedPhotos) {
                         showGalleryModal = true
                     }
                     
@@ -104,7 +105,11 @@ struct CompletionView: View {
         }
         // modal preview galeri foto
         .fullScreenCover(isPresented: $showGalleryModal) {
-            ImageGalleryModal(images: photos, isPresented: $showGalleryModal)
+            ImageGalleryModal(
+                images: photos,
+                capturedImages: capturedPhotos,
+                isPresented: $showGalleryModal
+            )
         }
         // navigasi ke ContentView (menu utama)
         .fullScreenCover(isPresented: $navigateToMainView) {
@@ -119,16 +124,36 @@ struct CompletionView: View {
 
 // MARK: - Reusable Photo Stack Component
 struct PhotoStackView: View {
-    let photos: [String]
+    var photos: [String] = []
+    var capturedPhotos: [UIImage] = []
     let onTap: () -> Void
+    
+    private var totalCount: Int {
+        !capturedPhotos.isEmpty ? capturedPhotos.count : photos.count
+    }
+    
+    @ViewBuilder
+    private func renderImage(at index: Int) -> some View {
+        if !capturedPhotos.isEmpty {
+            let safeIndex = max(0, min(index, capturedPhotos.count - 1))
+            Image(uiImage: capturedPhotos[safeIndex])
+                .resizable()
+                .scaledToFill()
+        } else if !photos.isEmpty {
+            let safeIndex = max(0, min(index, photos.count - 1))
+            Image(photos[safeIndex])
+                .resizable()
+                .scaledToFill()
+        } else {
+            Color.gray.opacity(0.3)
+        }
+    }
     
     var body: some View {
         VStack(spacing: 8) {
             ZStack {
                 // layer foto belakang
-                Image(photos.first ?? "")
-                    .resizable()
-                    .scaledToFill()
+                renderImage(at: min(2, totalCount - 1))
                     .frame(width: 430, height: 400)
                     .clipShape(RoundedRectangle(cornerRadius: 16))
                     .overlay(
@@ -137,9 +162,7 @@ struct PhotoStackView: View {
                     )
                     .rotationEffect(.degrees(-8))
                 
-                Image(photos.first ?? "")
-                    .resizable()
-                    .scaledToFill()
+                renderImage(at: min(1, totalCount - 1))
                     .frame(width: 430, height: 400)
                     .clipShape(RoundedRectangle(cornerRadius: 16))
                     .overlay(
@@ -150,9 +173,7 @@ struct PhotoStackView: View {
                 
                 // foto yang paling depan
                 ZStack(alignment: .bottomTrailing) {
-                    Image(photos.first ?? "")
-                        .resizable()
-                        .scaledToFill()
+                    renderImage(at: 0)
                         .frame(width: 430, height: 400)
                         .clipShape(RoundedRectangle(cornerRadius: 16))
                         .overlay(
@@ -161,15 +182,17 @@ struct PhotoStackView: View {
                         )
                         .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 4)
                     
-                    // badge "+2 more"
-                    Text("+\(max(0, photos.count - 3)) more")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(Color.black.opacity(0.6))
-                        .cornerRadius(8)
-                        .padding(12)
+                    // badge "+more"
+                    if totalCount > 3 {
+                        Text("+\(totalCount - 3) more")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(Color.black.opacity(0.6))
+                            .cornerRadius(8)
+                            .padding(12)
+                    }
                 }
             }
             // buka modal gallery
@@ -182,7 +205,8 @@ struct PhotoStackView: View {
 
 // MARK: - Image Gallery Modal
 struct ImageGalleryModal: View {
-    let images: [String]
+    var images: [String] = []
+    var capturedImages: [UIImage] = []
     @Binding var isPresented: Bool
     
     @State private var scrollPosition: Int? = 0
@@ -191,9 +215,30 @@ struct ImageGalleryModal: View {
         scrollPosition ?? 0
     }
     
+    private var totalCount: Int {
+        !capturedImages.isEmpty ? capturedImages.count : images.count
+    }
+    
     private let frameHeight: CGFloat = 715
     private let photoWidth: CGFloat = 786
     private let photoHeight: CGFloat = 510
+    
+    @ViewBuilder
+    private func renderModalImage(at index: Int) -> some View {
+        if !capturedImages.isEmpty {
+            let safeIndex = max(0, min(index, capturedImages.count - 1))
+            Image(uiImage: capturedImages[safeIndex])
+                .resizable()
+                .scaledToFill()
+        } else if !images.isEmpty {
+            let safeIndex = max(0, min(index, images.count - 1))
+            Image(images[safeIndex])
+                .resizable()
+                .scaledToFill()
+        } else {
+            Color.gray.opacity(0.3)
+        }
+    }
     
     var body: some View {
         GeometryReader { geometry in
@@ -205,10 +250,8 @@ struct ImageGalleryModal: View {
                     VStack(spacing: 18) {
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 20) {
-                                ForEach(0..<images.count, id: \.self) { index in
-                                    Image(images[index])
-                                        .resizable()
-                                        .scaledToFill()
+                                ForEach(0..<totalCount, id: \.self) { index in
+                                    renderModalImage(at: index)
                                         .frame(width: photoWidth, height: photoHeight)
                                         .clipShape(RoundedRectangle(cornerRadius: 24))
                                         .shadow(color: Color.black.opacity(0.25), radius: 8, x: 0, y: 4)
@@ -224,7 +267,7 @@ struct ImageGalleryModal: View {
                         
                         // dots indicator
                         HStack(spacing: 8) {
-                            ForEach(0..<images.count, id: \.self) { index in
+                            ForEach(0..<totalCount, id: \.self) { index in
                                 Circle()
                                     .fill(index == currentIndex ? Color.black : Color.gray.opacity(0.3))
                                     .frame(width: 7, height: 7)
