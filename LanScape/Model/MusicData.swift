@@ -41,7 +41,7 @@ extension MusicData {
             artist: "Lagu Populer",
             assetName: "JarangPulang.mp3",
             duration: "30s",
-            moves: "4",
+            moves: "5",
             coverImageName: "Jarang Pulang",
             coverColors: [Color(hex: "1E4BA3"), Color(hex: "00D2FF")],
             coverIcon: "house.fill"
@@ -51,7 +51,7 @@ extension MusicData {
             artist: "NewJeans",
             assetName: "BubbleGum",
             duration: "35s",
-            moves: "4",
+            moves: "5",
             coverImageName: "BubbleGumimg",
             coverColors: [Color(hex: "FF758C"), Color(hex: "FF7EB3")],
             coverIcon: "bubbles.and.sparkles.fill"
@@ -61,7 +61,7 @@ extension MusicData {
             artist: "Huntrix",
             assetName: "Golden",
             duration: "40s",
-            moves: "4",
+            moves: "5",
             coverImageName: "Goldenimg",
             coverColors: [Color(hex: "F7971E"), Color(hex: "FFD200")],
             coverIcon: "sparkles"
@@ -71,7 +71,7 @@ extension MusicData {
             artist: "Jamal Mirdad",
             assetName: "Happy",
             duration: "30s",
-            moves: "4",
+            moves: "5",
             coverImageName: "Happyimg",
             coverColors: [Color(hex: "00B09B"), Color(hex: "96C93D")],
             coverIcon: "face.smiling.fill"
@@ -81,7 +81,7 @@ extension MusicData {
             artist: "K3G Bollywood",
             assetName: "BoleChudiyan",
             duration: "45s",
-            moves: "4",
+            moves: "5",
             coverImageName: "BoleChudiyanimg",
             coverColors: [Color(hex: "EB3349"), Color(hex: "F45C43")],
             coverIcon: "music.note"

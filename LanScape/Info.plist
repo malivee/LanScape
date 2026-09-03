@@ -6,5 +6,7 @@
 	<string>Akses kamera diperlukan untuk mengambil foto pose bersama.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Akses mikrofon diperlukan untuk mendeteksi tepukan tangan dan teriakan pada interaksi seru.</string>
+	<key>UIRequiresFullScreen</key>
+	<true/>
 </dict>
 </plist>

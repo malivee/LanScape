@@ -48,11 +48,10 @@ final class VisionHandTrackingService: ObservableObject {
         lastFrameTime = now
         isProcessing = true
         
-        nonisolated(unsafe) let buffer = pixelBuffer
         processingQueue.async { [weak self] in
             guard let self = self else { return }
             
-            let requestHandler = VNImageRequestHandler(cvPixelBuffer: buffer, orientation: .up, options: [:])
+            let requestHandler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer, orientation: .up, options: [:])
             
             var points: [CGPoint] = []
             var isClap = false

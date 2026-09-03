@@ -1,5 +1,5 @@
 import SwiftUI
-@preconcurrency import AVFoundation
+import AVFoundation
 import UIKit
 
 struct CameraPreviewView: UIViewControllerRepresentable {
@@ -106,7 +106,7 @@ final class CameraPreviewViewController: UIViewController {
             return
         }
 
-        var activeOrientation: AVCaptureVideoOrientation = .landscapeLeft
+        let activeOrientation: AVCaptureVideoOrientation
         if let windowScene = view.window?.windowScene {
             switch windowScene.interfaceOrientation {
             case .landscapeRight:
@@ -116,18 +116,13 @@ final class CameraPreviewViewController: UIViewController {
             default:
                 activeOrientation = .landscapeLeft
             }
+        } else {
+            activeOrientation = .landscapeLeft
         }
 
-        if #available(iOS 17.0, *) {
-            let angle: CGFloat = (activeOrientation == .landscapeRight) ? 180 : 0
-            if connection.isVideoRotationAngleSupported(angle) {
-                connection.videoRotationAngle = angle
-            }
-        } else {
-            if connection.isVideoOrientationSupported {
-                if connection.videoOrientation != activeOrientation {
-                    connection.videoOrientation = activeOrientation
-                }
+        if connection.isVideoOrientationSupported {
+            if connection.videoOrientation != activeOrientation {
+                connection.videoOrientation = activeOrientation
             }
         }
 

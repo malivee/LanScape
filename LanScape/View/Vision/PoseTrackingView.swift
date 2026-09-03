@@ -57,7 +57,7 @@ struct PoseTrackingView: View {
     @State
     private var movementNumber: Int = 1
 
-    private let totalMovements: Int = 4
+    private let totalMovements: Int = 5
 
     @State
     private var captureState: PoseCaptureState = .showingPosePreview(secondsRemaining: 3)
@@ -538,17 +538,17 @@ struct PoseTrackingView: View {
     private func advanceToPostPhotoFlow() {
         guard !Task.isCancelled else { return }
 
-        if movementNumber <= totalMovements {
-            // Interactive challenges:
-            // 1: Clapping hands (shrink giant hand)
-            // 2: Fast circle touch with Vision hand tracking
-            // 3: Scream meter in middle
-            // 4: Fast movement
+        if movementNumber < totalMovements {
+            // Interactive challenges between photos:
+            // After Photo 1 -> Challenge 1: Clapping hands (shrink giant hand)
+            // After Photo 2 -> Challenge 2: Fast circle touch with Vision hand tracking
+            // After Photo 3 -> Challenge 3: Scream meter in middle
+            // After Photo 4 -> Challenge 4: Fast movement
             withAnimation(.easeInOut(duration: 0.3)) {
                 captureState = .interactionChallenge(interactionIndex: movementNumber)
             }
         } else {
-            // Sequence completed
+            // All 5 photos captured! Sequence completed!
             sessionDuration = Date().timeIntervalSince(sessionStartTime ?? Date())
             showCompletionView = true
         }
@@ -824,6 +824,7 @@ struct PoseTrackingView: View {
 // MARK: - Preview
 // =============================================================
 
-#Preview("Pose Tracking View", traits: .landscapeLeft) {
+#Preview("Pose Tracking View") {
     PoseTrackingView()
+        .previewInterfaceOrientation(.landscapeLeft)
 }

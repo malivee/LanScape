@@ -159,7 +159,7 @@ struct SelectMusicView: View {
                         .foregroundColor(.white)
                         .lineLimit(1)
                     
-                    Text("4 Gerakan Pose")
+                    Text("5 Gerakan Pose")
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.white.opacity(0.8))
                 }
@@ -180,6 +180,7 @@ struct SelectMusicView: View {
                         MovementItemCard(imageName: "pose2", title: "Pose Kedua")
                         MovementItemCard(imageName: "pose3", title: "Pose Ketiga")
                         MovementItemCard(imageName: "pose4", title: "Pose Keempat")
+                        MovementItemCard(imageName: "pose5", title: "Pose Kelima")
                         
                         Spacer()
                             .frame(height: 70)
@@ -227,6 +228,6 @@ struct SelectMusicView: View {
     }
 }
 
-#Preview("Main Music Selection", traits: .landscapeRight) {
+#Preview("Main Music Selection") {
     SelectMusicView()
 }
