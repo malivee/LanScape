@@ -88,7 +88,7 @@ struct SelectMusicView: View {
                             .font(.system(size: 40, weight: .bold))
                             .foregroundStyle(.black)
                         
-                        Text("Pilih musik favoritmu dan dengarkan cuplikannya!")
+                        Text("Sesuaikan pose foto dengan suasana lagu yang kamu pilih.")
                             .font(.system(size: 20, weight: .medium))
                             .foregroundStyle(.secondary)
                     }
@@ -159,7 +159,7 @@ struct SelectMusicView: View {
                         .foregroundColor(.white)
                         .lineLimit(1)
                     
-                    Text("5 Gerakan Pose")
+                    Text("5 Pose")
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.white.opacity(0.8))
                 }
@@ -176,18 +176,18 @@ struct SelectMusicView: View {
             ZStack(alignment: .bottom) {
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack(spacing: 20) {
-                        MovementItemCard(imageName: "pose 1", title: "Pose Pertama")
-                        MovementItemCard(imageName: "pose2", title: "Pose Kedua")
-                        MovementItemCard(imageName: "pose3", title: "Pose Ketiga")
-                        MovementItemCard(imageName: "pose4", title: "Pose Keempat")
-                        MovementItemCard(imageName: "pose5", title: "Pose Kelima")
+                        MovementItemCard(imageName: "pose 1", title: "Pose Fusion")
+                        MovementItemCard(imageName: "pose2", title: "Pose Menempel")
+                        MovementItemCard(imageName: "pose3", title: "Pose Hati")
+                        MovementItemCard(imageName: "pose4", title: "Pose Bintang")
+                        MovementItemCard(imageName: "pose5", title: "Pose Kita Bikin Romantis")
                         
                         Spacer()
                             .frame(height: 70)
                     }
                 }
                 
-                GradientStartButton(title: "Mulai Bergerak", fontSize: 22, fontWeight: .bold) {
+                GradientStartButton(title: "Mulai Berpose", fontSize: 22, fontWeight: .bold) {
                     navigateToPoseTracking = true
                 }
                 .padding(.bottom, 10)

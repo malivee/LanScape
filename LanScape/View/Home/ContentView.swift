@@ -60,7 +60,7 @@ struct ContentView: View {
                             .frame(width: 450)
                             .padding(.bottom, 90)
                         
-                        GradientStartButton(title: "Mulai Bergerak", fontSize:34, fontWeight: .bold) {
+                        GradientStartButton(title: "Mulai Berpose", fontSize:34, fontWeight: .bold) {
                             // trigger navigation
                             navigateToSelectMusic = true
                         }

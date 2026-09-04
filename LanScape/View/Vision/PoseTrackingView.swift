@@ -60,7 +60,7 @@ struct PoseTrackingView: View {
     private let totalMovements: Int = 5
 
     @State
-    private var captureState: PoseCaptureState = .showingPosePreview(secondsRemaining: 3)
+    private var captureState: PoseCaptureState = .showingPosePreview(secondsRemaining: 6)
 
     @State
     private var capturedPhotos: [UIImage] = []
@@ -205,7 +205,7 @@ struct PoseTrackingView: View {
     // MARK: - State Overlays
     // =========================================================
 
-    // State 1: 3-Second Pose Preview Card
+    // State 1: 6-Second Pose Preview Card
     @ViewBuilder
     private func posePreviewOverlay(secondsRemaining: Int) -> some View {
         ZStack {
@@ -455,8 +455,8 @@ struct PoseTrackingView: View {
         activeTimerTask?.cancel()
 
         activeTimerTask = Task { @MainActor in
-            // 1. Wait 3 seconds showing the pose preview
-            for remaining in (1...3).reversed() {
+            // 1. Wait 6 seconds showing the pose preview
+            for remaining in (1...6).reversed() {
                 guard !Task.isCancelled else { return }
                 withAnimation(.easeInOut(duration: 0.2)) {
                     captureState = .showingPosePreview(secondsRemaining: remaining)
@@ -561,9 +561,9 @@ struct PoseTrackingView: View {
                 captureState = .challengeSuccess
             }
 
-            // Celebratory display: 2 seconds
+            // Celebratory display: 5 seconds
             do {
-                try await Task.sleep(nanoseconds: 2_000_000_000)
+                try await Task.sleep(nanoseconds: 5_000_000_000)
             } catch { return }
 
             guard !Task.isCancelled else { return }
@@ -583,9 +583,9 @@ struct PoseTrackingView: View {
                 captureState = .challengeFailure(penalty: penalty)
             }
 
-            // Penalty notification display: 2.4 seconds
+            // Penalty notification display: 5 seconds
             do {
-                try await Task.sleep(nanoseconds: 2_400_000_000)
+                try await Task.sleep(nanoseconds: 5_000_000_000)
             } catch { return }
 
             guard !Task.isCancelled else { return }

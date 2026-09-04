@@ -80,12 +80,12 @@ struct MusicCarouselCard: View {
                 .foregroundColor(.black)
                 .lineLimit(1)
             
-            Spacer(minLength: 4)
+            Spacer()
             
             HStack(spacing: 12) {
                 HStack(spacing: 4) {
                     Image(systemName: "figure.dance")
-                    Text("\(music.moves) gerakan")
+                    Text("\(music.moves) pose")
                 }
                 
                 Text("•")

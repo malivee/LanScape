@@ -75,7 +75,7 @@ struct MiniPoseThumbnailBadge: View {
     init(imageName: String = "pose 1", size: CGFloat = 175) {
         self.imageName = imageName
         self.width = size
-        self.height = size * 0.77
+        self.height = size * 0.85
     }
     
     init(imageName: String = "pose 1", width: CGFloat, height: CGFloat) {
@@ -98,6 +98,8 @@ struct MiniPoseThumbnailBadge: View {
                 .resizable()
                 .scaledToFit()
                 .padding(8)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .offset(y: 8)
             
             Text("Target")
                 .font(.system(size: 11, weight: .heavy, design: .rounded))
