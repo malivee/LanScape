@@ -77,31 +77,35 @@ struct FastTapChallengeView: View {
                         .animation(.easeOut(duration: 0.4), value: tap.id)
                 }
                 
-                VStack(spacing: 20) {
+                let isPad = UIDevice.isIPad
+                let baseCircleDiameter: CGFloat = isPad ? 300 : 160
+                let barWidth: CGFloat = min(440, geometry.size.width * 0.65)
+                
+                VStack(spacing: isPad ? 20 : 6) {
                     // Header
-                    VStack(spacing: 8) {
-                        HStack(spacing: 8) {
+                    VStack(spacing: isPad ? 8 : 3) {
+                        HStack(spacing: 6) {
                             Image(systemName: "timer")
-                                .font(.system(size: 24, weight: .bold))
+                                .font(.system(size: isPad ? 24 : 16, weight: .bold))
                             Text("\(secondsRemaining)s")
-                                .font(.system(size: 32, weight: .heavy, design: .rounded))
+                                .font(.system(size: isPad ? 32 : 20, weight: .heavy, design: .rounded))
                         }
                         .foregroundColor(secondsRemaining <= 3 ? .red : .yellow)
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 8)
+                        .padding(.horizontal, isPad ? 24 : 14)
+                        .padding(.vertical, isPad ? 8 : 4)
                         .background(Color.black.opacity(0.65))
                         .clipShape(Capsule())
                         
                         Text("SENTUH DENGAN TANGAN KALIAN!")
-                            .font(.system(size: 38, weight: .heavy, design: .rounded))
+                            .font(.system(size: isPad ? 38 : 20, weight: .heavy, design: .rounded))
                             .foregroundColor(.white)
                             .shadow(color: .black.opacity(0.8), radius: 6)
                         
                         Text("Arahkan tangan kalian di depan kamera untuk menyentuh lingkaran!")
-                            .font(.system(size: 20, weight: .medium, design: .rounded))
+                            .font(.system(size: isPad ? 20 : 12, weight: .medium, design: .rounded))
                             .foregroundColor(.white.opacity(0.9))
                     }
-                    .padding(.top, 24)
+                    .padding(.top, isPad ? 24 : 8)
                     
                     Spacer()
                     
@@ -113,11 +117,11 @@ struct FastTapChallengeView: View {
                                 RadialGradient(
                                     colors: [Color.cyan.opacity(0.4), Color.clear],
                                     center: .center,
-                                    startRadius: 40,
-                                    endRadius: 180
+                                    startRadius: isPad ? 40 : 20,
+                                    endRadius: isPad ? 180 : 90
                                 )
                             )
-                            .frame(width: max(20, 360 * circleScale), height: max(20, 360 * circleScale))
+                            .frame(width: max(20, (baseCircleDiameter * 1.2) * circleScale), height: max(20, (baseCircleDiameter * 1.2) * circleScale))
                         
                         // Main shrinking circular disc
                         Circle()
@@ -128,21 +132,21 @@ struct FastTapChallengeView: View {
                                     endPoint: .bottomTrailing
                                 )
                             )
-                            .frame(width: max(20, 300 * circleScale), height: max(20, 300 * circleScale))
+                            .frame(width: max(20, baseCircleDiameter * circleScale), height: max(20, baseCircleDiameter * circleScale))
                             .overlay(
                                 Circle()
-                                    .stroke(Color.white, lineWidth: max(1, 6 * circleScale))
+                                    .stroke(Color.white, lineWidth: max(1, (isPad ? 6 : 4) * circleScale))
                             )
-                            .shadow(color: Color.cyan.opacity(0.8), radius: 24)
+                            .shadow(color: Color.cyan.opacity(0.8), radius: isPad ? 24 : 12)
                             .overlay(
-                                VStack(spacing: 4) {
+                                VStack(spacing: 2) {
                                     Image(systemName: "hand.raised.fill")
-                                        .font(.system(size: max(16, 72 * circleScale), weight: .bold))
+                                        .font(.system(size: max(14, (isPad ? 72 : 40) * circleScale), weight: .bold))
                                         .foregroundColor(.white)
                                     
                                     if circleScale > 0.35 {
                                         Text("SENTUH!")
-                                            .font(.system(size: max(12, 28 * circleScale), weight: .black, design: .rounded))
+                                            .font(.system(size: max(10, (isPad ? 28 : 15) * circleScale), weight: .black, design: .rounded))
                                             .foregroundColor(.white)
                                     }
                                 }
@@ -153,23 +157,23 @@ struct FastTapChallengeView: View {
                     Spacer()
                     
                     // Bottom Counter, Status & Progress Bar
-                    VStack(spacing: 12) {
-                        HStack(spacing: 12) {
+                    VStack(spacing: isPad ? 12 : 6) {
+                        HStack(spacing: isPad ? 12 : 8) {
                             Text("\(currentTaps) / \(targetTaps) Sentuhan")
-                                .font(.system(size: 26, weight: .bold, design: .rounded))
+                                .font(.system(size: isPad ? 26 : 16, weight: .bold, design: .rounded))
                                 .foregroundColor(.white)
                             
                             // Vision Hand Tracking Live Indicator Badge
-                            HStack(spacing: 6) {
+                            HStack(spacing: 4) {
                                 Circle()
                                     .fill(visionHandTracker.detectedHandPoints.isEmpty ? Color.orange : Color.green)
-                                    .frame(width: 10, height: 10)
+                                    .frame(width: isPad ? 10 : 8, height: isPad ? 10 : 8)
                                 Text(visionHandTracker.detectedHandPoints.isEmpty ? "Angkat Tanganmu ✋" : "Tangan Terdeteksi ✋")
-                                    .font(.system(size: 15, weight: .bold, design: .rounded))
+                                    .font(.system(size: isPad ? 15 : 11, weight: .bold, design: .rounded))
                                     .foregroundColor(.white)
                             }
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
+                            .padding(.horizontal, isPad ? 12 : 8)
+                            .padding(.vertical, isPad ? 6 : 4)
                             .background(Color.black.opacity(0.55))
                             .clipShape(Capsule())
                         }
@@ -178,7 +182,7 @@ struct FastTapChallengeView: View {
                         ZStack(alignment: .leading) {
                             RoundedRectangle(cornerRadius: 12)
                                 .fill(Color.white.opacity(0.25))
-                                .frame(width: 440, height: 16)
+                                .frame(width: barWidth, height: isPad ? 16 : 10)
                             
                             RoundedRectangle(cornerRadius: 12)
                                 .fill(
@@ -188,12 +192,13 @@ struct FastTapChallengeView: View {
                                         endPoint: .trailing
                                     )
                                 )
-                                .frame(width: max(0, 440 * (CGFloat(currentTaps) / CGFloat(targetTaps))), height: 16)
+                                .frame(width: max(0, barWidth * (CGFloat(currentTaps) / CGFloat(targetTaps))), height: isPad ? 16 : 10)
                                 .animation(.spring(response: 0.2), value: currentTaps)
                         }
                     }
-                    .padding(.bottom, 36)
+                    .padding(.bottom, isPad ? 36 : 12)
                 }
+
             }
             // Check vision hand collision against circle in real-time
             .onChange(of: visionHandTracker.detectedHandPoints) { _, newPoints in

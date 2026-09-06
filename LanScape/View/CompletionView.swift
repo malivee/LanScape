@@ -27,81 +27,105 @@ struct CompletionView: View {
     }
     
     var body: some View {
-        ZStack {
-            Color.black.opacity(0.8)
-                .ignoresSafeArea()
+        GeometryReader { geometry in
+            let isPad = UIDevice.current.userInterfaceIdiom == .pad || geometry.size.height > 550
+            let cardWidth = isPad ? min(1050, geometry.size.width * 0.90) : min(780, geometry.size.width * 0.92)
+            let cardHeight = isPad ? min(510, geometry.size.height * 0.62) : min(220, geometry.size.height * 0.60)
+            let photoW = isPad ? CGFloat(400) : CGFloat(170)
+            let photoH = isPad ? CGFloat(360) : CGFloat(150)
+            let btnW = isPad ? CGFloat(280) : min(CGFloat(210), (geometry.size.width - 80) / 3.3)
+            let btnH = isPad ? CGFloat(72) : CGFloat(44)
+            let btnFont = isPad ? CGFloat(24) : CGFloat(14)
             
-            VStack(spacing: 32) {
-                // title
-                Text("HORE, KALIAN BERHASIL!!")
-                    .font(.system(size: 44, weight: .bold))
-                    .foregroundColor(.white)
+            ZStack {
+                Color.black.opacity(0.8)
+                    .ignoresSafeArea()
                 
-                // card utama
-                HStack(spacing: 44) {
-                    // stack foto di sebelah kiri
-                    PhotoStackView(photos: photos, capturedPhotos: capturedPhotos) {
-                        showGalleryModal = true
-                    }
+                VStack(spacing: isPad ? 24 : 8) {
+                    Spacer(minLength: isPad ? 10 : 4)
                     
-                    // info teks di sebelah kanan
-                    VStack(alignment: .leading, spacing: 18) {
-                        Text("Kombinasi yang luar biasa!\nKalian berhasil menyelesaikan seluruh gerakan dengan baik.")
-                            .font(.system(size: 30, weight: .semibold))
-                            .lineSpacing(4)
+                    // title
+                    Text("HORE, KALIAN BERHASIL!!")
+                        .font(.system(size: isPad ? 40 : 20, weight: .bold))
+                        .foregroundColor(.white)
+                    
+                    // card utama
+                    HStack(spacing: isPad ? 36 : 16) {
+                        // stack foto di sebelah kiri
+                        PhotoStackView(
+                            photos: photos,
+                            capturedPhotos: capturedPhotos,
+                            photoWidth: photoW,
+                            photoHeight: photoH
+                        ) {
+                            showGalleryModal = true
+                        }
                         
-                        Divider()
-                            .frame(height: 1)
-                            .background(.gray)
-                            .padding(.vertical, 20)
-                        
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Kalian telah bergerak selama")
-                                .font(.system(size: 26, weight: .regular))
+                        // info teks di sebelah kanan
+                        VStack(alignment: .leading, spacing: isPad ? 14 : 4) {
+                            Text("Kombinasi yang luar biasa!\nKalian berhasil menyelesaikan seluruh gerakan dengan baik.")
+                                .font(.system(size: isPad ? 26 : 13, weight: .semibold))
+                                .lineSpacing(isPad ? 4 : 2)
+                                .lineLimit(2)
                             
-                            HStack(spacing: 6) {
-                                Image(systemName: "hourglass")
-                                    .font(.system(size: 26, weight: .bold))
-                                Text(formattedDuration)
-                                    .font(.system(size: 26, weight: .bold))
+                            Divider()
+                                .frame(height: 1)
+                                .background(.gray)
+                                .padding(.vertical, isPad ? 14 : 4)
+                            
+                            VStack(alignment: .leading, spacing: isPad ? 6 : 2) {
+                                Text("Kalian telah bergerak selama")
+                                    .font(.system(size: isPad ? 22 : 11, weight: .regular))
+                                
+                                HStack(spacing: 6) {
+                                    Image(systemName: "hourglass")
+                                        .font(.system(size: isPad ? 22 : 13, weight: .bold))
+                                    Text(formattedDuration)
+                                        .font(.system(size: isPad ? 24 : 14, weight: .bold))
+                                }
+                                .foregroundColor(Color.darkBlue)
                             }
-                            .foregroundColor(Color.darkBlue)
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.trailing, isPad ? 20 : 10)
                     }
-                    .frame(width: 470, height: 400, alignment: .leading)
-                }
-                .frame(width: 1050, height: 510)
-                .background(Color.lightBlue)
-                .cornerRadius(24)
-                
-                // action buttons
-                HStack(spacing: 24) {
-                    CompletionActionButton(title: "Ulangi", systemIcon: "arrow.counterclockwise") {
-                        if let onRestart {
-                            onRestart()
-                        } else {
-                            dismiss()
+                    .padding(.horizontal, isPad ? 28 : 14)
+                    .frame(width: cardWidth, height: cardHeight)
+                    .background(Color.lightBlue)
+                    .cornerRadius(isPad ? 24 : 16)
+                    
+                    // action buttons
+                    HStack(spacing: isPad ? 20 : 10) {
+                        CompletionActionButton(title: "Ulangi", systemIcon: "arrow.counterclockwise", width: btnW, height: btnH, fontSize: btnFont) {
+                            if let onRestart {
+                                onRestart()
+                            } else {
+                                dismiss()
+                            }
+                        }
+                        
+                        CompletionActionButton(title: "Menu Utama", systemIcon: "house.fill", width: btnW, height: btnH, fontSize: btnFont) {
+                            if let onMainMenu {
+                                onMainMenu()
+                            } else {
+                                navigateToMainView = true
+                            }
+                        }
+                        
+                        CompletionActionButton(title: "Pilih Lagu", systemIcon: "play.fill", isPrimary: true, width: btnW, height: btnH, fontSize: btnFont) {
+                            if let onSelectMusic {
+                                onSelectMusic()
+                            } else {
+                                navigateToSelectMusicView = true
+                            }
                         }
                     }
                     
-                    CompletionActionButton(title: "Menu Utama", systemIcon: "house.fill") {
-                        if let onMainMenu {
-                            onMainMenu()
-                        } else {
-                            navigateToMainView = true
-                        }
-                    }
-                    
-                    CompletionActionButton(title: "Pilih Lagu", systemIcon: "play.fill", isPrimary: true) {
-                        if let onSelectMusic {
-                            onSelectMusic()
-                        } else {
-                            navigateToSelectMusicView = true
-                        }
-                    }
+                    Spacer(minLength: isPad ? 10 : 4)
                 }
+                .padding(.horizontal, 16)
+                .frame(width: geometry.size.width, height: geometry.size.height)
             }
-            .padding()
         }
         // modal preview galeri foto
         .fullScreenCover(isPresented: $showGalleryModal) {
@@ -126,6 +150,8 @@ struct CompletionView: View {
 struct PhotoStackView: View {
     var photos: [String] = []
     var capturedPhotos: [UIImage] = []
+    var photoWidth: CGFloat = 430
+    var photoHeight: CGFloat = 400
     let onTap: () -> Void
     
     private var totalCount: Int {
@@ -154,44 +180,44 @@ struct PhotoStackView: View {
             ZStack {
                 // layer foto belakang
                 renderImage(at: min(2, totalCount - 1))
-                    .frame(width: 430, height: 400)
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .frame(width: photoWidth, height: photoHeight)
+                    .clipShape(RoundedRectangle(cornerRadius: photoHeight < 200 ? 10 : 16))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(Color.white, lineWidth: 2)
+                        RoundedRectangle(cornerRadius: photoHeight < 200 ? 10 : 16)
+                            .stroke(Color.white, lineWidth: photoHeight < 200 ? 1.5 : 2)
                     )
                     .rotationEffect(.degrees(-8))
                 
                 renderImage(at: min(1, totalCount - 1))
-                    .frame(width: 430, height: 400)
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .frame(width: photoWidth, height: photoHeight)
+                    .clipShape(RoundedRectangle(cornerRadius: photoHeight < 200 ? 10 : 16))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(Color.white, lineWidth: 2)
+                        RoundedRectangle(cornerRadius: photoHeight < 200 ? 10 : 16)
+                            .stroke(Color.white, lineWidth: photoHeight < 200 ? 1.5 : 2)
                     )
                     .rotationEffect(.degrees(-4))
                 
                 // foto yang paling depan
                 ZStack(alignment: .bottomTrailing) {
                     renderImage(at: 0)
-                        .frame(width: 430, height: 400)
-                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .frame(width: photoWidth, height: photoHeight)
+                        .clipShape(RoundedRectangle(cornerRadius: photoHeight < 200 ? 10 : 16))
                         .overlay(
-                            RoundedRectangle(cornerRadius: 16)
-                                .stroke(Color.white, lineWidth: 2)
+                            RoundedRectangle(cornerRadius: photoHeight < 200 ? 10 : 16)
+                                .stroke(Color.white, lineWidth: photoHeight < 200 ? 1.5 : 2)
                         )
                         .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 4)
                     
                     // badge "+more"
                     if totalCount > 3 {
                         Text("+\(totalCount - 3) more")
-                            .font(.system(size: 14, weight: .bold))
+                            .font(.system(size: photoHeight < 200 ? 10 : 14, weight: .bold))
                             .foregroundColor(.white)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
+                            .padding(.horizontal, photoHeight < 200 ? 6 : 10)
+                            .padding(.vertical, photoHeight < 200 ? 3 : 6)
                             .background(Color.black.opacity(0.6))
-                            .cornerRadius(8)
-                            .padding(12)
+                            .cornerRadius(6)
+                            .padding(photoHeight < 200 ? 6 : 12)
                     }
                 }
             }
@@ -219,22 +245,18 @@ struct ImageGalleryModal: View {
         !capturedImages.isEmpty ? capturedImages.count : images.count
     }
     
-    private let frameHeight: CGFloat = 715
-    private let photoWidth: CGFloat = 786
-    private let photoHeight: CGFloat = 510
-    
     @ViewBuilder
     private func renderModalImage(at index: Int) -> some View {
         if !capturedImages.isEmpty {
             let safeIndex = max(0, min(index, capturedImages.count - 1))
             Image(uiImage: capturedImages[safeIndex])
                 .resizable()
-                .scaledToFill()
+                .scaledToFit()
         } else if !images.isEmpty {
             let safeIndex = max(0, min(index, images.count - 1))
             Image(images[safeIndex])
                 .resizable()
-                .scaledToFill()
+                .scaledToFit()
         } else {
             Color.gray.opacity(0.3)
         }
@@ -242,38 +264,38 @@ struct ImageGalleryModal: View {
     
     var body: some View {
         GeometryReader { geometry in
+            let frameHeight = geometry.size.height * 0.85
+            
             ZStack {
-                Color.black.opacity(0.8).ignoresSafeArea()
-                ZStack {
-                    Color.white
-                    // foto carousel swipe kanan-kiri
-                    VStack(spacing: 18) {
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 20) {
-                                ForEach(0..<totalCount, id: \.self) { index in
-                                    renderModalImage(at: index)
-                                        .frame(width: photoWidth, height: photoHeight)
-                                        .clipShape(RoundedRectangle(cornerRadius: 24))
-                                        .shadow(color: Color.black.opacity(0.25), radius: 8, x: 0, y: 4)
-                                        .id(index)
-                                }
+                Color.black.opacity(0.85)
+                    .ignoresSafeArea()
+                
+                VStack {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        LazyHStack(spacing: 20) {
+                            ForEach(0..<totalCount, id: \.self) { index in
+                                renderModalImage(at: index)
+                                    .frame(width: geometry.size.width * 0.8, height: frameHeight)
+                                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                                    .id(index)
                             }
-                            .scrollTargetLayout()
-                            .padding(.horizontal, (geometry.size.width - photoWidth) / 2)
                         }
-                        .scrollTargetBehavior(.viewAligned)
-                        .scrollPosition(id: $scrollPosition)
-                        .frame(height: photoHeight)
-                        
-                        // dots indicator
+                        .scrollTargetLayout()
+                        .padding(.horizontal, geometry.size.width * 0.1)
+                    }
+                    .scrollPosition(id: $scrollPosition, anchor: .center)
+                    .scrollTargetBehavior(.viewAligned(anchor: .center))
+                    
+                    if totalCount > 1 {
                         HStack(spacing: 8) {
                             ForEach(0..<totalCount, id: \.self) { index in
                                 Circle()
-                                    .fill(index == currentIndex ? Color.black : Color.gray.opacity(0.3))
+                                    .fill(index == currentIndex ? Color.white : Color.gray.opacity(0.5))
                                     .frame(width: 7, height: 7)
                             }
                         }
                         .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.top, 8)
                     }
                 }
                 .frame(width: geometry.size.width, height: frameHeight)
@@ -288,8 +310,8 @@ struct ImageGalleryModal: View {
                         }
                         .shadow(color: Color.black.opacity(0.25), radius: 8, x: 0, y: 4)
                     }
-                    .padding(.trailing, 20)
-                    .padding(.top, 64)
+                    .padding(.trailing, 30)
+                    .padding(.top, 24)
                     
                     Spacer()
                 }
@@ -304,17 +326,21 @@ struct CompletionActionButton: View {
     let title: String
     let systemIcon: String
     var isPrimary: Bool = false
+    var width: CGFloat = 300
+    var height: CGFloat = 76
+    var fontSize: CGFloat = 26
     let action: () -> Void
     
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 8) {
+            HStack(spacing: 6) {
                 Image(systemName: systemIcon)
+                    .font(.system(size: fontSize * 0.9, weight: .bold))
                 Text(title)
+                    .font(.system(size: fontSize, weight: .bold))
             }
-            .font(.system(size: 26, weight: .bold))
             .foregroundColor(.white)
-            .frame(width: 300, height: 76)
+            .frame(width: width, height: height)
             .background(
                 Group {
                     if isPrimary {
@@ -324,19 +350,23 @@ struct CompletionActionButton: View {
                             endPoint: .bottom
                         )
                     } else {
-                        Color.darkBlue.opacity(0.8)
+                        Color.darkBlue.opacity(0.85)
                     }
                 }
             )
-            .cornerRadius(50)
+            .cornerRadius(height / 2)
             .overlay(
-                RoundedRectangle(cornerRadius: 50)
+                RoundedRectangle(cornerRadius: height / 2)
                     .stroke(Color.white.opacity(0.6), lineWidth: isPrimary ? 0 : 1.5)
             )
         }
     }
 }
 
-#Preview {
+#Preview("Completion - Phone Landscape", traits: .landscapeLeft) {
+    CompletionView()
+}
+
+#Preview("Completion - iPad Landscape", traits: .landscapeRight) {
     CompletionView()
 }

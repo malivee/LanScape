@@ -12,43 +12,45 @@ struct PoseInstructionView: View {
     var imageName: String = "pose 1"
     
     var body: some View {
-        VStack(spacing: 8) {
+        let isPad = UIDevice.isIPad
+        
+        VStack(spacing: isPad ? 8 : 4) {
             // Cheerful pill tag
             HStack(spacing: 6) {
                 Image(systemName: "sparkles")
                     .foregroundColor(Color.orange)
-                    .font(.system(size: 13, weight: .bold))
+                    .font(.system(size: isPad ? 13 : 10, weight: .bold))
                 Text("IKUTI GAYA POSE")
-                    .font(.system(size: 14, weight: .black, design: .rounded))
+                    .font(.system(size: isPad ? 14 : 11, weight: .black, design: .rounded))
                     .foregroundColor(Color.darkBlue)
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 6)
+            .padding(.horizontal, isPad ? 14 : 10)
+            .padding(.vertical, isPad ? 6 : 4)
             .background(Color.white)
             .clipShape(Capsule())
             .shadow(color: Color.black.opacity(0.08), radius: 4)
-            .padding(.top, 4)
+            .padding(.top, isPad ? 4 : 2)
             
             Text(mainTitle)
-                .font(.system(size: 36, weight: .heavy, design: .rounded))
+                .font(.system(size: isPad ? 36 : 22, weight: .heavy, design: .rounded))
                 .foregroundColor(.black)
             
             Text(subTitle)
-                .font(.system(size: 20, weight: .semibold, design: .rounded))
+                .font(.system(size: isPad ? 20 : 13, weight: .semibold, design: .rounded))
                 .foregroundColor(Color(hex: "5A6E85"))
-                .padding(.bottom, 6)
+                .padding(.bottom, isPad ? 6 : 2)
             
             Image(imageName)
                 .resizable()
                 .scaledToFit()
-                .frame(maxHeight: 300)
-                .padding(.horizontal, 20)
-                .padding(.bottom, 6)
+                .frame(maxHeight: isPad ? 280 : 120)
+                .padding(.horizontal, isPad ? 20 : 10)
+                .padding(.bottom, isPad ? 6 : 2)
         }
-        .padding(.vertical, 24)
-        .padding(.horizontal, 44)
+        .padding(.vertical, isPad ? 24 : 10)
+        .padding(.horizontal, isPad ? 44 : 24)
         .background(
-            RoundedRectangle(cornerRadius: 32)
+            RoundedRectangle(cornerRadius: isPad ? 32 : 20)
                 .fill(
                     LinearGradient(
                         colors: [Color(hex: "FFFFFF"), Color(hex: "F0F6FF")],
@@ -57,12 +59,12 @@ struct PoseInstructionView: View {
                     )
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: 32)
-                        .stroke(Color.white.opacity(0.9), lineWidth: 3)
+                    RoundedRectangle(cornerRadius: isPad ? 32 : 20)
+                        .stroke(Color.white.opacity(0.9), lineWidth: isPad ? 3 : 2)
                 )
-                .shadow(color: Color.black.opacity(0.22), radius: 24, x: 0, y: 8)
+                .shadow(color: Color.black.opacity(0.22), radius: isPad ? 24 : 12, x: 0, y: isPad ? 8 : 4)
         )
-        .frame(maxWidth: 680)
+        .frame(maxWidth: isPad ? 680 : 420)
     }
 }
 
@@ -85,45 +87,48 @@ struct MiniPoseThumbnailBadge: View {
     }
     
     var body: some View {
+        let isSmall = width < 120
+        
         ZStack(alignment: .topLeading) {
-            RoundedRectangle(cornerRadius: 20)
+            RoundedRectangle(cornerRadius: isSmall ? 12 : 20)
                 .fill(Color.white.opacity(0.92))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 20)
-                        .stroke(Color.blue.opacity(0.35), lineWidth: 2.5)
+                    RoundedRectangle(cornerRadius: isSmall ? 12 : 20)
+                        .stroke(Color.blue.opacity(0.35), lineWidth: isSmall ? 1.5 : 2.5)
                 )
-                .shadow(color: Color.black.opacity(0.18), radius: 10, x: 0, y: 4)
+                .shadow(color: Color.black.opacity(0.18), radius: isSmall ? 5 : 10, x: 0, y: isSmall ? 2 : 4)
             
             Image(imageName)
                 .resizable()
                 .scaledToFit()
-                .padding(8)
+                .padding(isSmall ? 4 : 8)
             
             Text("Target")
-                .font(.system(size: 11, weight: .heavy, design: .rounded))
+                .font(.system(size: isSmall ? 8 : 11, weight: .heavy, design: .rounded))
                 .foregroundColor(.white)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 3)
+                .padding(.horizontal, isSmall ? 5 : 8)
+                .padding(.vertical, isSmall ? 2 : 3)
                 .background(Color.blue)
                 .clipShape(Capsule())
-                .padding(8)
+                .padding(isSmall ? 4 : 8)
         }
         .frame(width: width, height: height)
     }
 }
 
-#Preview("Pose Instruction & Mini Badge") {
+#Preview("Pose Instruction & Mini Badge - Phone", traits: .landscapeLeft) {
     ZStack {
         Color.black.opacity(0.7).ignoresSafeArea()
         
-        VStack(spacing: 30) {
+        VStack(spacing: 20) {
             PoseInstructionView(
                 mainTitle: "Pose Pertama",
                 subTitle: "Pose Fusion",
                 imageName: "pose 1"
             )
             
-            MiniPoseThumbnailBadge(imageName: "pose 1", size: 175)
+            MiniPoseThumbnailBadge(imageName: "pose 1", size: 100)
         }
     }
 }
+
