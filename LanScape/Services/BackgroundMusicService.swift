@@ -133,4 +133,8 @@ final class BackgroundMusicService: ObservableObject {
         player.play()
         isPlaying = true
     }
+    
+    func setVolume(_ volume: Float) {
+        audioPlayer?.volume = volume
+    }
 }

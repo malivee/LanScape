@@ -7,14 +7,14 @@ import SwiftUI
 
 struct FastTapChallengeView: View {
     @ObservedObject var visionHandTracker: VisionHandTrackingService
-    let targetTaps: Int = 10
-    let timeLimit: Int = 8
+    let targetTaps: Int = 5
+    let timeLimit: Int = 10
     
     let onSuccess: () -> Void
     let onFailure: () -> Void
     
     @State private var currentTaps: Int = 0
-    @State private var secondsRemaining: Int = 8
+    @State private var secondsRemaining: Int = 10
     @State private var isFinished: Bool = false
     @State private var timerTask: Task<Void, Never>? = nil
     @State private var lastHandHitTime: Date = .distantPast
@@ -32,8 +32,8 @@ struct FastTapChallengeView: View {
             let currentRadius = circleSize / 2.0
             
             ZStack {
-                // Clean dark slate backdrop
-                Color(hex: "1F2024").opacity(0.85)
+                // Completely transparent background so camera preview remains 100% visible & clear
+                Color.clear
                     .ignoresSafeArea()
                     .contentShape(Rectangle())
                     .onTapGesture { location in
@@ -73,7 +73,7 @@ struct FastTapChallengeView: View {
                         }
                         .padding(.horizontal, isPad ? 12 : 9)
                         .padding(.vertical, isPad ? 5 : 3)
-                        .background(Color.black.opacity(0.65))
+                        .background(Color(hex: "111827").opacity(0.85))
                         .clipShape(Capsule())
                         .overlay(
                             Capsule()
@@ -84,18 +84,20 @@ struct FastTapChallengeView: View {
                             .font(.system(size: isPad ? 26 : 16, weight: .bold))
                             .foregroundColor(.white)
                             .tracking(0.6)
+                            .shadow(color: .black.opacity(0.8), radius: 6, y: 3)
                         
-                        Text("Arahkan tangan kalian di depan kamera untuk menyentuh lingkaran")
-                            .font(.system(size: isPad ? 14 : 10, weight: .regular))
-                            .foregroundColor(Color(hex: "CBD5E1"))
+                        Text("Arahkan tangan kalian di depan kamera untuk menyentuh lingkaran (\(currentTaps)/\(targetTaps))")
+                            .font(.system(size: isPad ? 14 : 10, weight: .medium))
+                            .foregroundColor(Color(hex: "E2E8F0"))
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 24)
+                            .shadow(color: .black.opacity(0.8), radius: 4)
                     }
                     .padding(.top, isPad ? 24 : 10)
                     
                     Spacer()
                     
-                    // Central Interactive Circle (Figma Reference Style)
+                    // Central Interactive Circle
                     Button {
                         handleTap(at: circleCenter)
                     } label: {
@@ -112,7 +114,7 @@ struct FastTapChallengeView: View {
                                 .trim(from: 0, to: progress)
                                 .stroke(
                                     Color(hex: "60A5FA"),
-                                    style: StrokeStyle(lineWidth: isPad ? 4 : 3, lineCap: .round)
+                                    style: StrokeStyle(lineWidth: isPad ? 6 : 4, lineCap: .round)
                                 )
                                 .frame(width: circleSize, height: circleSize)
                                 .rotationEffect(.degrees(-90))
@@ -121,6 +123,7 @@ struct FastTapChallengeView: View {
                             Circle()
                                 .fill(Color(hex: "155DFC"))
                                 .frame(width: circleSize - (isPad ? 8 : 6), height: circleSize - (isPad ? 8 : 6))
+                                .shadow(color: Color(hex: "155DFC").opacity(0.6), radius: isPad ? 20 : 12)
                             
                             VStack(spacing: isPad ? 4 : 2) {
                                 Text("✋")
@@ -144,13 +147,14 @@ struct FastTapChallengeView: View {
                             .font(.system(size: isPad ? 19 : 13, weight: .heavy))
                             .foregroundColor(.white)
                             .tracking(1.4)
+                            .shadow(color: .black.opacity(0.8), radius: 4)
                         
-                        Text("Arahkan tanganmu tepat pada lingkaran (\(currentTaps)/\(targetTaps))")
+                        Text("Arahkan tanganmu tepat pada lingkaran atau sentuh layar (\(currentTaps)/\(targetTaps))")
                             .font(.system(size: isPad ? 13 : 9.5, weight: .medium))
                             .foregroundColor(.white)
                             .padding(.horizontal, isPad ? 20 : 13)
                             .padding(.vertical, isPad ? 7 : 4.5)
-                            .background(Color(hex: "2563EB"))
+                            .background(Color(hex: "111827").opacity(0.85))
                             .clipShape(Capsule())
                     }
                     .padding(.bottom, isPad ? 24 : 10)
@@ -243,12 +247,4 @@ struct FastTapChallengeView: View {
             }
         }
     }
-}
-
-#Preview("Fast Tap Challenge", traits: .landscapeLeft) {
-    FastTapChallengeView(
-        visionHandTracker: VisionHandTrackingService(),
-        onSuccess: {},
-        onFailure: {}
-    )
 }

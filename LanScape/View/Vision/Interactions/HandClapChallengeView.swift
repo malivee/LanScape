@@ -8,15 +8,15 @@ import SwiftUI
 struct HandClapChallengeView: View {
     @ObservedObject var audioMonitor: AudioLevelMonitor
     var visionHandTracker: VisionHandTrackingService? = nil
-    let targetClaps: Int = 12
-    let timeLimit: Int = 8
+    let targetClaps: Int = 5
+    let timeLimit: Int = 10
     
     var onClapTriggered: (() -> Void)? = nil
     let onSuccess: () -> Void
     let onFailure: () -> Void
     
     @State private var currentClaps: Int = 0
-    @State private var secondsRemaining: Int = 8
+    @State private var secondsRemaining: Int = 10
     @State private var isFinished: Bool = false
     @State private var timerTask: Task<Void, Never>? = nil
     @State private var bounceScale: CGFloat = 1.0
@@ -30,8 +30,8 @@ struct HandClapChallengeView: View {
         let circleSize: CGFloat = isPad ? 210 : 124
         
         ZStack {
-            // Clean dark slate backdrop with subtle blur
-            Color(hex: "1F2024").opacity(0.85)
+            // Completely transparent background so camera preview remains 100% visible & clear
+            Color.clear
                 .ignoresSafeArea()
                 .contentShape(Rectangle())
                 .onTapGesture {
@@ -52,7 +52,7 @@ struct HandClapChallengeView: View {
                     }
                     .padding(.horizontal, isPad ? 12 : 9)
                     .padding(.vertical, isPad ? 5 : 3)
-                    .background(Color.black.opacity(0.65))
+                    .background(Color(hex: "111827").opacity(0.85))
                     .clipShape(Capsule())
                     .overlay(
                         Capsule()
@@ -64,50 +64,48 @@ struct HandClapChallengeView: View {
                         .font(.system(size: isPad ? 26 : 16, weight: .bold))
                         .foregroundColor(.white)
                         .tracking(0.6)
+                        .shadow(color: .black.opacity(0.8), radius: 6, y: 3)
                     
                     // Subtitle
-                    Text("Tepuk tangan kalian secepat mungkin sampai ikon tangan mengecil")
-                        .font(.system(size: isPad ? 14 : 10, weight: .regular))
-                        .foregroundColor(Color(hex: "CBD5E1"))
+                    Text("Tepuk tangan kalian bersama di depan kamera (\(currentClaps)/\(targetClaps))")
+                        .font(.system(size: isPad ? 14 : 10, weight: .medium))
+                        .foregroundColor(Color(hex: "E2E8F0"))
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 24)
+                        .shadow(color: .black.opacity(0.8), radius: 4)
                 }
                 .padding(.top, isPad ? 24 : 10)
                 
                 Spacer()
                 
-                // Central Interactive Circle (Figma Reference Style)
+                // Central Interactive Circle
                 Button {
                     registerClap()
                 } label: {
                     ZStack {
-                        // Soft subtle outer blue glow ring
                         Circle()
                             .stroke(Color(hex: "3B82F6").opacity(0.35), lineWidth: isPad ? 7 : 5)
                             .frame(width: circleSize + (isPad ? 12 : 8), height: circleSize + (isPad ? 12 : 8))
                         
-                        // Circular track
                         Circle()
                             .stroke(Color.white.opacity(0.12), lineWidth: isPad ? 4 : 3)
                             .frame(width: circleSize, height: circleSize)
                         
-                        // Circular Progress Stroke
                         Circle()
                             .trim(from: 0, to: progress)
                             .stroke(
                                 Color(hex: "60A5FA"),
-                                style: StrokeStyle(lineWidth: isPad ? 4 : 3, lineCap: .round)
+                                style: StrokeStyle(lineWidth: isPad ? 6 : 4, lineCap: .round)
                             )
                             .frame(width: circleSize, height: circleSize)
                             .rotationEffect(.degrees(-90))
                             .animation(.easeOut(duration: 0.15), value: progress)
                         
-                        // Solid Royal Blue Interior (Reference match)
                         Circle()
                             .fill(Color(hex: "155DFC"))
                             .frame(width: circleSize - (isPad ? 8 : 6), height: circleSize - (isPad ? 8 : 6))
+                            .shadow(color: Color(hex: "155DFC").opacity(0.6), radius: isPad ? 20 : 12)
                         
-                        // Center content: Clapping hand + Action label
                         VStack(spacing: isPad ? 4 : 2) {
                             Text("👏")
                                 .font(.system(size: isPad ? 52 : 32))
@@ -130,13 +128,14 @@ struct HandClapChallengeView: View {
                         .font(.system(size: isPad ? 19 : 13, weight: .heavy))
                         .foregroundColor(.white)
                         .tracking(1.4)
+                        .shadow(color: .black.opacity(0.8), radius: 4)
                     
                     Text("Arahkan tangan langsung atau sentuh layar (\(currentClaps)/\(targetClaps))")
                         .font(.system(size: isPad ? 13 : 9.5, weight: .medium))
                         .foregroundColor(.white)
                         .padding(.horizontal, isPad ? 20 : 13)
                         .padding(.vertical, isPad ? 7 : 4.5)
-                        .background(Color(hex: "2563EB"))
+                        .background(Color(hex: "111827").opacity(0.85))
                         .clipShape(Capsule())
                 }
                 .padding(.bottom, isPad ? 24 : 10)
@@ -204,13 +203,4 @@ struct HandClapChallengeView: View {
             }
         }
     }
-}
-
-#Preview("Hand Clap Challenge", traits: .landscapeLeft) {
-    HandClapChallengeView(
-        audioMonitor: AudioLevelMonitor(),
-        visionHandTracker: VisionHandTrackingService(),
-        onSuccess: {},
-        onFailure: {}
-    )
 }

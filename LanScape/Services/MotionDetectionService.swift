@@ -103,8 +103,8 @@ final class MotionDetectionService: ObservableObject {
                 guard !self.isCompleted else { return }
                 self.instantMotion = self.instantMotion * 0.3 + rawMotion * 0.7
                 
-                if self.instantMotion > 0.15 {
-                    self.accumulatedProgress = min(1.0, self.accumulatedProgress + (self.instantMotion * 0.035))
+                if self.instantMotion > 0.03 {
+                    self.accumulatedProgress = min(1.0, self.accumulatedProgress + (self.instantMotion * 0.09))
                     if self.accumulatedProgress >= 1.0 && !self.isCompleted {
                         self.isCompleted = true
                         self.isTargetReached = true

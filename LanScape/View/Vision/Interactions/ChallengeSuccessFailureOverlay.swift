@@ -13,7 +13,7 @@ struct ChallengeSuccessOverlay: View {
         let isPad = UIDevice.isIPad
         
         ZStack {
-            Color(hex: "1F2024").opacity(0.88)
+            Color.black.opacity(0.35)
                 .ignoresSafeArea()
             
             VStack(spacing: isPad ? 14 : 8) {
@@ -69,7 +69,7 @@ struct ChallengeFailureOverlay: View {
         let isPad = UIDevice.isIPad
         
         ZStack {
-            Color(hex: "1F2024").opacity(0.88)
+            Color.black.opacity(0.35)
                 .ignoresSafeArea()
             
             VStack(spacing: isPad ? 14 : 8) {
