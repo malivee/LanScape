@@ -17,190 +17,145 @@ struct FastTapChallengeView: View {
     @State private var secondsRemaining: Int = 8
     @State private var isFinished: Bool = false
     @State private var timerTask: Task<Void, Never>? = nil
-    @State private var tapPoints: [TapEffectPoint] = []
     @State private var lastHandHitTime: Date = .distantPast
+    @State private var bounceScale: CGFloat = 1.0
     
-    struct TapEffectPoint: Identifiable {
-        let id = UUID()
-        let point: CGPoint
-    }
-    
-    // Circle starts at size 320 and shrinks with every tap
-    private var circleScale: CGFloat {
-        let remainingRatio = CGFloat(targetTaps - currentTaps) / CGFloat(targetTaps)
-        return max(0.12, remainingRatio)
+    private var progress: CGFloat {
+        CGFloat(currentTaps) / CGFloat(targetTaps)
     }
     
     var body: some View {
         GeometryReader { geometry in
+            let isPad = UIDevice.isIPad
+            let circleSize: CGFloat = isPad ? 210 : 124
             let circleCenter = CGPoint(x: geometry.size.width / 2, y: geometry.size.height / 2)
-            let currentRadius = (300.0 * circleScale) / 2.0
+            let currentRadius = circleSize / 2.0
             
             ZStack {
-                // Background dark overlay with interactive tap anywhere or directly on circle
-                Color.black.opacity(0.50)
+                // Clean dark slate backdrop
+                Color(hex: "1F2024").opacity(0.85)
                     .ignoresSafeArea()
                     .contentShape(Rectangle())
                     .onTapGesture { location in
                         handleTap(at: location)
                     }
                 
-                // Tracked Hand Cursors (Vision Hand Tracking!)
+                // Tracked Hand Cursors (Clean subtle indicator)
                 ForEach(Array(visionHandTracker.detectedHandPoints.enumerated()), id: \.offset) { _, handPoint in
                     let handPos = handScreenPosition(handPoint, in: geometry.size)
                     
                     ZStack {
-                        // Pulsing target ring
                         Circle()
-                            .stroke(Color.yellow, lineWidth: 3)
-                            .frame(width: 70, height: 70)
+                            .stroke(Color(hex: "60A5FA"), lineWidth: 2)
+                            .frame(width: isPad ? 50 : 36, height: isPad ? 50 : 36)
                         
                         Circle()
-                            .fill(Color.yellow.opacity(0.3))
-                            .frame(width: 50, height: 50)
+                            .fill(Color(hex: "60A5FA").opacity(0.2))
+                            .frame(width: isPad ? 36 : 26, height: isPad ? 36 : 26)
                         
                         Text("✋")
-                            .font(.system(size: 28))
+                            .font(.system(size: isPad ? 20 : 14))
                     }
                     .position(handPos)
                     .animation(.easeOut(duration: 0.1), value: handPoint)
                 }
                 
-                // Tap particle sparks
-                ForEach(tapPoints) { tap in
-                    Circle()
-                        .stroke(Color.cyan, lineWidth: 3)
-                        .frame(width: 60, height: 60)
-                        .position(tap.point)
-                        .scaleEffect(1.8)
-                        .opacity(0)
-                        .animation(.easeOut(duration: 0.4), value: tap.id)
-                }
-                
-                let isPad = UIDevice.isIPad
-                let baseCircleDiameter: CGFloat = isPad ? 300 : 160
-                let barWidth: CGFloat = min(440, geometry.size.width * 0.65)
-                
-                VStack(spacing: isPad ? 20 : 6) {
-                    // Header
-                    VStack(spacing: isPad ? 8 : 3) {
-                        HStack(spacing: 6) {
+                VStack(spacing: 0) {
+                    // Top Header: Timer Pill, Title, Subtitle
+                    VStack(spacing: isPad ? 8 : 4) {
+                        HStack(spacing: 4) {
                             Image(systemName: "timer")
-                                .font(.system(size: isPad ? 24 : 16, weight: .bold))
+                                .font(.system(size: isPad ? 13 : 10, weight: .bold))
+                                .foregroundColor(Color(hex: "EF4444"))
                             Text("\(secondsRemaining)s")
-                                .font(.system(size: isPad ? 32 : 20, weight: .heavy, design: .rounded))
+                                .font(.system(size: isPad ? 14 : 11, weight: .bold))
+                                .foregroundColor(.white)
                         }
-                        .foregroundColor(secondsRemaining <= 3 ? .red : .yellow)
-                        .padding(.horizontal, isPad ? 24 : 14)
-                        .padding(.vertical, isPad ? 8 : 4)
+                        .padding(.horizontal, isPad ? 12 : 9)
+                        .padding(.vertical, isPad ? 5 : 3)
                         .background(Color.black.opacity(0.65))
                         .clipShape(Capsule())
+                        .overlay(
+                            Capsule()
+                                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                        )
                         
-                        Text("SENTUH DENGAN TANGAN KALIAN!")
-                            .font(.system(size: isPad ? 38 : 20, weight: .heavy, design: .rounded))
+                        Text("SENTUH DENGAN TANGAN KALIAN")
+                            .font(.system(size: isPad ? 26 : 16, weight: .bold))
                             .foregroundColor(.white)
-                            .shadow(color: .black.opacity(0.8), radius: 6)
+                            .tracking(0.6)
                         
-                        Text("Arahkan tangan kalian di depan kamera untuk menyentuh lingkaran!")
-                            .font(.system(size: isPad ? 20 : 12, weight: .medium, design: .rounded))
-                            .foregroundColor(.white.opacity(0.9))
+                        Text("Arahkan tangan kalian di depan kamera untuk menyentuh lingkaran")
+                            .font(.system(size: isPad ? 14 : 10, weight: .regular))
+                            .foregroundColor(Color(hex: "CBD5E1"))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 24)
                     }
-                    .padding(.top, isPad ? 24 : 8)
+                    .padding(.top, isPad ? 24 : 10)
                     
                     Spacer()
                     
-                    // The Shrinking Circle Target
-                    ZStack {
-                        // Ambient glow
-                        Circle()
-                            .fill(
-                                RadialGradient(
-                                    colors: [Color.cyan.opacity(0.4), Color.clear],
-                                    center: .center,
-                                    startRadius: isPad ? 40 : 20,
-                                    endRadius: isPad ? 180 : 90
-                                )
-                            )
-                            .frame(width: max(20, (baseCircleDiameter * 1.2) * circleScale), height: max(20, (baseCircleDiameter * 1.2) * circleScale))
-                        
-                        // Main shrinking circular disc
-                        Circle()
-                            .fill(
-                                LinearGradient(
-                                    colors: [Color(hex: "00F2FE"), Color(hex: "4FACFE")],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .frame(width: max(20, baseCircleDiameter * circleScale), height: max(20, baseCircleDiameter * circleScale))
-                            .overlay(
-                                Circle()
-                                    .stroke(Color.white, lineWidth: max(1, (isPad ? 6 : 4) * circleScale))
-                            )
-                            .shadow(color: Color.cyan.opacity(0.8), radius: isPad ? 24 : 12)
-                            .overlay(
-                                VStack(spacing: 2) {
-                                    Image(systemName: "hand.raised.fill")
-                                        .font(.system(size: max(14, (isPad ? 72 : 40) * circleScale), weight: .bold))
-                                        .foregroundColor(.white)
-                                    
-                                    if circleScale > 0.35 {
-                                        Text("SENTUH!")
-                                            .font(.system(size: max(10, (isPad ? 28 : 15) * circleScale), weight: .black, design: .rounded))
-                                            .foregroundColor(.white)
-                                    }
-                                }
-                            )
-                    }
-                    .animation(.spring(response: 0.22, dampingFraction: 0.65), value: circleScale)
-                    
-                    Spacer()
-                    
-                    // Bottom Counter, Status & Progress Bar
-                    VStack(spacing: isPad ? 12 : 6) {
-                        HStack(spacing: isPad ? 12 : 8) {
-                            Text("\(currentTaps) / \(targetTaps) Sentuhan")
-                                .font(.system(size: isPad ? 26 : 16, weight: .bold, design: .rounded))
-                                .foregroundColor(.white)
+                    // Central Interactive Circle (Figma Reference Style)
+                    Button {
+                        handleTap(at: circleCenter)
+                    } label: {
+                        ZStack {
+                            Circle()
+                                .stroke(Color(hex: "3B82F6").opacity(0.35), lineWidth: isPad ? 7 : 5)
+                                .frame(width: circleSize + (isPad ? 12 : 8), height: circleSize + (isPad ? 12 : 8))
                             
-                            // Vision Hand Tracking Live Indicator Badge
-                            HStack(spacing: 4) {
-                                Circle()
-                                    .fill(visionHandTracker.detectedHandPoints.isEmpty ? Color.orange : Color.green)
-                                    .frame(width: isPad ? 10 : 8, height: isPad ? 10 : 8)
-                                Text(visionHandTracker.detectedHandPoints.isEmpty ? "Angkat Tanganmu ✋" : "Tangan Terdeteksi ✋")
-                                    .font(.system(size: isPad ? 15 : 11, weight: .bold, design: .rounded))
+                            Circle()
+                                .stroke(Color.white.opacity(0.12), lineWidth: isPad ? 4 : 3)
+                                .frame(width: circleSize, height: circleSize)
+                            
+                            Circle()
+                                .trim(from: 0, to: progress)
+                                .stroke(
+                                    Color(hex: "60A5FA"),
+                                    style: StrokeStyle(lineWidth: isPad ? 4 : 3, lineCap: .round)
+                                )
+                                .frame(width: circleSize, height: circleSize)
+                                .rotationEffect(.degrees(-90))
+                                .animation(.easeOut(duration: 0.15), value: progress)
+                            
+                            Circle()
+                                .fill(Color(hex: "155DFC"))
+                                .frame(width: circleSize - (isPad ? 8 : 6), height: circleSize - (isPad ? 8 : 6))
+                            
+                            VStack(spacing: isPad ? 4 : 2) {
+                                Text("✋")
+                                    .font(.system(size: isPad ? 52 : 32))
+                                    .scaleEffect(bounceScale)
+                                
+                                Text("SENTUH")
+                                    .font(.system(size: isPad ? 16 : 10.5, weight: .bold))
                                     .foregroundColor(.white)
+                                    .tracking(0.6)
                             }
-                            .padding(.horizontal, isPad ? 12 : 8)
-                            .padding(.vertical, isPad ? 6 : 4)
-                            .background(Color.black.opacity(0.55))
-                            .clipShape(Capsule())
-                        }
-                        
-                        // Progress Bar
-                        ZStack(alignment: .leading) {
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.white.opacity(0.25))
-                                .frame(width: barWidth, height: isPad ? 16 : 10)
-                            
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(
-                                    LinearGradient(
-                                        colors: [Color.cyan, Color.blue],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
-                                .frame(width: max(0, barWidth * (CGFloat(currentTaps) / CGFloat(targetTaps))), height: isPad ? 16 : 10)
-                                .animation(.spring(response: 0.2), value: currentTaps)
                         }
                     }
-                    .padding(.bottom, isPad ? 36 : 12)
+                    .buttonStyle(.plain)
+                    
+                    Spacer()
+                    
+                    // Bottom: Cheer + Helper Pill
+                    VStack(spacing: isPad ? 8 : 5) {
+                        Text("LETSGOOO...!!!")
+                            .font(.system(size: isPad ? 19 : 13, weight: .heavy))
+                            .foregroundColor(.white)
+                            .tracking(1.4)
+                        
+                        Text("Arahkan tanganmu tepat pada lingkaran (\(currentTaps)/\(targetTaps))")
+                            .font(.system(size: isPad ? 13 : 9.5, weight: .medium))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, isPad ? 20 : 13)
+                            .padding(.vertical, isPad ? 7 : 4.5)
+                            .background(Color(hex: "2563EB"))
+                            .clipShape(Capsule())
+                    }
+                    .padding(.bottom, isPad ? 24 : 10)
                 }
-
             }
-            // Check vision hand collision against circle in real-time
             .onChange(of: visionHandTracker.detectedHandPoints) { _, newPoints in
                 checkVisionHandCollisions(points: newPoints, circleCenter: circleCenter, radius: currentRadius, in: geometry.size)
             }
@@ -216,7 +171,6 @@ struct FastTapChallengeView: View {
     }
     
     private func handScreenPosition(_ visionPoint: CGPoint, in size: CGSize) -> CGPoint {
-        // Vision coordinates: (0,0) is bottom-left
         let x = visionPoint.x * size.width
         let y = (1.0 - visionPoint.y) * size.height
         return CGPoint(x: x, y: y)
@@ -226,7 +180,7 @@ struct FastTapChallengeView: View {
         guard !isFinished else { return }
         
         let now = Date()
-        guard now.timeIntervalSince(lastHandHitTime) > 0.18 else { return }
+        guard now.timeIntervalSince(lastHandHitTime) > 0.16 else { return }
         
         for point in points {
             let directPos = handScreenPosition(point, in: size)
@@ -235,8 +189,7 @@ struct FastTapChallengeView: View {
             let distDirect = hypot(directPos.x - circleCenter.x, directPos.y - circleCenter.y)
             let distMirrored = hypot(mirroredPos.x - circleCenter.x, mirroredPos.y - circleCenter.y)
             
-            // If either direct or mirrored hand reaches the circle
-            let hitRadius = radius + 35.0
+            let hitRadius = radius + 30.0
             if distDirect <= hitRadius {
                 lastHandHitTime = now
                 handleTap(at: directPos)
@@ -252,17 +205,18 @@ struct FastTapChallengeView: View {
     private func handleTap(at point: CGPoint) {
         guard !isFinished else { return }
         
-        // Haptic feedback
         let generator = UIImpactFeedbackGenerator(style: .medium)
         generator.impactOccurred()
         
         currentTaps += 1
         
-        // Add visual tap point
-        let newTap = TapEffectPoint(point: point)
-        tapPoints.append(newTap)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
-            tapPoints.removeAll { $0.id == newTap.id }
+        withAnimation(.spring(response: 0.15, dampingFraction: 0.5)) {
+            bounceScale = 1.2
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+            withAnimation(.easeOut(duration: 0.15)) {
+                bounceScale = 1.0
+            }
         }
         
         if currentTaps >= targetTaps {
@@ -294,12 +248,7 @@ struct FastTapChallengeView: View {
 #Preview("Fast Tap Challenge", traits: .landscapeLeft) {
     FastTapChallengeView(
         visionHandTracker: VisionHandTrackingService(),
-        onSuccess: {
-            print("Fast Tap Success")
-        },
-        onFailure: {
-            print("Fast Tap Failure")
-        }
+        onSuccess: {},
+        onFailure: {}
     )
 }
-

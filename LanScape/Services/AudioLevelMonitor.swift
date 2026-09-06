@@ -20,9 +20,9 @@ final class AudioLevelMonitor: ObservableObject {
     private var lastClapTime: Date = .distantPast
     
     // Clap threshold: sharp spike in decibels
-    private let clapPowerThreshold: Float = -15.0 // Peak decibels
-    private let clapRiseThreshold: Float = 10.0 // Sudden jump from previous frame
-    private let clapCooldownSeconds: TimeInterval = 0.20
+    private let clapPowerThreshold: Float = -18.0 // Peak decibels
+    private let clapRiseThreshold: Float = 7.0 // Sudden jump from previous frame
+    private let clapCooldownSeconds: TimeInterval = 0.11
     
     init() {}
     
@@ -104,15 +104,15 @@ final class AudioLevelMonitor: ObservableObject {
         let avgPower = recorder.averagePower(forChannel: 0)
         let peakPower = recorder.peakPower(forChannel: 0)
         
-        // Convert dB (-55dB to 0dB) to normalized 0.0 ... 1.0
-        let minDb: Float = -50.0
-        let maxDb: Float = -3.0
+        // Convert dB (-48dB to 0dB) to normalized 0.0 ... 1.0
+        let minDb: Float = -48.0
+        let maxDb: Float = -2.0
         let clampedAvg = max(minDb, min(maxDb, avgPower))
         let targetVolume = CGFloat((clampedAvg - minDb) / (maxDb - minDb))
         
-        // Smooth screaming volume with dynamic response
+        // Fast attack, smooth decay for responsive screaming feedback
         if targetVolume > normalizedVolume {
-            normalizedVolume = normalizedVolume * 0.4 + targetVolume * 0.6
+            normalizedVolume = normalizedVolume * 0.2 + targetVolume * 0.8
         } else {
             normalizedVolume = normalizedVolume * 0.85 + targetVolume * 0.15
         }

@@ -1,137 +1,153 @@
+//
+//  CameraPreviewView.swift
+//  LanScape
+//
+
 import SwiftUI
 import AVFoundation
 import UIKit
 
-struct CameraPreviewView: UIViewControllerRepresentable {
-
+struct CameraPreviewView: UIViewRepresentable {
     let session: AVCaptureSession
     var onOrientationChanged: ((AVCaptureVideoOrientation) -> Void)? = nil
 
-    func makeUIViewController(
-        context: Context
-    ) -> CameraPreviewViewController {
-        let controller = CameraPreviewViewController()
-        controller.session = session
-        controller.onOrientationChanged = onOrientationChanged
-        return controller
+    func makeUIView(context: Context) -> CameraPreviewUIView {
+        let view = CameraPreviewUIView()
+        view.videoPreviewLayer.session = session
+        view.onOrientationChanged = onOrientationChanged
+        view.updateOrientation()
+        return view
     }
 
-    func updateUIViewController(
-        _ uiViewController: CameraPreviewViewController,
-        context: Context
-    ) {
-        uiViewController.session = session
-        uiViewController.onOrientationChanged = onOrientationChanged
-        uiViewController.updatePreview()
+    func updateUIView(_ uiView: CameraPreviewUIView, context: Context) {
+        if uiView.videoPreviewLayer.session !== session {
+            uiView.videoPreviewLayer.session = session
+        }
+        uiView.onOrientationChanged = onOrientationChanged
+        uiView.updateOrientation()
     }
 }
 
-// MARK: - Camera Preview Controller
+// MARK: - Native Direct Preview Layer View (Dynamic Orientation, Never Flipped)
+final class CameraPreviewUIView: UIView {
+    override class var layerClass: AnyClass {
+        AVCaptureVideoPreviewLayer.self
+    }
 
-final class CameraPreviewViewController: UIViewController {
-
-    var session: AVCaptureSession? {
-        didSet {
-            updatePreview()
-        }
+    var videoPreviewLayer: AVCaptureVideoPreviewLayer {
+        layer as! AVCaptureVideoPreviewLayer
     }
 
     var onOrientationChanged: ((AVCaptureVideoOrientation) -> Void)?
 
-    private var previewLayer: AVCaptureVideoPreviewLayer?
-
-    // MARK: - Lifecycle
-
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        view.backgroundColor = .black
-        setupLayer()
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        backgroundColor = .black
+        videoPreviewLayer.videoGravity = .resizeAspectFill
+        
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleOrientationNotification),
+            name: UIDevice.orientationDidChangeNotification,
+            object: nil
+        )
     }
 
-    override func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
-        previewLayer?.frame = view.bounds
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+
+    @objc private func handleOrientationNotification() {
+        DispatchQueue.main.async { [weak self] in
+            self?.updateOrientation()
+        }
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
         updateOrientation()
     }
 
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        previewLayer?.frame = view.bounds
-        updateOrientation()
-    }
-
-    override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
-        super.viewWillTransition(to: size, with: coordinator)
-        coordinator.animate(alongsideTransition: { [weak self] _ in
-            guard let self else { return }
-            self.previewLayer?.frame = self.view.bounds
-            self.updateOrientation()
-        })
-    }
-
-    // MARK: - Setup
-
-    private func setupLayer() {
-        guard previewLayer == nil else { return }
-
-        let layer = AVCaptureVideoPreviewLayer()
-        layer.videoGravity = .resizeAspectFill
-        layer.session = session
-
-        view.layer.insertSublayer(layer, at: 0)
-        previewLayer = layer
-    }
-
-    // MARK: - Update
-
-    func updatePreview() {
-        if previewLayer == nil {
-            setupLayer()
-        }
-
-        if previewLayer?.session !== session {
-            previewLayer?.session = session
-        }
-
-        if previewLayer?.frame != view.bounds {
-            previewLayer?.frame = view.bounds
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        if window != nil {
             updateOrientation()
         }
     }
 
-    // MARK: - Orientation
-
     func updateOrientation() {
-        guard let connection = previewLayer?.connection else {
-            return
+        guard let connection = videoPreviewLayer.connection else { return }
+
+        let targetOrientation = resolveActiveOrientation()
+
+        if connection.isVideoOrientationSupported && connection.videoOrientation != targetOrientation {
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            connection.videoOrientation = targetOrientation
+            CATransaction.commit()
         }
 
-        let activeOrientation: AVCaptureVideoOrientation
-        if let windowScene = view.window?.windowScene {
-            switch windowScene.interfaceOrientation {
-            case .landscapeRight:
-                activeOrientation = .landscapeRight
-            case .landscapeLeft:
-                activeOrientation = .landscapeLeft
-            default:
-                activeOrientation = .landscapeLeft
-            }
-        } else {
-            activeOrientation = .landscapeLeft
-        }
-
-        if connection.isVideoOrientationSupported {
-            if connection.videoOrientation != activeOrientation {
-                connection.videoOrientation = activeOrientation
-            }
-        }
-
-        // FRONT CAMERA: Mirror preview horizontally
+        // FRONT CAMERA: Always mirror so user sees mirror reflection
         if connection.isVideoMirroringSupported {
             connection.automaticallyAdjustsVideoMirroring = false
             connection.isVideoMirrored = true
         }
 
-        onOrientationChanged?(activeOrientation)
+        onOrientationChanged?(targetOrientation)
+    }
+
+    private func resolveActiveOrientation() -> AVCaptureVideoOrientation {
+        // 1. Resolve from current UIWindowScene
+        if let windowScene = self.window?.windowScene {
+            switch windowScene.interfaceOrientation {
+            case .landscapeRight:
+                return .landscapeRight
+            case .landscapeLeft:
+                return .landscapeLeft
+            case .portrait:
+                return .portrait
+            case .portraitUpsideDown:
+                return .portraitUpsideDown
+            default:
+                break
+            }
+        }
+
+        // 2. Resolve from all connected scenes
+        for scene in UIApplication.shared.connectedScenes {
+            if let windowScene = scene as? UIWindowScene {
+                switch windowScene.interfaceOrientation {
+                case .landscapeRight:
+                    return .landscapeRight
+                case .landscapeLeft:
+                    return .landscapeLeft
+                case .portrait:
+                    return .portrait
+                case .portraitUpsideDown:
+                    return .portraitUpsideDown
+                default:
+                    break
+                }
+            }
+        }
+
+        // 3. Fallback based on physical device orientation
+        // Note: UIDevice.landscapeLeft means device is tilted left -> interface is landscapeRight!
+        switch UIDevice.current.orientation {
+        case .landscapeLeft:
+            return .landscapeRight
+        case .landscapeRight:
+            return .landscapeLeft
+        case .portraitUpsideDown:
+            return .portraitUpsideDown
+        case .portrait:
+            return .portrait
+        default:
+            return .landscapeLeft
+        }
     }
 }

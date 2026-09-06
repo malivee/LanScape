@@ -35,7 +35,7 @@ struct FacePenaltyLiveOverlay: View {
                     }
                     .position(
                         x: faceX + faceWidth / 2,
-                        y: faceY + faceHeight * 0.35
+                        y: faceY + faceHeight * face.sticker.yOffsetFactor
                     )
                 }
                 
@@ -71,6 +71,7 @@ struct FacePenaltyLiveOverlay: View {
         s.activatePenalty(sticker: .clown)
         s.detectedFaces = [
             DetectedFacePenalty(
+                id: 0,
                 normalizedRect: CGRect(x: 0.35, y: 0.25, width: 0.3, height: 0.4),
                 sticker: .clown
             )
@@ -78,7 +79,7 @@ struct FacePenaltyLiveOverlay: View {
         return s
     }()
     
-    return GeometryReader { proxy in
+    GeometryReader { proxy in
         ZStack {
             Color.black.opacity(0.8).ignoresSafeArea()
             FacePenaltyLiveOverlay(

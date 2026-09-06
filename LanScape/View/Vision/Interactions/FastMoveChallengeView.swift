@@ -15,140 +15,136 @@ struct FastMoveChallengeView: View {
     @State private var secondsRemaining: Int = 8
     @State private var isFinished: Bool = false
     @State private var timerTask: Task<Void, Never>? = nil
-    @State private var pulseWave: Bool = false
+    @State private var bounceScale: CGFloat = 1.0
+    
+    private var progress: CGFloat {
+        min(1.0, max(0.0, motionService.accumulatedProgress))
+    }
     
     var body: some View {
         let isPad = UIDevice.isIPad
-        let circleSize: CGFloat = isPad ? 170 : 100
-        let shockwaveSize: CGFloat = isPad ? 220 : 130
-        let barWidth: CGFloat = isPad ? 440 : 280
+        let circleSize: CGFloat = isPad ? 210 : 124
         
         ZStack {
-            Color.black.opacity(0.55)
+            Color(hex: "1F2024").opacity(0.85)
                 .ignoresSafeArea()
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    motionService.addManualMotion(amount: 0.12)
+                }
             
-            VStack(spacing: isPad ? 20 : 6) {
-                // Header
-                VStack(spacing: isPad ? 8 : 3) {
-                    HStack(spacing: 6) {
+            VStack(spacing: 0) {
+                // Top Header: Timer Pill, Title, Subtitle
+                VStack(spacing: isPad ? 8 : 4) {
+                    HStack(spacing: 4) {
                         Image(systemName: "timer")
-                            .font(.system(size: isPad ? 24 : 16, weight: .bold))
+                            .font(.system(size: isPad ? 13 : 10, weight: .bold))
+                            .foregroundColor(Color(hex: "EF4444"))
                         Text("\(secondsRemaining)s")
-                            .font(.system(size: isPad ? 32 : 20, weight: .heavy, design: .rounded))
+                            .font(.system(size: isPad ? 14 : 11, weight: .bold))
+                            .foregroundColor(.white)
                     }
-                    .foregroundColor(secondsRemaining <= 3 ? .red : .yellow)
-                    .padding(.horizontal, isPad ? 24 : 14)
-                    .padding(.vertical, isPad ? 8 : 4)
+                    .padding(.horizontal, isPad ? 12 : 9)
+                    .padding(.vertical, isPad ? 5 : 3)
                     .background(Color.black.opacity(0.65))
                     .clipShape(Capsule())
+                    .overlay(
+                        Capsule()
+                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                    )
                     
-                    Text("GERAK SECEPAT MUNGKIN!")
-                        .font(.system(size: isPad ? 38 : 20, weight: .heavy, design: .rounded))
+                    Text("GERAK SECEPAT MUNGKIN")
+                        .font(.system(size: isPad ? 26 : 16, weight: .bold))
                         .foregroundColor(.white)
-                        .shadow(color: .black.opacity(0.8), radius: 6)
+                        .tracking(0.6)
                     
-                    Text("Goyangkan tubuh, tangan, atau lompat bebas bersama!")
-                        .font(.system(size: isPad ? 20 : 12, weight: .medium, design: .rounded))
-                        .foregroundColor(.white.opacity(0.9))
+                    Text("Goyangkan tubuh, tangan, atau lompat kalian secara bersama")
+                        .font(.system(size: isPad ? 14 : 10, weight: .regular))
+                        .foregroundColor(Color(hex: "CBD5E1"))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 24)
                 }
-                .padding(.top, isPad ? 24 : 8)
+                .padding(.top, isPad ? 24 : 10)
                 
                 Spacer()
                 
-                // Speed Energy / Motion Graphic
-                ZStack {
-                    // Shockwave circle
-                    Circle()
-                        .stroke(Color.green.opacity(0.4), lineWidth: isPad ? 4 : 2.5)
-                        .frame(width: shockwaveSize, height: shockwaveSize)
-                        .scaleEffect(pulseWave ? 1.4 : 1.0)
-                        .opacity(pulseWave ? 0.2 : 0.8)
-                        .animation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true), value: pulseWave)
-                    
-                    // Central Circle Icon
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [Color(hex: "11998E"), Color(hex: "38EF7D")],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: circleSize, height: circleSize)
-                        .shadow(color: Color.green.opacity(0.7), radius: isPad ? 20 : 10)
-                    
-                    VStack(spacing: 2) {
-                        Image(systemName: "figure.run.square.stack.fill")
-                            .font(.system(size: isPad ? 64 : 36, weight: .bold))
-                            .foregroundColor(.white)
+                // Central Interactive Circle (Figma Reference Style)
+                Button {
+                    motionService.addManualMotion(amount: 0.12)
+                } label: {
+                    ZStack {
+                        Circle()
+                            .stroke(Color(hex: "3B82F6").opacity(0.35), lineWidth: isPad ? 7 : 5)
+                            .frame(width: circleSize + (isPad ? 12 : 8), height: circleSize + (isPad ? 12 : 8))
                         
-                        Text("\(Int(motionService.accumulatedProgress * 100))%")
-                            .font(.system(size: isPad ? 24 : 15, weight: .black, design: .rounded))
-                            .foregroundColor(.white)
-                    }
-                }
-                
-                Spacer()
-                
-                // Motion Meter & Progress
-                VStack(spacing: isPad ? 12 : 6) {
-                    Text(motionService.instantMotion > 0.3 ? "⚡️ GERAKAN TERDETEKSI!" : "AYO TERUS BERGERAK!")
-                        .font(.system(size: isPad ? 22 : 14, weight: .bold, design: .rounded))
-                        .foregroundColor(motionService.instantMotion > 0.3 ? .green : .white)
-                    
-                    // Progress Bar
-                    ZStack(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.white.opacity(0.25))
-                            .frame(width: barWidth, height: isPad ? 16 : 10)
+                        Circle()
+                            .stroke(Color.white.opacity(0.12), lineWidth: isPad ? 4 : 3)
+                            .frame(width: circleSize, height: circleSize)
                         
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(
-                                LinearGradient(
-                                    colors: [Color.green, Color.mint, Color.cyan],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
+                        Circle()
+                            .trim(from: 0, to: progress)
+                            .stroke(
+                                Color(hex: "60A5FA"),
+                                style: StrokeStyle(lineWidth: isPad ? 4 : 3, lineCap: .round)
                             )
-                            .frame(width: max(0, barWidth * motionService.accumulatedProgress), height: isPad ? 16 : 10)
-                            .animation(.easeOut(duration: 0.15), value: motionService.accumulatedProgress)
-                    }
-                    .frame(width: barWidth, height: isPad ? 16 : 10)
-                    
-                    // Simulator & Touch Helper
-                    Button {
-                        motionService.addManualMotion(amount: 0.18)
-                    } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: "bolt.fill")
-                            Text("Bantuan: Tekan untuk tambah gerak")
+                            .frame(width: circleSize, height: circleSize)
+                            .rotationEffect(.degrees(-90))
+                            .animation(.easeOut(duration: 0.15), value: progress)
+                        
+                        Circle()
+                            .fill(Color(hex: "155DFC"))
+                            .frame(width: circleSize - (isPad ? 8 : 6), height: circleSize - (isPad ? 8 : 6))
+                        
+                        VStack(spacing: isPad ? 4 : 2) {
+                            Text("🏃")
+                                .font(.system(size: isPad ? 52 : 32))
+                                .scaleEffect(bounceScale)
+                            
+                            Text("\(Int(progress * 100))%")
+                                .font(.system(size: isPad ? 16 : 10.5, weight: .bold))
+                                .foregroundColor(.white)
+                                .tracking(0.5)
                         }
-                        .font(.system(size: isPad ? 15 : 11, weight: .semibold, design: .rounded))
-                        .foregroundColor(.white.opacity(0.85))
-                        .padding(.horizontal, isPad ? 16 : 10)
-                        .padding(.vertical, isPad ? 8 : 4)
-                        .background(Color.white.opacity(0.18))
-                        .clipShape(Capsule())
                     }
-                    .buttonStyle(.plain)
                 }
-                .padding(.bottom, isPad ? 28 : 10)
+                .buttonStyle(.plain)
+                
+                Spacer()
+                
+                // Bottom: Cheer + Helper Pill
+                VStack(spacing: isPad ? 8 : 5) {
+                    Text("LETSGOOO...!!!")
+                        .font(.system(size: isPad ? 19 : 13, weight: .heavy))
+                        .foregroundColor(.white)
+                        .tracking(1.4)
+                    
+                    Text("Gerakan seluruh anggota tubuhmu secepat mungkin (\(Int(progress * 100))%)")
+                        .font(.system(size: isPad ? 13 : 9.5, weight: .medium))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, isPad ? 20 : 13)
+                        .padding(.vertical, isPad ? 7 : 4.5)
+                        .background(Color(hex: "2563EB"))
+                        .clipShape(Capsule())
+                }
+                .padding(.bottom, isPad ? 24 : 10)
             }
         }
-
         .onAppear {
-            motionService.reset()
             motionService.isTrackingActive = true
             motionService.onTargetReached = {
                 finishSuccess()
             }
-            pulseWave = true
             startTimer()
         }
         .onDisappear {
             motionService.isTrackingActive = false
-            timerTask?.cancel()
             motionService.onTargetReached = nil
+            timerTask?.cancel()
+        }
+        .onChange(of: motionService.accumulatedProgress) { _, newProgress in
+            if newProgress >= 1.0 && !isFinished {
+                finishSuccess()
+            }
         }
     }
     
@@ -159,6 +155,10 @@ struct FastMoveChallengeView: View {
         
         let generator = UINotificationFeedbackGenerator()
         generator.notificationOccurred(.success)
+        
+        withAnimation(.spring(response: 0.15, dampingFraction: 0.5)) {
+            bounceScale = 1.2
+        }
         
         onSuccess()
     }
@@ -185,12 +185,7 @@ struct FastMoveChallengeView: View {
 #Preview("Fast Move Challenge", traits: .landscapeLeft) {
     FastMoveChallengeView(
         motionService: MotionDetectionService(),
-        onSuccess: {
-            print("Fast Move Success")
-        },
-        onFailure: {
-            print("Fast Move Failure")
-        }
+        onSuccess: {},
+        onFailure: {}
     )
 }
-

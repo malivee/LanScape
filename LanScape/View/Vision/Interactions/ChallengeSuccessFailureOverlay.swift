@@ -6,54 +6,53 @@
 import SwiftUI
 
 struct ChallengeSuccessOverlay: View {
-    @State private var scale: CGFloat = 0.6
+    @State private var scale: CGFloat = 0.8
     @State private var opacity: Double = 0.0
     
     var body: some View {
         let isPad = UIDevice.isIPad
         
         ZStack {
-            Color.black.opacity(0.45)
+            Color(hex: "1F2024").opacity(0.88)
                 .ignoresSafeArea()
             
-            VStack(spacing: isPad ? 16 : 8) {
-                // Confetti / Celebration Icon
+            VStack(spacing: isPad ? 14 : 8) {
+                Spacer()
+                
+                // 1. Top Header
+                Text("TANTANGAN BERHASIL!")
+                    .font(.system(size: isPad ? 26 : 17, weight: .bold))
+                    .foregroundColor(Color(hex: "10B981"))
+                    .tracking(0.8)
+                
+                // 2. Center Graphic
                 Text("🎉")
-                    .font(.system(size: isPad ? 80 : 44))
+                    .font(.system(size: isPad ? 80 : 48))
                     .scaleEffect(scale)
                 
-                Text("HORE, KALIAN BERHASIL!")
-                    .font(.system(size: isPad ? 42 : 22, weight: .heavy, design: .rounded))
+                // 3. Pill Badge
+                Text("Luar Biasa Kompak!")
+                    .font(.system(size: isPad ? 15 : 11, weight: .bold))
                     .foregroundColor(.white)
-                    .multilineTextAlignment(.center)
-                    .shadow(color: Color.green.opacity(0.8), radius: isPad ? 16 : 8)
+                    .padding(.horizontal, isPad ? 22 : 14)
+                    .padding(.vertical, isPad ? 7 : 4.5)
+                    .background(Color(hex: "10B981"))
+                    .clipShape(Capsule())
                 
-                Text("Tantangan selesai dengan hebat! Bersiap untuk foto selanjutnya...")
-                    .font(.system(size: isPad ? 20 : 13, weight: .semibold, design: .rounded))
-                    .foregroundColor(.white.opacity(0.95))
+                // 4. Subtitle
+                Text("Hebat sekali! Kalian berhasil menyelesaikan tantangan ini bersama-sama!")
+                    .font(.system(size: isPad ? 14 : 10, weight: .regular))
+                    .foregroundColor(Color(hex: "CBD5E1"))
                     .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
+                
+                Spacer()
             }
-            .padding(.horizontal, isPad ? 48 : 24)
-            .padding(.vertical, isPad ? 32 : 16)
-            .background(
-                LinearGradient(
-                    colors: [Color(hex: "00B09B").opacity(0.95), Color(hex: "96C93D").opacity(0.95)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
-            .clipShape(RoundedRectangle(cornerRadius: isPad ? 32 : 20))
-            .overlay(
-                RoundedRectangle(cornerRadius: isPad ? 32 : 20)
-                    .stroke(Color.white, lineWidth: isPad ? 3 : 2)
-            )
-            .shadow(color: Color.green.opacity(0.6), radius: isPad ? 30 : 16)
             .scaleEffect(scale)
             .opacity(opacity)
-            .padding(.horizontal, isPad ? 40 : 20)
         }
         .onAppear {
-            withAnimation(.spring(response: 0.45, dampingFraction: 0.65)) {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
                 scale = 1.0
                 opacity = 1.0
             }
@@ -63,66 +62,53 @@ struct ChallengeSuccessOverlay: View {
 
 struct ChallengeFailureOverlay: View {
     let penaltySticker: PenaltyStickerType
-    @State private var scale: CGFloat = 0.6
+    @State private var scale: CGFloat = 0.8
     @State private var opacity: Double = 0.0
     
     var body: some View {
         let isPad = UIDevice.isIPad
         
         ZStack {
-            Color.black.opacity(0.55)
+            Color(hex: "1F2024").opacity(0.88)
                 .ignoresSafeArea()
             
-            VStack(spacing: isPad ? 14 : 6) {
-                // Penalty Sticker Graphic
+            VStack(spacing: isPad ? 14 : 8) {
+                Spacer()
+                
+                // 1. Top Header (Reference Match: "HUKUMAN AKTIF")
+                Text("HUKUMAN AKTIF")
+                    .font(.system(size: isPad ? 26 : 17, weight: .bold))
+                    .foregroundColor(Color(hex: "EF4444"))
+                    .tracking(0.8)
+                
+                // 2. Center Graphic (Reference Match: Big Emoji)
                 Text(penaltySticker.rawValue)
-                    .font(.system(size: isPad ? 84 : 44))
+                    .font(.system(size: isPad ? 80 : 48))
                     .scaleEffect(scale)
                 
-                Text("WAKTU HABIS!")
-                    .font(.system(size: isPad ? 42 : 22, weight: .heavy, design: .rounded))
+                // 3. Pill Badge (Reference Match: Red Pill with Sticker Title)
+                Text(penaltySticker.title)
+                    .font(.system(size: isPad ? 15 : 11, weight: .bold))
                     .foregroundColor(.white)
-                    .multilineTextAlignment(.center)
-                    .shadow(color: Color.red.opacity(0.8), radius: isPad ? 16 : 8)
-                
-                Text("Yah, kalian belum berhasil! Muka kalian terkena hukuman:")
-                    .font(.system(size: isPad ? 20 : 12, weight: .semibold, design: .rounded))
-                    .foregroundColor(.white.opacity(0.9))
-                    .multilineTextAlignment(.center)
-                
-                Text("\(penaltySticker.rawValue) \(penaltySticker.title)")
-                    .font(.system(size: isPad ? 28 : 17, weight: .bold, design: .rounded))
-                    .foregroundColor(.yellow)
-                    .padding(.horizontal, isPad ? 24 : 14)
-                    .padding(.vertical, isPad ? 8 : 4)
-                    .background(Color.black.opacity(0.4))
+                    .padding(.horizontal, isPad ? 22 : 14)
+                    .padding(.vertical, isPad ? 7 : 4.5)
+                    .background(Color(hex: "EF4444"))
                     .clipShape(Capsule())
                 
-                Text("Stiker ini akan menempel di wajah kalian pada foto berikutnya! 😜")
-                    .font(.system(size: isPad ? 16 : 11, weight: .medium, design: .rounded))
-                    .foregroundColor(.white.opacity(0.85))
+                // 4. Subtitle (Reference Match: Family Friendly Comforting Copy)
+                Text("Sayang sekali kamu harus mendapatkan hukuman ini, next harus lebih kompak yaa")
+                    .font(.system(size: isPad ? 14 : 10, weight: .regular))
+                    .foregroundColor(Color(hex: "CBD5E1"))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
+                
+                Spacer()
             }
-            .padding(.horizontal, isPad ? 48 : 24)
-            .padding(.vertical, isPad ? 32 : 14)
-            .background(
-                LinearGradient(
-                    colors: [Color(hex: "EB3349").opacity(0.95), Color(hex: "F45C43").opacity(0.95)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
-            .clipShape(RoundedRectangle(cornerRadius: isPad ? 32 : 20))
-            .overlay(
-                RoundedRectangle(cornerRadius: isPad ? 32 : 20)
-                    .stroke(Color.white, lineWidth: isPad ? 3 : 2)
-            )
-            .shadow(color: Color.red.opacity(0.6), radius: isPad ? 30 : 16)
             .scaleEffect(scale)
             .opacity(opacity)
-            .padding(.horizontal, isPad ? 40 : 20)
         }
         .onAppear {
-            withAnimation(.spring(response: 0.45, dampingFraction: 0.65)) {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
                 scale = 1.0
                 opacity = 1.0
             }
@@ -143,5 +129,3 @@ struct ChallengeFailureOverlay: View {
         ChallengeFailureOverlay(penaltySticker: .clown)
     }
 }
-
-

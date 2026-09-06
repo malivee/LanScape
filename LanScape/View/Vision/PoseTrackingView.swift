@@ -27,24 +27,25 @@ struct PoseTrackingView: View {
     // MARK: - Services & Environment
     // =========================================================
 
-    var selectedMusic: MusicData? = nil
+    var selectedMusic: MusicData?
+    
+    init(selectedMusic: MusicData? = nil) {
+        self.selectedMusic = selectedMusic
+    }
 
-    @ObservedObject
     private var musicService = BackgroundMusicService.shared
-
-    @ObservedObject
     private var cameraService = CameraService.shared
 
-    @StateObject
+    @State
     private var audioMonitor = AudioLevelMonitor()
 
-    @StateObject
+    @State
     private var motionService = MotionDetectionService()
 
-    @StateObject
+    @State
     private var penaltyService = FacePenaltyService()
 
-    @StateObject
+    @State
     private var visionHandTracker = VisionHandTrackingService()
 
     @Environment(\.dismiss)
@@ -510,7 +511,7 @@ struct PoseTrackingView: View {
         // If penalty is active, bake penalty stickers onto this captured photo!
         let baseImage = capturedImage ?? UIImage(named: self.currentPoseImageName)
         if let image = baseImage {
-            let finalImage = penaltyService.isPenaltyActive ? penaltyService.bakePenaltyOntoImage(image) : image
+            let finalImage = penaltyService.isPenaltyActive ? await penaltyService.bakePenaltyOntoImageAsync(image) : image
             self.capturedPhotos.append(finalImage)
         }
 
@@ -628,9 +629,9 @@ struct PoseTrackingView: View {
         
         isSessionLoading = true
         Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 800_000_000)
+            try? await Task.sleep(nanoseconds: 350_000_000)
             guard !Task.isCancelled else { return }
-            withAnimation(.easeOut(duration: 0.35)) {
+            withAnimation(.easeOut(duration: 0.30)) {
                 isSessionLoading = false
             }
             startCurrentPoseCycle()
@@ -667,10 +668,10 @@ struct PoseTrackingView: View {
             sessionStartTime = Date()
             
             Task { @MainActor in
-                // Brief loading presentation so camera hardware stabilizes and transitions gracefully
-                try? await Task.sleep(nanoseconds: 1_000_000_000)
+                // Snappy loading presentation so camera hardware stabilizes and transitions gracefully
+                try? await Task.sleep(nanoseconds: 350_000_000)
                 guard !Task.isCancelled else { return }
-                withAnimation(.easeOut(duration: 0.35)) {
+                withAnimation(.easeOut(duration: 0.30)) {
                     isSessionLoading = false
                 }
                 startCurrentPoseCycle()
