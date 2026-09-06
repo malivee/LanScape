@@ -22,6 +22,26 @@ final class BackgroundMusicService: ObservableObject {
     
     private init() {
         configureAudioSessionAsync()
+        preloadAllSongs()
+    }
+    
+    func preloadAllSongs() {
+        let assetNames = ["JarangPulang.mp3", "BubbleGum", "Golden", "Happy", "BoleChudiyan"]
+        
+        Task.detached(priority: .utility) { [weak self] in
+            for name in assetNames {
+                guard let dataAsset = NSDataAsset(name: name) else { continue }
+                if let player = try? AVAudioPlayer(data: dataAsset.data) {
+                    player.prepareToPlay()
+                    await MainActor.run {
+                        guard let self = self else { return }
+                        if self.playerCache[name] == nil {
+                            self.playerCache[name] = player
+                        }
+                    }
+                }
+            }
+        }
     }
     
     private func configureAudioSessionAsync() {
@@ -112,5 +132,9 @@ final class BackgroundMusicService: ObservableObject {
         guard let player = audioPlayer, !player.isPlaying else { return }
         player.play()
         isPlaying = true
+    }
+    
+    func setVolume(_ volume: Float) {
+        audioPlayer?.volume = volume
     }
 }

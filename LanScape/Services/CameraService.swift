@@ -24,6 +24,7 @@ final class CameraService: NSObject, ObservableObject, AVCapturePhotoCaptureDele
 
     private let sessionQueue = DispatchQueue(label: "cameraSessionQueue")
     private let videoBufferQueue = DispatchQueue(label: "cameraVideoBufferQueue", qos: .userInteractive)
+    private let renderQueue = DispatchQueue(label: "cameraRenderQueue", qos: .userInteractive)
 
     private var isConfigured = false
     private var photoCaptureCompletion: ((UIImage?) -> Void)?
@@ -40,7 +41,12 @@ final class CameraService: NSObject, ObservableObject, AVCapturePhotoCaptureDele
             guard let self = self else { return }
             if !self.isConfigured {
                 self.setupSession()
+            } else if !self.captureSession.isRunning {
+                self.startSession()
             }
+        }
+        renderQueue.async { [weak self] in
+            _ = self?.ciContext
         }
     }
 
@@ -88,7 +94,7 @@ final class CameraService: NSObject, ObservableObject, AVCapturePhotoCaptureDele
                 self.captureSession.removeInput(input)
             }
 
-            // Add Front Camera
+            // Configure Front Camera hardware for maximum clarity and auto-adjustments
             guard let frontCamera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front),
                   let videoInput = try? AVCaptureDeviceInput(device: frontCamera),
                   self.captureSession.canAddInput(videoInput) else {
@@ -98,7 +104,25 @@ final class CameraService: NSObject, ObservableObject, AVCapturePhotoCaptureDele
                 return
             }
 
+            do {
+                try frontCamera.lockForConfiguration()
+                if frontCamera.isFocusModeSupported(.continuousAutoFocus) {
+                    frontCamera.focusMode = .continuousAutoFocus
+                }
+                if frontCamera.isExposureModeSupported(.continuousAutoExposure) {
+                    frontCamera.exposureMode = .continuousAutoExposure
+                }
+                if frontCamera.isLowLightBoostSupported {
+                    frontCamera.automaticallyEnablesLowLightBoostWhenAvailable = true
+                }
+                frontCamera.unlockForConfiguration()
+            } catch {
+                print("⚠️ Front camera hardware configuration note: \(error)")
+            }
+
             self.captureSession.addInput(videoInput)
+
+            let initialOrientation = self.resolveActiveOrientation()
 
             // Add Video Output for frame capture
             if self.captureSession.canAddOutput(self.videoOutput) {
@@ -108,7 +132,7 @@ final class CameraService: NSObject, ObservableObject, AVCapturePhotoCaptureDele
 
                 if let connection = self.videoOutput.connection(with: .video) {
                     if connection.isVideoOrientationSupported {
-                        connection.videoOrientation = .landscapeLeft
+                        connection.videoOrientation = initialOrientation
                     }
                     if connection.isVideoMirroringSupported {
                         connection.automaticallyAdjustsVideoMirroring = false
@@ -120,9 +144,11 @@ final class CameraService: NSObject, ObservableObject, AVCapturePhotoCaptureDele
             // Add Photo Output
             if self.captureSession.canAddOutput(self.photoOutput) {
                 self.captureSession.addOutput(self.photoOutput)
+                self.photoOutput.maxPhotoQualityPrioritization = .balanced
+                
                 if let photoConnection = self.photoOutput.connection(with: .video) {
                     if photoConnection.isVideoOrientationSupported {
-                        photoConnection.videoOrientation = .landscapeLeft
+                        photoConnection.videoOrientation = initialOrientation
                     }
                     if photoConnection.isVideoMirroringSupported {
                         photoConnection.automaticallyAdjustsVideoMirroring = false
@@ -134,6 +160,35 @@ final class CameraService: NSObject, ObservableObject, AVCapturePhotoCaptureDele
             self.captureSession.commitConfiguration()
             self.isConfigured = true
             self.startSession()
+        }
+    }
+
+    // MARK: - Active Orientation Resolver
+    func resolveActiveOrientation() -> AVCaptureVideoOrientation {
+        for scene in UIApplication.shared.connectedScenes {
+            if let windowScene = scene as? UIWindowScene {
+                switch windowScene.interfaceOrientation {
+                case .landscapeRight:
+                    return .landscapeRight
+                case .landscapeLeft:
+                    return .landscapeLeft
+                case .portrait:
+                    return .portrait
+                case .portraitUpsideDown:
+                    return .portraitUpsideDown
+                default:
+                    break
+                }
+            }
+        }
+
+        switch UIDevice.current.orientation {
+        case .landscapeLeft:
+            return .landscapeRight
+        case .landscapeRight:
+            return .landscapeLeft
+        default:
+            return .landscapeLeft
         }
     }
 
@@ -196,23 +251,21 @@ final class CameraService: NSObject, ObservableObject, AVCapturePhotoCaptureDele
                 return
             }
 
-            // Fallback immediately if session is not running (e.g. Simulator)
-            guard self.captureSession.isRunning else {
-                let frame = self.renderLatestFrame()
-                DispatchQueue.main.async { completion(frame) }
-                return
-            }
-
-            // If photoOutput connection is available and active, capture high-res photo
-            if let connection = self.photoOutput.connection(with: .video), connection.isActive {
+            // If session is running and photo output is active, capture high-quality photo
+            if self.captureSession.isRunning,
+               let connection = self.photoOutput.connection(with: .video),
+               connection.isActive {
                 self.photoCaptureCompletion = completion
                 let settings = AVCapturePhotoSettings()
+                settings.photoQualityPrioritization = .balanced
                 self.photoOutput.capturePhoto(with: settings, delegate: self)
             } else {
-                // Instant fallback from latest video buffer frame
-                let frame = self.renderLatestFrame()
-                DispatchQueue.main.async {
-                    completion(frame)
+                // Fallback from video buffer rendered on background queue
+                self.renderQueue.async { [weak self] in
+                    let frame = self?.renderLatestFrame()
+                    DispatchQueue.main.async {
+                        completion(frame)
+                    }
                 }
             }
         }
@@ -220,19 +273,24 @@ final class CameraService: NSObject, ObservableObject, AVCapturePhotoCaptureDele
 
     // MARK: - AVCapturePhotoCaptureDelegate
     func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
-        var resultImage: UIImage? = nil
+        // Decode and render image on background renderQueue
+        renderQueue.async { [weak self] in
+            guard let self = self else { return }
+            var resultImage: UIImage? = nil
 
-        if let data = photo.fileDataRepresentation(), let image = UIImage(data: data) {
-            resultImage = image
-        } else {
-            resultImage = renderLatestFrame()
-        }
+            if let data = photo.fileDataRepresentation(), let image = UIImage(data: data) {
+                // Normalize orientation so all subsequent processing and rendering is 100% upright
+                resultImage = image.normalizedUp()
+            } else {
+                resultImage = self.renderLatestFrame()
+            }
 
-        let completion = photoCaptureCompletion
-        photoCaptureCompletion = nil
+            let completion = self.photoCaptureCompletion
+            self.photoCaptureCompletion = nil
 
-        DispatchQueue.main.async {
-            completion?(resultImage)
+            DispatchQueue.main.async {
+                completion?(resultImage)
+            }
         }
     }
 

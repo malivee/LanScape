@@ -8,170 +8,139 @@ import SwiftUI
 struct HandClapChallengeView: View {
     @ObservedObject var audioMonitor: AudioLevelMonitor
     var visionHandTracker: VisionHandTrackingService? = nil
-    let targetClaps: Int = 6
-    let timeLimit: Int = 8
+    let targetClaps: Int = 5
+    let timeLimit: Int = 10
     
     var onClapTriggered: (() -> Void)? = nil
     let onSuccess: () -> Void
     let onFailure: () -> Void
     
     @State private var currentClaps: Int = 0
-    @State private var secondsRemaining: Int = 8
+    @State private var secondsRemaining: Int = 10
     @State private var isFinished: Bool = false
     @State private var timerTask: Task<Void, Never>? = nil
-    @State private var pulseEffect: CGFloat = 1.0
-    @State private var ripples: [UUID] = []
+    @State private var bounceScale: CGFloat = 1.0
     
-    // Size starts at 320 and shrinks with each clap
-    private var handScale: CGFloat {
-        let remainingRatio = CGFloat(targetClaps - currentClaps) / CGFloat(targetClaps)
-        return max(0.18, remainingRatio)
+    private var progress: CGFloat {
+        CGFloat(currentClaps) / CGFloat(targetClaps)
     }
     
     var body: some View {
         let isPad = UIDevice.isIPad
-        let baseHandDiameter: CGFloat = isPad ? 280 : 150
-        let barWidth: CGFloat = isPad ? 440 : 280
+        let circleSize: CGFloat = isPad ? 210 : 124
         
         ZStack {
-            // Darkened translucent backdrop for focus (tapping anywhere also triggers clap!)
-            Color.black.opacity(0.55)
+            // Completely transparent background so camera preview remains 100% visible & clear
+            Color.clear
                 .ignoresSafeArea()
                 .contentShape(Rectangle())
                 .onTapGesture {
                     registerClap()
                 }
             
-            VStack(spacing: isPad ? 20 : 6) {
-                // Top Header with Timer and Instruction
-                VStack(spacing: isPad ? 8 : 3) {
-                    HStack(spacing: 6) {
+            VStack(spacing: 0) {
+                // Top Header: Timer Pill, Title, Subtitle
+                VStack(spacing: isPad ? 8 : 4) {
+                    // Timer Capsule
+                    HStack(spacing: 4) {
                         Image(systemName: "timer")
-                            .font(.system(size: isPad ? 24 : 16, weight: .bold))
+                            .font(.system(size: isPad ? 13 : 10, weight: .bold))
+                            .foregroundColor(Color(hex: "EF4444"))
                         Text("\(secondsRemaining)s")
-                            .font(.system(size: isPad ? 32 : 20, weight: .heavy, design: .rounded))
+                            .font(.system(size: isPad ? 14 : 11, weight: .bold))
+                            .foregroundColor(.white)
                     }
-                    .foregroundColor(secondsRemaining <= 3 ? .red : .yellow)
-                    .padding(.horizontal, isPad ? 24 : 14)
-                    .padding(.vertical, isPad ? 8 : 4)
-                    .background(Color.black.opacity(0.65))
+                    .padding(.horizontal, isPad ? 12 : 9)
+                    .padding(.vertical, isPad ? 5 : 3)
+                    .background(Color(hex: "111827").opacity(0.85))
                     .clipShape(Capsule())
+                    .overlay(
+                        Capsule()
+                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                    )
                     
-                    Text("TEPUK TANGAN BERSAMA!")
-                        .font(.system(size: isPad ? 38 : 20, weight: .heavy, design: .rounded))
+                    // Main Title
+                    Text("TEPUK TANGAN BERSAMA")
+                        .font(.system(size: isPad ? 26 : 16, weight: .bold))
                         .foregroundColor(.white)
-                        .shadow(color: .black.opacity(0.8), radius: 6)
+                        .tracking(0.6)
+                        .shadow(color: .black.opacity(0.8), radius: 6, y: 3)
                     
-                    Text("Tepuk tangan kalian secepat mungkin sampai tangannya mengecil!")
-                        .font(.system(size: isPad ? 20 : 12, weight: .medium, design: .rounded))
-                        .foregroundColor(.white.opacity(0.9))
+                    // Subtitle
+                    Text("Tepuk tangan kalian bersama di depan kamera (\(currentClaps)/\(targetClaps))")
+                        .font(.system(size: isPad ? 14 : 10, weight: .medium))
+                        .foregroundColor(Color(hex: "E2E8F0"))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 24)
+                        .shadow(color: .black.opacity(0.8), radius: 4)
                 }
-                .padding(.top, isPad ? 24 : 8)
+                .padding(.top, isPad ? 24 : 10)
                 
                 Spacer()
                 
-                // Giant Clapping Hand Interactive Target
-                ZStack {
-                    // Shockwave rings when clapped
-                    ForEach(ripples, id: \.self) { _ in
+                // Central Interactive Circle
+                Button {
+                    registerClap()
+                } label: {
+                    ZStack {
                         Circle()
-                            .stroke(Color.yellow.opacity(0.6), lineWidth: isPad ? 4 : 2.5)
-                            .frame(width: isPad ? 320 : 180, height: isPad ? 320 : 180)
-                            .scaleEffect(pulseEffect)
-                            .opacity(2.0 - Double(pulseEffect))
-                    }
-                    
-                    // Outer glow circle
-                    Circle()
-                        .fill(
-                            RadialGradient(
-                                colors: [Color.yellow.opacity(0.35), Color.clear],
-                                center: .center,
-                                startRadius: isPad ? 40 : 20,
-                                endRadius: isPad ? 180 : 90
+                            .stroke(Color(hex: "3B82F6").opacity(0.35), lineWidth: isPad ? 7 : 5)
+                            .frame(width: circleSize + (isPad ? 12 : 8), height: circleSize + (isPad ? 12 : 8))
+                        
+                        Circle()
+                            .stroke(Color.white.opacity(0.12), lineWidth: isPad ? 4 : 3)
+                            .frame(width: circleSize, height: circleSize)
+                        
+                        Circle()
+                            .trim(from: 0, to: progress)
+                            .stroke(
+                                Color(hex: "60A5FA"),
+                                style: StrokeStyle(lineWidth: isPad ? 6 : 4, lineCap: .round)
                             )
-                        )
-                        .frame(width: max(20, (baseHandDiameter * 1.2) * handScale), height: max(20, (baseHandDiameter * 1.2) * handScale))
-                    
-                    // Giant Hand Icon / Graphic
-                    Button {
-                        registerClap()
-                    } label: {
-                        ZStack {
-                            Circle()
-                                .fill(
-                                    LinearGradient(
-                                        colors: [Color(hex: "FFAE34"), Color(hex: "FF6B00")],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
-                                .frame(width: max(20, baseHandDiameter * handScale), height: max(20, baseHandDiameter * handScale))
-                                .shadow(color: Color.orange.opacity(0.6), radius: isPad ? 20 : 10)
+                            .frame(width: circleSize, height: circleSize)
+                            .rotationEffect(.degrees(-90))
+                            .animation(.easeOut(duration: 0.15), value: progress)
+                        
+                        Circle()
+                            .fill(Color(hex: "155DFC"))
+                            .frame(width: circleSize - (isPad ? 8 : 6), height: circleSize - (isPad ? 8 : 6))
+                            .shadow(color: Color(hex: "155DFC").opacity(0.6), radius: isPad ? 20 : 12)
+                        
+                        VStack(spacing: isPad ? 4 : 2) {
+                            Text("👏")
+                                .font(.system(size: isPad ? 52 : 32))
+                                .scaleEffect(bounceScale)
                             
-                            VStack(spacing: 2) {
-                                Text("👏")
-                                    .font(.system(size: max(16, (isPad ? 130 : 65) * handScale)))
-                                
-                                if handScale > 0.45 {
-                                    Text("TEPUK!")
-                                        .font(.system(size: max(10, (isPad ? 26 : 14) * handScale), weight: .black, design: .rounded))
-                                        .foregroundColor(.white)
-                                }
-                            }
+                            Text("TEPUK!")
+                                .font(.system(size: isPad ? 16 : 10.5, weight: .bold))
+                                .foregroundColor(.white)
+                                .tracking(0.6)
                         }
                     }
-                    .buttonStyle(.plain)
-                    .animation(.spring(response: 0.28, dampingFraction: 0.6), value: handScale)
                 }
+                .buttonStyle(.plain)
                 
                 Spacer()
                 
-                // Bottom Progress Bar & Clap Counter
-                VStack(spacing: isPad ? 12 : 6) {
-                    Text("\(currentClaps) / \(targetClaps) Tepukan")
-                        .font(.system(size: isPad ? 26 : 16, weight: .bold, design: .rounded))
+                // Bottom: Cheer text + Helper Pill
+                VStack(spacing: isPad ? 8 : 5) {
+                    Text("LETSGOOO...!!!")
+                        .font(.system(size: isPad ? 19 : 13, weight: .heavy))
                         .foregroundColor(.white)
+                        .tracking(1.4)
+                        .shadow(color: .black.opacity(0.8), radius: 4)
                     
-                    // Progress Bar
-                    ZStack(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.white.opacity(0.25))
-                            .frame(width: barWidth, height: isPad ? 16 : 10)
-                        
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(
-                                LinearGradient(
-                                    colors: [Color.yellow, Color.orange],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                            .frame(width: max(0, barWidth * (CGFloat(currentClaps) / CGFloat(targetClaps))), height: isPad ? 16 : 10)
-                            .animation(.spring(response: 0.3), value: currentClaps)
-                    }
-                    
-                    // Help Hint / Simulator trigger
-                    Button {
-                        registerClap()
-                    } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: "hand.tap.fill")
-                            Text("Bisa tepuk tangan langsung atau sentuh layar")
-                        }
-                        .font(.system(size: isPad ? 16 : 11, weight: .semibold, design: .rounded))
-                        .foregroundColor(.white.opacity(0.85))
-                        .padding(.horizontal, isPad ? 16 : 10)
-                        .padding(.vertical, isPad ? 8 : 4)
-                        .background(Color.black.opacity(0.4))
+                    Text("Arahkan tangan langsung atau sentuh layar (\(currentClaps)/\(targetClaps))")
+                        .font(.system(size: isPad ? 13 : 9.5, weight: .medium))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, isPad ? 20 : 13)
+                        .padding(.vertical, isPad ? 7 : 4.5)
+                        .background(Color(hex: "111827").opacity(0.85))
                         .clipShape(Capsule())
-                    }
-                    .buttonStyle(.plain)
                 }
-                .padding(.bottom, isPad ? 28 : 10)
+                .padding(.bottom, isPad ? 24 : 10)
             }
         }
-
         .onAppear {
             visionHandTracker?.isTrackingActive = true
             audioMonitor.requestPermissionAndStart()
@@ -195,22 +164,19 @@ struct HandClapChallengeView: View {
     func registerClap() {
         guard !isFinished else { return }
         
-        // Haptic feedback
         let generator = UIImpactFeedbackGenerator(style: .medium)
         generator.impactOccurred()
         
         currentClaps += 1
         onClapTriggered?()
         
-        // Ripple effect
-        let newId = UUID()
-        ripples.append(newId)
-        withAnimation(.easeOut(duration: 0.6)) {
-            pulseEffect = 1.4
+        withAnimation(.spring(response: 0.15, dampingFraction: 0.5)) {
+            bounceScale = 1.2
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-            pulseEffect = 1.0
-            ripples.removeAll { $0 == newId }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+            withAnimation(.easeOut(duration: 0.15)) {
+                bounceScale = 1.0
+            }
         }
         
         if currentClaps >= targetClaps {
@@ -238,17 +204,3 @@ struct HandClapChallengeView: View {
         }
     }
 }
-
-#Preview("Hand Clap Challenge", traits: .landscapeLeft) {
-    HandClapChallengeView(
-        audioMonitor: AudioLevelMonitor(),
-        visionHandTracker: VisionHandTrackingService(),
-        onSuccess: {
-            print("Hand Clap Success")
-        },
-        onFailure: {
-            print("Hand Clap Failure")
-        }
-    )
-}
-

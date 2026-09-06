@@ -7,140 +7,131 @@ import SwiftUI
 
 struct ScreamMeterChallengeView: View {
     @ObservedObject var audioMonitor: AudioLevelMonitor
-    let timeLimit: Int = 8
+    let timeLimit: Int = 10
     
     let onSuccess: () -> Void
     let onFailure: () -> Void
     
     @State private var meterProgress: CGFloat = 0.0 // 0.0 to 1.0
-    @State private var secondsRemaining: Int = 8
+    @State private var secondsRemaining: Int = 10
     @State private var isFinished: Bool = false
     @State private var timerTask: Task<Void, Never>? = nil
-    @State private var pulseFlame: Bool = false
+    @State private var meterLoopTask: Task<Void, Never>? = nil
+    @State private var bounceScale: CGFloat = 1.0
     
     var body: some View {
         let isPad = UIDevice.isIPad
-        let containerWidth: CGFloat = isPad ? 520 : 340
-        let containerHeight: CGFloat = isPad ? 160 : 96
-        let barHeight: CGFloat = isPad ? 38 : 22
+        let circleSize: CGFloat = isPad ? 210 : 124
         
         ZStack {
-            Color.black.opacity(0.55)
+            // Completely transparent background so camera preview remains 100% visible & clear
+            Color.clear
                 .ignoresSafeArea()
-            
-            VStack(spacing: isPad ? 20 : 6) {
-                // Header
-                VStack(spacing: isPad ? 8 : 3) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "timer")
-                            .font(.system(size: isPad ? 24 : 16, weight: .bold))
-                        Text("\(secondsRemaining)s")
-                            .font(.system(size: isPad ? 32 : 20, weight: .heavy, design: .rounded))
-                    }
-                    .foregroundColor(secondsRemaining <= 3 ? .red : .yellow)
-                    .padding(.horizontal, isPad ? 24 : 14)
-                    .padding(.vertical, isPad ? 8 : 4)
-                    .background(Color.black.opacity(0.65))
-                    .clipShape(Capsule())
-                    
-                    Text("TERIAK SEKERAS-KERASNYA!")
-                        .font(.system(size: isPad ? 38 : 20, weight: .heavy, design: .rounded))
-                        .foregroundColor(.white)
-                        .shadow(color: .black.opacity(0.8), radius: 6)
-                    
-                    Text("Ayo teriak bersama sampai meteran di tengah penuh!")
-                        .font(.system(size: isPad ? 20 : 12, weight: .medium, design: .rounded))
-                        .foregroundColor(.white.opacity(0.9))
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    boostVolume()
                 }
-                .padding(.top, isPad ? 24 : 8)
+            
+            VStack(spacing: 0) {
+                // Top Header: Timer Pill, Title, Subtitle
+                VStack(spacing: isPad ? 8 : 4) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "timer")
+                            .font(.system(size: isPad ? 13 : 10, weight: .bold))
+                            .foregroundColor(Color(hex: "EF4444"))
+                        Text("\(secondsRemaining)s")
+                            .font(.system(size: isPad ? 14 : 11, weight: .bold))
+                            .foregroundColor(.white)
+                    }
+                    .padding(.horizontal, isPad ? 12 : 9)
+                    .padding(.vertical, isPad ? 5 : 3)
+                    .background(Color(hex: "111827").opacity(0.85))
+                    .clipShape(Capsule())
+                    .overlay(
+                        Capsule()
+                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                    )
+                    
+                    Text("TERIAK SEKERAS-KERASNYA")
+                        .font(.system(size: isPad ? 26 : 16, weight: .bold))
+                        .foregroundColor(.white)
+                        .tracking(0.6)
+                        .shadow(color: .black.opacity(0.8), radius: 6, y: 3)
+                    
+                    Text("Ayo teriak bersama sekeras mungkin sampai lingkaran penuh")
+                        .font(.system(size: isPad ? 14 : 10, weight: .medium))
+                        .foregroundColor(Color(hex: "E2E8F0"))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 24)
+                        .shadow(color: .black.opacity(0.8), radius: 4)
+                }
+                .padding(.top, isPad ? 24 : 10)
                 
                 Spacer()
                 
-                // Centered Energy Scream Meter
-                ZStack {
-                    // Outer glow container
-                    RoundedRectangle(cornerRadius: isPad ? 32 : 18)
-                        .fill(Color.black.opacity(0.45))
-                        .frame(width: containerWidth, height: containerHeight)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: isPad ? 32 : 18)
-                                .stroke(Color.white.opacity(0.3), lineWidth: isPad ? 3 : 2)
-                        )
-                        .shadow(color: meterProgress > 0.7 ? Color.red.opacity(0.6) : Color.orange.opacity(0.4), radius: isPad ? 24 : 12)
-                    
-                    VStack(spacing: isPad ? 12 : 6) {
-                        // Flame icon and percentage
-                        HStack {
-                            Text(meterProgress > 0.8 ? "🔥" : "📢")
-                                .font(.system(size: isPad ? 36 : 22))
-                                .scaleEffect(pulseFlame ? 1.25 : 1.0)
+                // Central Interactive Circle
+                Button {
+                    boostVolume()
+                } label: {
+                    ZStack {
+                        Circle()
+                            .stroke(Color(hex: "3B82F6").opacity(0.35), lineWidth: isPad ? 7 : 5)
+                            .frame(width: circleSize + (isPad ? 12 : 8), height: circleSize + (isPad ? 12 : 8))
+                        
+                        Circle()
+                            .stroke(Color.white.opacity(0.12), lineWidth: isPad ? 4 : 3)
+                            .frame(width: circleSize, height: circleSize)
+                        
+                        Circle()
+                            .trim(from: 0, to: meterProgress)
+                            .stroke(
+                                meterProgress > 0.75 ? Color(hex: "F87171") : Color(hex: "60A5FA"),
+                                style: StrokeStyle(lineWidth: isPad ? 6 : 4, lineCap: .round)
+                            )
+                            .frame(width: circleSize, height: circleSize)
+                            .rotationEffect(.degrees(-90))
+                            .animation(.easeOut(duration: 0.15), value: meterProgress)
+                        
+                        Circle()
+                            .fill(Color(hex: "155DFC"))
+                            .frame(width: circleSize - (isPad ? 8 : 6), height: circleSize - (isPad ? 8 : 6))
+                            .shadow(color: Color(hex: "155DFC").opacity(0.6), radius: isPad ? 20 : 12)
+                        
+                        VStack(spacing: isPad ? 4 : 2) {
+                            Text(meterProgress > 0.75 ? "🔥" : "📢")
+                                .font(.system(size: isPad ? 52 : 32))
+                                .scaleEffect(bounceScale)
                             
                             Text("\(Int(meterProgress * 100))%")
-                                .font(.system(size: isPad ? 40 : 22, weight: .black, design: .rounded))
+                                .font(.system(size: isPad ? 16 : 10.5, weight: .bold))
                                 .foregroundColor(.white)
-                            
-                            Spacer()
-                            
-                            Text(meterProgress > 0.7 ? "HAMPIR PENUH!" : "TERIAK LEBIH KERAS!")
-                                .font(.system(size: isPad ? 20 : 12, weight: .heavy, design: .rounded))
-                                .foregroundColor(meterProgress > 0.7 ? .yellow : .white.opacity(0.8))
+                                .tracking(0.5)
                         }
-                        .padding(.horizontal, isPad ? 36 : 18)
-                        
-                        // Meter Bar in the middle
-                        GeometryReader { meterGeo in
-                            ZStack(alignment: .leading) {
-                                RoundedRectangle(cornerRadius: isPad ? 16 : 10)
-                                    .fill(Color.white.opacity(0.2))
-                                    .frame(height: barHeight)
-                                
-                                RoundedRectangle(cornerRadius: isPad ? 16 : 10)
-                                    .fill(
-                                        LinearGradient(
-                                            colors: [
-                                                Color(hex: "00F2FE"),
-                                                Color(hex: "FEE140"),
-                                                Color(hex: "FA709A"),
-                                                Color(hex: "FF0844")
-                                            ],
-                                            startPoint: .leading,
-                                            endPoint: .trailing
-                                        )
-                                    )
-                                    .frame(width: max(0, meterGeo.size.width * meterProgress), height: barHeight)
-                                    .animation(.easeOut(duration: 0.1), value: meterProgress)
-                            }
-                        }
-                        .frame(height: barHeight)
-                        .padding(.horizontal, isPad ? 36 : 18)
                     }
                 }
+                .buttonStyle(.plain)
                 
                 Spacer()
                 
-                // Bottom Button for Tap/Hold Boost (accessibility + simulator testing)
-                VStack(spacing: isPad ? 12 : 6) {
-                    Button {
-                        boostVolume()
-                    } label: {
-                        HStack(spacing: 8) {
-                            Image(systemName: "waveform")
-                                .font(.system(size: isPad ? 20 : 14, weight: .bold))
-                            Text("Bantuan: Tekan untuk isi meteran")
-                                .font(.system(size: isPad ? 16 : 11, weight: .semibold, design: .rounded))
-                        }
-                        .foregroundColor(.white.opacity(0.9))
-                        .padding(.horizontal, isPad ? 20 : 12)
-                        .padding(.vertical, isPad ? 10 : 6)
-                        .background(Color.white.opacity(0.2))
+                // Bottom: Cheer + Helper Pill
+                VStack(spacing: isPad ? 8 : 5) {
+                    Text("LETSGOOO...!!!")
+                        .font(.system(size: isPad ? 19 : 13, weight: .heavy))
+                        .foregroundColor(.white)
+                        .tracking(1.4)
+                        .shadow(color: .black.opacity(0.8), radius: 4)
+                    
+                    Text(meterProgress > 0.7 ? "SEDIKIT LAGI PENUH!" : "Teriak bersama atau buat suara yang lantang")
+                        .font(.system(size: isPad ? 13 : 9.5, weight: .medium))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, isPad ? 20 : 13)
+                        .padding(.vertical, isPad ? 7 : 4.5)
+                        .background(Color(hex: "111827").opacity(0.85))
                         .clipShape(Capsule())
-                    }
-                    .buttonStyle(.plain)
                 }
-                .padding(.bottom, isPad ? 28 : 10)
+                .padding(.bottom, isPad ? 24 : 10)
             }
         }
-
         .onAppear {
             audioMonitor.requestPermissionAndStart()
             startTimer()
@@ -155,14 +146,24 @@ struct ScreamMeterChallengeView: View {
     
     private func boostVolume() {
         guard !isFinished else { return }
-        meterProgress = min(1.0, meterProgress + 0.18)
+        let generator = UIImpactFeedbackGenerator(style: .medium)
+        generator.impactOccurred()
+        
+        meterProgress = min(1.0, meterProgress + 0.20)
+        withAnimation(.spring(response: 0.15, dampingFraction: 0.5)) {
+            bounceScale = 1.2
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+            withAnimation(.easeOut(duration: 0.15)) {
+                bounceScale = 1.0
+            }
+        }
+        
         if meterProgress >= 1.0 {
             finishSuccess()
         }
     }
     
-    @State private var meterLoopTask: Task<Void, Never>? = nil
-
     private func startMeterLoop() {
         meterLoopTask?.cancel()
         meterLoopTask = Task { @MainActor in
@@ -173,17 +174,12 @@ struct ScreamMeterChallengeView: View {
                 guard !Task.isCancelled, !isFinished else { return }
                 
                 let vol = audioMonitor.normalizedVolume
-                if vol > 0.20 {
-                    // Fill meter proportionally to volume
-                    let increment = (vol - 0.15) * 0.07
+                if vol > 0.08 {
+                    let increment = (vol - 0.06) * 0.20
                     meterProgress = min(1.0, meterProgress + increment)
-                    withAnimation(.easeInOut(duration: 0.1)) {
-                        pulseFlame = true
-                    }
+                    bounceScale = 1.08
                 } else {
-                    // Slow decay if quiet
-                    meterProgress = max(0.0, meterProgress - 0.008)
-                    pulseFlame = false
+                    bounceScale = 1.0
                 }
                 
                 if meterProgress >= 1.0 {
@@ -198,6 +194,7 @@ struct ScreamMeterChallengeView: View {
         guard !isFinished else { return }
         isFinished = true
         timerTask?.cancel()
+        meterLoopTask?.cancel()
         
         let generator = UINotificationFeedbackGenerator()
         generator.notificationOccurred(.success)
@@ -218,21 +215,9 @@ struct ScreamMeterChallengeView: View {
             
             if !isFinished {
                 isFinished = true
+                meterLoopTask?.cancel()
                 onFailure()
             }
         }
     }
 }
-
-#Preview("Scream Meter Challenge", traits: .landscapeLeft) {
-    ScreamMeterChallengeView(
-        audioMonitor: AudioLevelMonitor(),
-        onSuccess: {
-            print("Scream Meter Success")
-        },
-        onFailure: {
-            print("Scream Meter Failure")
-        }
-    )
-}
-

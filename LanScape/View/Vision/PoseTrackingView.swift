@@ -18,7 +18,8 @@ struct PoseTrackingView: View {
         case countdown(number: Int)
         case flashShutter
         case photoCaptured
-        case interactionChallenge(interactionIndex: Int)
+        case miniGameTutorial(game: MiniGameMetadata)
+        case interactionChallenge(game: MiniGameMetadata)
         case challengeSuccess
         case challengeFailure(penalty: PenaltyStickerType)
     }
@@ -27,24 +28,25 @@ struct PoseTrackingView: View {
     // MARK: - Services & Environment
     // =========================================================
 
-    var selectedMusic: MusicData? = nil
+    var selectedMusic: MusicData?
+    
+    init(selectedMusic: MusicData? = nil) {
+        self.selectedMusic = selectedMusic
+    }
 
-    @ObservedObject
     private var musicService = BackgroundMusicService.shared
-
-    @ObservedObject
     private var cameraService = CameraService.shared
 
-    @StateObject
+    @State
     private var audioMonitor = AudioLevelMonitor()
 
-    @StateObject
+    @State
     private var motionService = MotionDetectionService()
 
-    @StateObject
+    @State
     private var penaltyService = FacePenaltyService()
 
-    @StateObject
+    @State
     private var visionHandTracker = VisionHandTrackingService()
 
     @Environment(\.dismiss)
@@ -53,6 +55,9 @@ struct PoseTrackingView: View {
     // =========================================================
     // MARK: - State
     // =========================================================
+
+    @State
+    private var sessionMiniGames: [MiniGameMetadata] = MiniGameCatalog.selectRandomChallenges(count: 4)
 
     @State
     private var movementNumber: Int = 1
@@ -146,8 +151,25 @@ struct PoseTrackingView: View {
                 case .photoCaptured:
                     photoCapturedOverlay
 
-                case .interactionChallenge(let interactionIndex):
-                    interactionOverlay(for: interactionIndex)
+                case .miniGameTutorial(let game):
+                    PreChallengeTutorialView(
+                        metadata: game,
+                        onStart: {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                captureState = .interactionChallenge(game: game)
+                            }
+                        },
+                        onExit: {
+                            musicService.stop()
+                            activeTimerTask?.cancel()
+                            dismiss()
+                        }
+                    )
+                    .transition(.opacity)
+
+                case .interactionChallenge(let game):
+                    interactionOverlay(for: game)
+                        .transition(.opacity)
 
                 case .challengeSuccess:
                     ChallengeSuccessOverlay()
@@ -343,9 +365,9 @@ struct PoseTrackingView: View {
 
     // State 4: Post-Photo Interactive Mini-Game Overlay
     @ViewBuilder
-    private func interactionOverlay(for index: Int) -> some View {
-        switch index {
-        case 1:
+    private func interactionOverlay(for game: MiniGameMetadata) -> some View {
+        switch game.id {
+        case .handClap:
             HandClapChallengeView(
                 audioMonitor: audioMonitor,
                 visionHandTracker: visionHandTracker,
@@ -358,7 +380,7 @@ struct PoseTrackingView: View {
             )
             .transition(.opacity)
 
-        case 2:
+        case .fastTap:
             FastTapChallengeView(
                 visionHandTracker: visionHandTracker,
                 onSuccess: {
@@ -370,7 +392,7 @@ struct PoseTrackingView: View {
             )
             .transition(.opacity)
 
-        case 3:
+        case .screamMeter:
             ScreamMeterChallengeView(
                 audioMonitor: audioMonitor,
                 onSuccess: {
@@ -382,7 +404,7 @@ struct PoseTrackingView: View {
             )
             .transition(.opacity)
 
-        case 4:
+        case .fastMove:
             FastMoveChallengeView(
                 motionService: motionService,
                 onSuccess: {
@@ -394,8 +416,142 @@ struct PoseTrackingView: View {
             )
             .transition(.opacity)
 
-        default:
-            EmptyView()
+        case .sayILoveYou:
+            SayILoveYouChallengeView(
+                audioMonitor: audioMonitor,
+                onSuccess: { handleChallengeSuccess() },
+                onFailure: { handleChallengeFailure() }
+            )
+            .transition(.opacity)
+
+        case .fanSmoke:
+            FanSmokeChallengeView(
+                visionHandTracker: visionHandTracker,
+                motionService: motionService,
+                onSuccess: { handleChallengeSuccess() },
+                onFailure: { handleChallengeFailure() }
+            )
+            .transition(.opacity)
+
+        case .waveHello:
+            WaveHelloChallengeView(
+                visionHandTracker: visionHandTracker,
+                motionService: motionService,
+                onSuccess: { handleChallengeSuccess() },
+                onFailure: { handleChallengeFailure() }
+            )
+            .transition(.opacity)
+
+        case .doubleThumbsUp:
+            DoubleThumbsUpChallengeView(
+                visionHandTracker: visionHandTracker,
+                motionService: motionService,
+                onSuccess: { handleChallengeSuccess() },
+                onFailure: { handleChallengeFailure() }
+            )
+            .transition(.opacity)
+
+        case .halfHeart:
+            HalfHeartChallengeView(
+                visionHandTracker: visionHandTracker,
+                motionService: motionService,
+                onSuccess: { handleChallengeSuccess() },
+                onFailure: { handleChallengeFailure() }
+            )
+            .transition(.opacity)
+
+        case .batteryHug:
+            BatteryHugChallengeView(
+                motionService: motionService,
+                onSuccess: { handleChallengeSuccess() },
+                onFailure: { handleChallengeFailure() }
+            )
+            .transition(.opacity)
+
+        case .gentleHeadPat:
+            GentleHeadPatChallengeView(
+                visionHandTracker: visionHandTracker,
+                motionService: motionService,
+                onSuccess: { handleChallengeSuccess() },
+                onFailure: { handleChallengeFailure() }
+            )
+            .transition(.opacity)
+
+        case .cheekToCheek:
+            CheekToCheekChallengeView(
+                motionService: motionService,
+                onSuccess: { handleChallengeSuccess() },
+                onFailure: { handleChallengeFailure() }
+            )
+            .transition(.opacity)
+
+        case .puffCheeks:
+            PuffCheeksChallengeView(
+                motionService: motionService,
+                onSuccess: { handleChallengeSuccess() },
+                onFailure: { handleChallengeFailure() }
+            )
+            .transition(.opacity)
+
+        case .fishLips:
+            FishLipsChallengeView(
+                motionService: motionService,
+                onSuccess: { handleChallengeSuccess() },
+                onFailure: { handleChallengeFailure() }
+            )
+            .transition(.opacity)
+
+        case .mouthOpen:
+            MouthOpenChallengeView(
+                audioMonitor: audioMonitor,
+                motionService: motionService,
+                onSuccess: { handleChallengeSuccess() },
+                onFailure: { handleChallengeFailure() }
+            )
+            .transition(.opacity)
+
+        case .peekABoo:
+            PeekABooChallengeView(
+                visionHandTracker: visionHandTracker,
+                motionService: motionService,
+                onSuccess: { handleChallengeSuccess() },
+                onFailure: { handleChallengeFailure() }
+            )
+            .transition(.opacity)
+
+        case .blowCandle:
+            BlowCandleChallengeView(
+                audioMonitor: audioMonitor,
+                onSuccess: { handleChallengeSuccess() },
+                onFailure: { handleChallengeFailure() }
+            )
+            .transition(.opacity)
+
+        case .laughOutLoud:
+            LaughOutLoudChallengeView(
+                audioMonitor: audioMonitor,
+                onSuccess: { handleChallengeSuccess() },
+                onFailure: { handleChallengeFailure() }
+            )
+            .transition(.opacity)
+
+        case .sleepyPose:
+            SleepyPoseChallengeView(
+                visionHandTracker: visionHandTracker,
+                motionService: motionService,
+                onSuccess: { handleChallengeSuccess() },
+                onFailure: { handleChallengeFailure() }
+            )
+            .transition(.opacity)
+
+        case .gentleHighFive:
+            GentleHighFiveChallengeView(
+                visionHandTracker: visionHandTracker,
+                motionService: motionService,
+                onSuccess: { handleChallengeSuccess() },
+                onFailure: { handleChallengeFailure() }
+            )
+            .transition(.opacity)
         }
     }
 
@@ -510,7 +666,7 @@ struct PoseTrackingView: View {
         // If penalty is active, bake penalty stickers onto this captured photo!
         let baseImage = capturedImage ?? UIImage(named: self.currentPoseImageName)
         if let image = baseImage {
-            let finalImage = penaltyService.isPenaltyActive ? penaltyService.bakePenaltyOntoImage(image) : image
+            let finalImage = penaltyService.isPenaltyActive ? await penaltyService.bakePenaltyOntoImageAsync(image) : image
             self.capturedPhotos.append(finalImage)
         }
 
@@ -543,22 +699,29 @@ struct PoseTrackingView: View {
         guard !Task.isCancelled else { return }
 
         if movementNumber < totalMovements {
-            // Interactive challenges between photos:
-            // After Photo 1 -> Challenge 1: Clapping hands (shrink giant hand)
-            // After Photo 2 -> Challenge 2: Fast circle touch with Vision hand tracking
-            // After Photo 3 -> Challenge 3: Scream meter in middle
-            // After Photo 4 -> Challenge 4: Fast movement
+            let gameIndex = (movementNumber - 1) % max(1, sessionMiniGames.count)
+            let selectedGame = sessionMiniGames.indices.contains(gameIndex) ? sessionMiniGames[gameIndex] : (MiniGameCatalog.allGames[.handClap] ?? MiniGameCatalog.selectRandomChallenges(count: 1)[0])
+            
+            // Duck background music volume for audio-based games so voice/laughter is easily detected
+            if selectedGame.sensorType == .audioVoice || selectedGame.sensorType == .audioScream || selectedGame.sensorType == .audioClap || selectedGame.id == .mouthOpen {
+                musicService.setVolume(0.25)
+            }
+            
             withAnimation(.easeInOut(duration: 0.3)) {
-                captureState = .interactionChallenge(interactionIndex: movementNumber)
+                captureState = .miniGameTutorial(game: selectedGame)
             }
         } else {
             // All 5 photos captured! Sequence completed!
+            musicService.setVolume(0.75)
             sessionDuration = Date().timeIntervalSince(sessionStartTime ?? Date())
             showCompletionView = true
         }
     }
 
     private func handleChallengeSuccess() {
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(.success)
+        
         activeTimerTask?.cancel()
         activeTimerTask = Task { @MainActor in
             withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
@@ -577,6 +740,9 @@ struct PoseTrackingView: View {
     }
 
     private func handleChallengeFailure() {
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(.warning)
+        
         activeTimerTask?.cancel()
 
         let penalty = PenaltyStickerType.allCases.randomElement() ?? .banana
@@ -600,6 +766,9 @@ struct PoseTrackingView: View {
 
     private func advanceToNextPose() {
         guard !Task.isCancelled else { return }
+        
+        // Restore music volume to full energetic level
+        musicService.setVolume(0.75)
 
         if movementNumber < totalMovements {
             withAnimation(.easeInOut(duration: 0.25)) {
@@ -622,15 +791,16 @@ struct PoseTrackingView: View {
         movementNumber = 1
         capturedPhotos = []
         sessionStartTime = Date()
+        sessionMiniGames = MiniGameCatalog.selectRandomChallenges(count: 4)
         
         let songAsset = selectedMusic?.assetName ?? MusicData.sample.first?.assetName ?? "JarangPulang.mp3"
         musicService.play(assetName: songAsset, isLooping: true, volume: 0.75)
         
         isSessionLoading = true
         Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 800_000_000)
+            try? await Task.sleep(nanoseconds: 350_000_000)
             guard !Task.isCancelled else { return }
-            withAnimation(.easeOut(duration: 0.35)) {
+            withAnimation(.easeOut(duration: 0.30)) {
                 isSessionLoading = false
             }
             startCurrentPoseCycle()
@@ -665,12 +835,13 @@ struct PoseTrackingView: View {
             movementNumber = 1
             capturedPhotos = []
             sessionStartTime = Date()
+            sessionMiniGames = MiniGameCatalog.selectRandomChallenges(count: 4)
             
             Task { @MainActor in
-                // Brief loading presentation so camera hardware stabilizes and transitions gracefully
-                try? await Task.sleep(nanoseconds: 1_000_000_000)
+                // Snappy loading presentation so camera hardware stabilizes and transitions gracefully
+                try? await Task.sleep(nanoseconds: 350_000_000)
                 guard !Task.isCancelled else { return }
-                withAnimation(.easeOut(duration: 0.35)) {
+                withAnimation(.easeOut(duration: 0.30)) {
                     isSessionLoading = false
                 }
                 startCurrentPoseCycle()
@@ -766,33 +937,19 @@ struct PoseTrackingView: View {
                         }
                     }
 
-                    Divider()
-
-                    Button("Test Interaksi 1: Tepukan Tangan") {
+                    Button("Test Tutorial Game Acak") {
                         activeTimerTask?.cancel()
+                        let randomGame = MiniGameCatalog.allGames.values.randomElement() ?? sessionMiniGames[0]
                         withAnimation {
-                            captureState = .interactionChallenge(interactionIndex: 1)
+                            captureState = .miniGameTutorial(game: randomGame)
                         }
                     }
 
-                    Button("Test Interaksi 2: Sentuh Cepat") {
+                    Button("Test Main Mini-Game Acak") {
                         activeTimerTask?.cancel()
+                        let randomGame = MiniGameCatalog.allGames.values.randomElement() ?? sessionMiniGames[0]
                         withAnimation {
-                            captureState = .interactionChallenge(interactionIndex: 2)
-                        }
-                    }
-
-                    Button("Test Interaksi 3: Meteran Teriakan") {
-                        activeTimerTask?.cancel()
-                        withAnimation {
-                            captureState = .interactionChallenge(interactionIndex: 3)
-                        }
-                    }
-
-                    Button("Test Interaksi 4: Gerak Cepat") {
-                        activeTimerTask?.cancel()
-                        withAnimation {
-                            captureState = .interactionChallenge(interactionIndex: 4)
+                            captureState = .interactionChallenge(game: randomGame)
                         }
                     }
 
