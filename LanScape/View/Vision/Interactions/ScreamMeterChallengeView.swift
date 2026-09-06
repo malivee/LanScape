@@ -217,3 +217,16 @@ struct ScreamMeterChallengeView: View {
         }
     }
 }
+
+#Preview("Scream Meter Challenge", traits: .landscapeLeft) {
+    ScreamMeterChallengeView(
+        audioMonitor: AudioLevelMonitor(),
+        onSuccess: {
+            print("Scream Meter Success")
+        },
+        onFailure: {
+            print("Scream Meter Failure")
+        }
+    )
+}
+

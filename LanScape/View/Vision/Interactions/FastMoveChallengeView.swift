@@ -177,3 +177,16 @@ struct FastMoveChallengeView: View {
         }
     }
 }
+
+#Preview("Fast Move Challenge", traits: .landscapeLeft) {
+    FastMoveChallengeView(
+        motionService: MotionDetectionService(),
+        onSuccess: {
+            print("Fast Move Success")
+        },
+        onFailure: {
+            print("Fast Move Failure")
+        }
+    )
+}
+

@@ -285,3 +285,16 @@ struct FastTapChallengeView: View {
         }
     }
 }
+
+#Preview("Fast Tap Challenge", traits: .landscapeLeft) {
+    FastTapChallengeView(
+        visionHandTracker: VisionHandTrackingService(),
+        onSuccess: {
+            print("Fast Tap Success")
+        },
+        onFailure: {
+            print("Fast Tap Failure")
+        }
+    )
+}
+

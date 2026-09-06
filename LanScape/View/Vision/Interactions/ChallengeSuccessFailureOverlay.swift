@@ -123,3 +123,18 @@ struct ChallengeFailureOverlay: View {
         }
     }
 }
+
+#Preview("Challenge Success Overlay", traits: .landscapeLeft) {
+    ZStack {
+        Color.black.opacity(0.7).ignoresSafeArea()
+        ChallengeSuccessOverlay()
+    }
+}
+
+#Preview("Challenge Failure Overlay", traits: .landscapeLeft) {
+    ZStack {
+        Color.black.opacity(0.7).ignoresSafeArea()
+        ChallengeFailureOverlay(penaltySticker: .clown)
+    }
+}
+

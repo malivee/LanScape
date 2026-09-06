@@ -233,3 +233,17 @@ struct HandClapChallengeView: View {
         }
     }
 }
+
+#Preview("Hand Clap Challenge", traits: .landscapeLeft) {
+    HandClapChallengeView(
+        audioMonitor: AudioLevelMonitor(),
+        visionHandTracker: VisionHandTrackingService(),
+        onSuccess: {
+            print("Hand Clap Success")
+        },
+        onFailure: {
+            print("Hand Clap Failure")
+        }
+    )
+}
+

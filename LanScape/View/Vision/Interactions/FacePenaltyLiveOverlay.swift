@@ -64,3 +64,28 @@ struct FacePenaltyLiveOverlay: View {
         }
     }
 }
+
+#Preview("Face Penalty Live Overlay", traits: .landscapeLeft) {
+    let service: FacePenaltyService = {
+        let s = FacePenaltyService()
+        s.activatePenalty(sticker: .clown)
+        s.detectedFaces = [
+            DetectedFacePenalty(
+                normalizedRect: CGRect(x: 0.35, y: 0.25, width: 0.3, height: 0.4),
+                sticker: .clown
+            )
+        ]
+        return s
+    }()
+    
+    return GeometryReader { proxy in
+        ZStack {
+            Color.black.opacity(0.8).ignoresSafeArea()
+            FacePenaltyLiveOverlay(
+                penaltyService: service,
+                geometry: proxy
+            )
+        }
+    }
+}
+
