@@ -32,8 +32,8 @@ struct PoseTrackingView: View {
     @ObservedObject
     private var musicService = BackgroundMusicService.shared
 
-    @StateObject
-    private var cameraService = CameraService()
+    @ObservedObject
+    private var cameraService = CameraService.shared
 
     @StateObject
     private var audioMonitor = AudioLevelMonitor()
@@ -60,7 +60,7 @@ struct PoseTrackingView: View {
     private let totalMovements: Int = 5
 
     @State
-    private var captureState: PoseCaptureState = .showingPosePreview(secondsRemaining: 3)
+    private var captureState: PoseCaptureState = .countdown(number: 5)
 
     @State
     private var capturedPhotos: [UIImage] = []
@@ -83,6 +83,9 @@ struct PoseTrackingView: View {
     @State
     private var hasInitialized: Bool = false
 
+    @State
+    private var isSessionLoading: Bool = true
+
     // =========================================================
     // MARK: - Body
     // =========================================================
@@ -101,10 +104,6 @@ struct PoseTrackingView: View {
                 .clipped()
                 .ignoresSafeArea()
 
-                // 2. Center Divider Line
-                CenterDividerLineView()
-                    .frame(width: geometry.size.width, height: geometry.size.height)
-                    .ignoresSafeArea()
 
                 // 2.5 Live Face Penalty Overlay (renders stickers over faces when penalty is active)
                 FacePenaltyLiveOverlay(penaltyService: penaltyService, geometry: geometry)
@@ -119,9 +118,9 @@ struct PoseTrackingView: View {
                             Spacer()
                             MiniPoseThumbnailBadge(
                                 imageName: currentPoseImageName,
-                                size: 175
+                                size: UIDevice.isIPad ? 175 : 105
                             )
-                            .padding(.trailing, 28)
+                            .padding(.trailing, UIDevice.isIPad ? 28 : 50)
                             .padding(.top, 6)
                             .transition(.scale.combined(with: .opacity))
                         }
@@ -169,6 +168,16 @@ struct PoseTrackingView: View {
                 #if DEBUG
                 testControlsOverlay
                 #endif
+
+                // 7. Polished Game Loading Screen
+                if isSessionLoading {
+                    GameLoadingView(
+                        title: "Menyiapkan Kamera & Panggung...",
+                        subtitle: "Pastikan kalian berdiri atau duduk dengan nyaman!"
+                    )
+                    .transition(.opacity)
+                    .zIndex(150)
+                }
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
             .ignoresSafeArea()
@@ -245,6 +254,10 @@ struct PoseTrackingView: View {
     // State 2: 5.. 4.. 3.. 2.. 1.. Countdown
     @ViewBuilder
     private func countdownOverlay(number: Int) -> some View {
+        let isPad = UIDevice.isIPad
+        let circleSize: CGFloat = isPad ? 150 : 96
+        let numberFont: CGFloat = isPad ? 88 : 54
+        
         ZStack {
             VStack {
                 Spacer()
@@ -259,16 +272,16 @@ struct PoseTrackingView: View {
                                 endPoint: .bottomTrailing
                             )
                         )
-                        .frame(width: 150, height: 150)
-                        .shadow(color: Color(hex: "00D2FF").opacity(0.6), radius: 18)
+                        .frame(width: circleSize, height: circleSize)
+                        .shadow(color: Color(hex: "00D2FF").opacity(0.6), radius: isPad ? 18 : 10)
 
                     Circle()
-                        .stroke(Color.white, lineWidth: 5)
-                        .frame(width: 150, height: 150)
+                        .stroke(Color.white, lineWidth: isPad ? 5 : 3.5)
+                        .frame(width: circleSize, height: circleSize)
 
                     Text("\(number)")
                         .id(number)
-                        .font(.system(size: 88, weight: .heavy, design: .rounded))
+                        .font(.system(size: numberFont, weight: .heavy, design: .rounded))
                         .foregroundColor(.white)
                         .shadow(color: Color.black.opacity(0.4), radius: 4)
                         .transition(.scale.combined(with: .opacity))
@@ -276,13 +289,13 @@ struct PoseTrackingView: View {
                 .animation(.spring(response: 0.35, dampingFraction: 0.65), value: number)
 
                 Text("Tahan gaya kalian!")
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .font(.system(size: isPad ? 28 : 17, weight: .bold, design: .rounded))
                     .foregroundColor(.white)
-                    .padding(.horizontal, 28)
-                    .padding(.vertical, 10)
+                    .padding(.horizontal, isPad ? 28 : 18)
+                    .padding(.vertical, isPad ? 10 : 6)
                     .background(Color.black.opacity(0.65))
                     .clipShape(Capsule())
-                    .padding(.top, 16)
+                    .padding(.top, isPad ? 16 : 8)
                     .shadow(color: .black.opacity(0.4), radius: 6)
 
                 Spacer()
@@ -295,19 +308,21 @@ struct PoseTrackingView: View {
     // State 3: Captured Photo Flash & Feedback
     @ViewBuilder
     private var photoCapturedOverlay: some View {
+        let isPad = UIDevice.isIPad
+        
         ZStack {
             VStack {
                 Spacer()
 
-                HStack(spacing: 12) {
+                HStack(spacing: isPad ? 12 : 8) {
                     Image(systemName: "camera.fill")
-                        .font(.system(size: 32, weight: .bold))
+                        .font(.system(size: isPad ? 32 : 20, weight: .bold))
                     Text("FOTO TERCATAT!")
-                        .font(.system(size: 36, weight: .black, design: .rounded))
+                        .font(.system(size: isPad ? 36 : 22, weight: .black, design: .rounded))
                 }
                 .foregroundColor(.white)
-                .padding(.horizontal, 36)
-                .padding(.vertical, 16)
+                .padding(.horizontal, isPad ? 36 : 20)
+                .padding(.vertical, isPad ? 16 : 10)
                 .background(
                     LinearGradient(
                         colors: [Color.green.opacity(0.9), Color.blue.opacity(0.9)],
@@ -316,7 +331,7 @@ struct PoseTrackingView: View {
                     )
                 )
                 .clipShape(Capsule())
-                .shadow(color: Color.green.opacity(0.7), radius: 16)
+                .shadow(color: Color.green.opacity(0.7), radius: isPad ? 16 : 10)
                 .scaleEffect(1.05)
                 .transition(.scale.combined(with: .opacity))
 
@@ -390,7 +405,10 @@ struct PoseTrackingView: View {
 
     @ViewBuilder
     private var gameplayHeader: some View {
-        VStack(spacing: 12) {
+        let isPad = UIDevice.isIPad
+        let btnSize: CGFloat = isPad ? 52 : 38
+        
+        VStack(spacing: isPad ? 12 : 6) {
             HStack {
                 // Pause / Exit button
                 Button {
@@ -401,11 +419,11 @@ struct PoseTrackingView: View {
                     ZStack {
                         Circle()
                             .fill(Color.white.opacity(0.92))
-                            .frame(width: 52, height: 52)
+                            .frame(width: btnSize, height: btnSize)
                             .shadow(color: .black.opacity(0.2), radius: 4)
 
                         Image(systemName: "xmark")
-                            .font(.system(size: 20, weight: .bold))
+                            .font(.system(size: isPad ? 20 : 15, weight: .bold))
                             .foregroundColor(.black)
                     }
                 }
@@ -414,19 +432,19 @@ struct PoseTrackingView: View {
                 Spacer()
 
                 Text("\(movementNumber)/\(totalMovements) Gerakan")
-                    .font(.system(size: 26, weight: .bold, design: .rounded))
+                    .font(.system(size: isPad ? 26 : 18, weight: .bold, design: .rounded))
                     .foregroundColor(.white)
                     .shadow(color: .black.opacity(0.8), radius: 4, x: 0, y: 2)
 
                 Spacer()
 
                 Color.clear
-                    .frame(width: 52, height: 52)
+                    .frame(width: btnSize, height: btnSize)
             }
 
             // Progress Bar
             GeometryReader { geometry in
-                let spacing: CGFloat = 8
+                let spacing: CGFloat = isPad ? 8 : 4
                 let totalWidth = geometry.size.width
                 let calculatedWidth = (totalWidth - (spacing * CGFloat(totalMovements - 1))) / CGFloat(totalMovements)
                 let segmentWidth = max(0, calculatedWidth)
@@ -435,17 +453,18 @@ struct PoseTrackingView: View {
                     ForEach(0..<totalMovements, id: \.self) { index in
                         RoundedRectangle(cornerRadius: 5)
                             .fill(index < movementNumber ? Color.blue : Color.white.opacity(0.35))
-                            .frame(width: segmentWidth, height: 7)
+                            .frame(width: segmentWidth, height: isPad ? 7 : 5)
                             .animation(.easeInOut(duration: 0.25), value: movementNumber)
                     }
                 }
             }
-            .frame(height: 7)
+            .frame(height: isPad ? 7 : 5)
         }
-        .padding(.horizontal, 30)
-        .padding(.top, 18)
-        .padding(.bottom, 18)
+        .padding(.horizontal, isPad ? 30 : 54)
+        .padding(.top, isPad ? 18 : 8)
+        .padding(.bottom, isPad ? 18 : 8)
     }
+
 
     // =========================================================
     // MARK: - Flow & Timers
@@ -455,22 +474,7 @@ struct PoseTrackingView: View {
         activeTimerTask?.cancel()
 
         activeTimerTask = Task { @MainActor in
-            // 1. Wait 3 seconds showing the pose preview
-            for remaining in (1...3).reversed() {
-                guard !Task.isCancelled else { return }
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    captureState = .showingPosePreview(secondsRemaining: remaining)
-                }
-                do {
-                    try await Task.sleep(nanoseconds: 1_000_000_000)
-                } catch {
-                    return
-                }
-            }
-
-            guard !Task.isCancelled else { return }
-
-            // 2. Countdown 5, 4, 3, 2, 1
+            // Countdown 5, 4, 3, 2, 1 (starts immediately without startup delay)
             for num in (1...5).reversed() {
                 guard !Task.isCancelled else { return }
                 withAnimation(.spring(response: 0.35, dampingFraction: 0.65)) {
@@ -622,7 +626,15 @@ struct PoseTrackingView: View {
         let songAsset = selectedMusic?.assetName ?? MusicData.sample.first?.assetName ?? "JarangPulang.mp3"
         musicService.play(assetName: songAsset, isLooping: true, volume: 0.75)
         
-        startCurrentPoseCycle()
+        isSessionLoading = true
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 800_000_000)
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeOut(duration: 0.35)) {
+                isSessionLoading = false
+            }
+            startCurrentPoseCycle()
+        }
     }
 
     // =========================================================
@@ -637,8 +649,12 @@ struct PoseTrackingView: View {
             if penaltyService?.isPenaltyActive == true {
                 penaltyService?.processLiveBuffer(buffer)
             }
-            visionHandTracker?.processPixelBuffer(buffer)
-            motionService?.processPixelBuffer(buffer)
+            if visionHandTracker?.isTrackingActive == true {
+                visionHandTracker?.processPixelBuffer(buffer)
+            }
+            if motionService?.isTrackingActive == true {
+                motionService?.processPixelBuffer(buffer)
+            }
         }
 
         let songAsset = selectedMusic?.assetName ?? MusicData.sample.first?.assetName ?? "JarangPulang.mp3"
@@ -649,7 +665,16 @@ struct PoseTrackingView: View {
             movementNumber = 1
             capturedPhotos = []
             sessionStartTime = Date()
-            startCurrentPoseCycle()
+            
+            Task { @MainActor in
+                // Brief loading presentation so camera hardware stabilizes and transitions gracefully
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
+                guard !Task.isCancelled else { return }
+                withAnimation(.easeOut(duration: 0.35)) {
+                    isSessionLoading = false
+                }
+                startCurrentPoseCycle()
+            }
         }
     }
 
@@ -662,13 +687,16 @@ struct PoseTrackingView: View {
         penaltyService.clearPenalty()
         musicService.stop()
         hasInitialized = false
+        isSessionLoading = true
     }
 
     private func forceLandscape() {
         if let windowScene = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first {
             if #available(iOS 16.0, *) {
-                let preferences = UIWindowScene.GeometryPreferences.iOS(interfaceOrientations: .landscape)
-                windowScene.requestGeometryUpdate(preferences) { _ in }
+                if !windowScene.interfaceOrientation.isLandscape {
+                    let preferences = UIWindowScene.GeometryPreferences.iOS(interfaceOrientations: .landscape)
+                    windowScene.requestGeometryUpdate(preferences) { _ in }
+                }
             }
         }
     }

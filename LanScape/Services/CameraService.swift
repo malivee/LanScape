@@ -11,6 +11,8 @@ import CoreImage
 
 final class CameraService: NSObject, ObservableObject, AVCapturePhotoCaptureDelegate, AVCaptureVideoDataOutputSampleBufferDelegate {
 
+    static let shared = CameraService()
+
     // MARK: - Published State
     @Published var isCameraRunning: Bool = false
     @Published var permissionGranted: Bool = false
@@ -26,12 +28,21 @@ final class CameraService: NSObject, ObservableObject, AVCapturePhotoCaptureDele
     private var isConfigured = false
     private var photoCaptureCompletion: ((UIImage?) -> Void)?
     
-    // Efficient persistent CIContext (reused, never reallocated per frame)
-    private let ciContext = CIContext(options: [.useSoftwareRenderer: false])
+    // Efficient persistent CIContext (initialized lazily to avoid blocking UI during launch)
+    private lazy var ciContext: CIContext = CIContext(options: [.useSoftwareRenderer: false])
     private var latestPixelBuffer: CVPixelBuffer?
     private let bufferLock = NSLock()
     
     var onPixelBufferAvailable: ((CVPixelBuffer) -> Void)?
+
+    func warmUp() {
+        sessionQueue.async { [weak self] in
+            guard let self = self else { return }
+            if !self.isConfigured {
+                self.setupSession()
+            }
+        }
+    }
 
     // MARK: - Init
     override init() {
