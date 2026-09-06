@@ -119,7 +119,7 @@ struct ContentView: View {
                 SelectMusicView()
             }
             .navigationDestination(isPresented: $navigateToGallery) {
-                GalleryView()
+                TulisPostcardView()
             }
             .fullScreenCover(isPresented: $showHelp) {
                 TutorialGuideView()
