@@ -39,21 +39,19 @@ struct TulisPostcardView: View {
     @State private var localVideoURL: URL?
     @State private var showShareSheet = false
 
-    // Replace these names with the 5 UIImage assets from your camera sequence.
-    // If your camera already provides 5 UIImages, assign them to this array instead.
-    @State private var collageImages: [UIImage] = [
-        UIImage(named: "BubbleGumimg") ?? UIImage(),
-        UIImage(named: "BubbleGumimg") ?? UIImage(),
-        UIImage(named: "BubbleGumimg") ?? UIImage(),
-        UIImage(named: "BubbleGumimg") ?? UIImage(),
-        UIImage(named: "BubbleGumimg") ?? UIImage()
-    ]
+
+    let collageImages: [UIImage]
 
     // MARK: - Error
 
     @State private var showError = false
     @State private var errorMessage = ""
 
+    init(images: [UIImage]) {
+        self.collageImages = Array(images.prefix(5))
+    }
+    
+    
     var body: some View {
         GeometryReader { geometry in
             ZStack {
@@ -864,5 +862,5 @@ extension UIDevice {
 // MARK: - Preview
 
 #Preview {
-    TulisPostcardView()
+    TulisPostcardView(images: [UIImage(named: "BoleChudiyanimg") ?? UIImage(), UIImage(named: "BoleChudiyanimg") ?? UIImage(), UIImage(named: "BoleChudiyanimg") ?? UIImage(), UIImage(named: "BoleChudiyanimg") ?? UIImage(), UIImage(named: "BoleChudiyanimg") ?? UIImage()])
 }

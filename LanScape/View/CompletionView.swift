@@ -1,372 +1,1002 @@
-// Completion or Result Page
+//
+//  CompletionView.swift
+//  stamppal
+//
+//  Completion screen:
+//  - 5 customized photos
+//  - photo strip on the left
+//  - Share popover matching the reference
+//  - postcard -> TulisPostcardView
+//  - photo -> native share sheet with 6 images
+//
 
 import SwiftUI
+import SwiftData
+import UIKit
 
 struct CompletionView: View {
-    var durationSeconds: TimeInterval = 243
-    var photos: [String] = ["markHaechan", "markHaechan", "markHaechan", "markHaechan", "markHaechan"]
-    var capturedPhotos: [UIImage] = []
+
+    @Environment(\.modelContext)
+    private var modelContext
+
+    @Environment(\.dismiss)
+    private var dismiss
+
+    // MARK: - Input
+
+    let durationSeconds: TimeInterval
+    let capturedPhotos: [UIImage]
+
     var onRestart: (() -> Void)? = nil
     var onSelectMusic: (() -> Void)? = nil
     var onMainMenu: (() -> Void)? = nil
 
-    @Environment(\.dismiss) private var dismiss
-    @State private var showGalleryModal = false
-    @State private var navigateToMainView = false
-    @State private var navigateToSelectMusicView = false
-    
-    private var formattedDuration: String {
-        let total = Int(durationSeconds)
-        let m = total / 60
-        let s = total % 60
-        if m > 0 {
-            return "\(m) menit \(s) detik"
-        } else {
-            return "\(s) detik"
-        }
+    // MARK: - State
+
+    @State private var showShareMenu = false
+    @State private var showShareSheet = false
+    @State private var showPostcard = false
+    @State private var showGallery = false
+    @State private var galleryIndex = 0
+    @State private var didSaveGallery = false
+
+    // MARK: - Photos
+
+    private var fivePhotos: [UIImage] {
+        Array(capturedPhotos.prefix(5))
     }
-    
+
+    private var postcardImage: UIImage? {
+        makePhotoStrip(from: fivePhotos)
+            ?? fivePhotos.first
+    }
+
+    private var sixShareItems: [Any] {
+        var items: [Any] = []
+
+        if let strip = postcardImage {
+            items.append(strip)
+        }
+
+        items.append(contentsOf: fivePhotos)
+
+        return items
+    }
+
+    // MARK: - Duration
+
+    private var formattedDuration: String {
+        let total = max(0, Int(durationSeconds))
+        let minutes = total / 60
+        let seconds = total % 60
+
+        return "\(minutes) menit \(seconds) detik"
+    }
+
+    // MARK: - Body
+
     var body: some View {
         GeometryReader { geometry in
-            let isPad = UIDevice.current.userInterfaceIdiom == .pad || geometry.size.height > 550
-            let cardWidth = isPad ? min(1050, geometry.size.width * 0.90) : min(780, geometry.size.width * 0.92)
-            let cardHeight = isPad ? min(510, geometry.size.height * 0.62) : min(220, geometry.size.height * 0.60)
-            let photoW = isPad ? CGFloat(400) : CGFloat(170)
-            let photoH = isPad ? CGFloat(360) : CGFloat(150)
-            let btnW = isPad ? CGFloat(280) : min(CGFloat(210), (geometry.size.width - 80) / 3.3)
-            let btnH = isPad ? CGFloat(72) : CGFloat(44)
-            let btnFont = isPad ? CGFloat(24) : CGFloat(14)
-            
+
+            let width = geometry.size.width
+            let height = geometry.size.height
+            let isPad = UIDevice.current.userInterfaceIdiom == .pad || width >= 900
+
+            // Everything is calculated from the available landscape size.
+            // This prevents the title/buttons from being pushed outside the screen.
+            let horizontalPadding: CGFloat = isPad ? 42 : 24
+            let titleHeight: CGFloat = isPad ? 70 : 54
+            let bottomButtonHeight: CGFloat = isPad ? 72 : 58
+            let bottomAreaHeight: CGFloat = isPad ? 105 : 82
+
+            let contentTop =
+                max(
+                    isPad ? 135 : 100,
+                    titleHeight + 42
+                )
+
+            let contentBottom =
+                height - bottomAreaHeight - 18
+
+            let photoAreaHeight =
+                max(
+                    300,
+                    min(
+                        680,
+                        contentBottom - contentTop
+                    )
+                )
+
+            let stripWidth =
+                min(
+                    isPad ? 265 : 190,
+                    width * 0.22
+                )
+
+            let gridGap: CGFloat = isPad ? 24 : 14
+
+            let availableGridWidth =
+                width
+                - (horizontalPadding * 2)
+                - stripWidth
+                - gridGap
+
+            let cellWidth =
+                max(
+                    130,
+                    min(
+                        isPad ? 390 : 300,
+                        (availableGridWidth - gridGap) / 2
+                    )
+                )
+
+            let cellHeight =
+                max(
+                    95,
+                    (photoAreaHeight - (gridGap * 2)) / 3
+                )
+
             ZStack {
-                Color.black.opacity(0.8)
-                    .ignoresSafeArea()
-                
-                VStack(spacing: isPad ? 24 : 8) {
-                    Spacer(minLength: isPad ? 10 : 4)
-                    
-                    // title
-                    Text("HORE, KALIAN BERHASIL!!")
-                        .font(.system(size: isPad ? 40 : 20, weight: .bold))
-                        .foregroundColor(.white)
-                    
-                    // card utama
-                    HStack(spacing: isPad ? 36 : 16) {
-                        // stack foto di sebelah kiri
-                        PhotoStackView(
-                            photos: photos,
-                            capturedPhotos: capturedPhotos,
-                            photoWidth: photoW,
-                            photoHeight: photoH
-                        ) {
-                            showGalleryModal = true
-                        }
-                        
-                        // info teks di sebelah kanan
-                        VStack(alignment: .leading, spacing: isPad ? 14 : 4) {
-                            Text("Kombinasi yang luar biasa!\nKalian berhasil menyelesaikan seluruh gerakan dengan baik.")
-                                .font(.system(size: isPad ? 26 : 13, weight: .semibold))
-                                .lineSpacing(isPad ? 4 : 2)
-                                .lineLimit(2)
-                            
-                            Divider()
-                                .frame(height: 1)
-                                .background(.gray)
-                                .padding(.vertical, isPad ? 14 : 4)
-                            
-                            VStack(alignment: .leading, spacing: isPad ? 6 : 2) {
-                                Text("Kalian telah bergerak selama")
-                                    .font(.system(size: isPad ? 22 : 11, weight: .regular))
-                                
-                                HStack(spacing: 6) {
-                                    Image(systemName: "hourglass")
-                                        .font(.system(size: isPad ? 22 : 13, weight: .bold))
-                                    Text(formattedDuration)
-                                        .font(.system(size: isPad ? 24 : 14, weight: .bold))
-                                }
-                                .foregroundColor(Color.darkBlue)
+
+                // MARK: Background
+
+                LinearGradient(
+                    colors: [
+                        Color(
+                            red: 0.84,
+                            green: 0.92,
+                            blue: 1.00
+                        ),
+                        Color(
+                            red: 0.73,
+                            green: 0.86,
+                            blue: 1.00
+                        )
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
+
+                // MARK: Outside-tap layer
+                // IMPORTANT: This must be BEHIND the content.
+                // If it is placed after the VStack, it can intercept
+                // taps intended for the two SharePopover buttons.
+                if showShareMenu {
+                    Color.clear
+                        .ignoresSafeArea()
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            withAnimation(.easeOut(duration: 0.18)) {
+                                showShareMenu = false
                             }
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.trailing, isPad ? 20 : 10)
+                }
+
+                // MARK: Main layout
+
+                VStack(spacing: 0) {
+
+                    // TITLE
+                    Text("Tersimpan di galeri!")
+                        .font(
+                            .system(
+                                size: isPad ? 42 : 32,
+                                weight: .bold
+                            )
+                        )
+                        .foregroundStyle(.black)
+                        .frame(
+                            height: titleHeight,
+                            alignment: .top
+                        )
+                        .padding(.top, isPad ? 32 : 22)
+
+                    // PHOTO AREA
+                    HStack(
+                        alignment: .top,
+                        spacing: gridGap
+                    ) {
+
+                        // LEFT PHOTO STRIP
+                        Button {
+                            if !fivePhotos.isEmpty {
+                                galleryIndex = 0
+                                showGallery = true
+                            }
+                        } label: {
+                            PhotoStripView(
+                                image: postcardImage
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .frame(
+                            width: stripWidth,
+                            height: photoAreaHeight
+                        )
+
+                        // RIGHT: 5 PHOTOS
+                        VStack(spacing: gridGap) {
+
+                            HStack(spacing: gridGap) {
+                                completionPhoto(
+                                    index: 0,
+                                    width: cellWidth,
+                                    height: cellHeight
+                                )
+
+                                completionPhoto(
+                                    index: 1,
+                                    width: cellWidth,
+                                    height: cellHeight
+                                )
+                            }
+
+                            HStack(spacing: gridGap) {
+                                completionPhoto(
+                                    index: 2,
+                                    width: cellWidth,
+                                    height: cellHeight
+                                )
+
+                                completionPhoto(
+                                    index: 3,
+                                    width: cellWidth,
+                                    height: cellHeight
+                                )
+                            }
+
+                            HStack(spacing: gridGap) {
+                                completionPhoto(
+                                    index: 4,
+                                    width: cellWidth,
+                                    height: cellHeight
+                                )
+
+                                // Empty sixth slot.
+                                Color.clear
+                                    .frame(
+                                        width: cellWidth,
+                                        height: cellHeight
+                                    )
+                            }
+                        }
+                        .frame(
+                            width: cellWidth * 2 + gridGap,
+                            height: photoAreaHeight,
+                            alignment: .top
+                        )
                     }
-                    .padding(.horizontal, isPad ? 28 : 14)
-                    .frame(width: cardWidth, height: cardHeight)
-                    .background(Color.lightBlue)
-                    .cornerRadius(isPad ? 24 : 16)
-                    
-                    // action buttons
-                    HStack(spacing: isPad ? 20 : 10) {
-                        CompletionActionButton(title: "Ulangi", systemIcon: "arrow.counterclockwise", width: btnW, height: btnH, fontSize: btnFont) {
+                    .frame(
+                        maxWidth: .infinity,
+                        alignment: .top
+                    )
+                    .padding(.horizontal, horizontalPadding)
+
+                    Spacer(minLength: 0)
+
+                    // BOTTOM BUTTONS
+                    HStack(spacing: isPad ? 28 : 18) {
+
+                        CompletionButton(
+                            title: "Pose Ulang",
+                            icon: "arrow.counterclockwise",
+                            width: isPad ? 300 : 250,
+                            height: bottomButtonHeight
+                        ) {
+                            showShareMenu = false
+
                             if let onRestart {
                                 onRestart()
                             } else {
                                 dismiss()
                             }
                         }
-                        
-                        CompletionActionButton(title: "Menu Utama", systemIcon: "house.fill", width: btnW, height: btnH, fontSize: btnFont) {
+
+                        CompletionButton(
+                            title: "Menu Utama",
+                            icon: "house.fill",
+                            width: isPad ? 300 : 250,
+                            height: bottomButtonHeight
+                        ) {
+                            showShareMenu = false
+
                             if let onMainMenu {
                                 onMainMenu()
                             } else {
-                                navigateToMainView = true
+                                dismiss()
                             }
                         }
-                        
-                        CompletionActionButton(title: "Pilih Lagu", systemIcon: "play.fill", isPrimary: true, width: btnW, height: btnH, fontSize: btnFont) {
-                            if let onSelectMusic {
-                                onSelectMusic()
-                            } else {
-                                navigateToSelectMusicView = true
+
+                        // SHARE BUTTON + POPOVER
+                        ZStack(alignment: .bottom) {
+
+                            CompletionButton(
+                                title: "Share",
+                                icon: "square.and.arrow.up",
+                                isPrimary: true,
+                                width: isPad ? 300 : 250,
+                                height: bottomButtonHeight
+                            ) {
+                                withAnimation(
+                                    .easeOut(duration: 0.18)
+                                ) {
+                                    showShareMenu.toggle()
+                                }
+                            }
+
+                            if showShareMenu {
+
+                                SharePopover(
+                                    onPostcard: {
+                                        // Close menu first.
+                                        showShareMenu = false
+
+                                        // Then present postcard.
+                                        DispatchQueue.main.async {
+                                            showPostcard = true
+                                        }
+                                    },
+                                    onPhotos: {
+                                        // Close menu first.
+                                        showShareMenu = false
+
+                                        guard !sixShareItems.isEmpty else {
+                                            return
+                                        }
+
+                                        // Present after the popover has disappeared.
+                                        DispatchQueue.main.async {
+                                            showShareSheet = true
+                                        }
+                                    }
+                                )
+                                .offset(
+                                    y: -(bottomButtonHeight + 14)
+                                )
+                                .transition(
+                                    .opacity
+                                        .combined(
+                                            with: .scale(
+                                                scale: 0.94,
+                                                anchor: .bottom
+                                            )
+                                        )
+                                )
+                                .zIndex(1000)
                             }
                         }
                     }
-                    
-                    Spacer(minLength: isPad ? 10 : 4)
+                    .frame(
+                        height: bottomAreaHeight,
+                        alignment: .bottom
+                    )
+                    .padding(.bottom, isPad ? 26 : 18)
                 }
-                .padding(.horizontal, 16)
-                .frame(width: geometry.size.width, height: geometry.size.height)
+                .frame(
+                    width: width,
+                    height: height
+                )
+
             }
-        }
-        // modal preview galeri foto
-        .fullScreenCover(isPresented: $showGalleryModal) {
-            ImageGalleryModal(
-                images: photos,
-                capturedImages: capturedPhotos,
-                isPresented: $showGalleryModal
+            .frame(
+                width: width,
+                height: height
             )
         }
-        // navigasi ke ContentView (menu utama)
-        .fullScreenCover(isPresented: $navigateToMainView) {
-            ContentView()
+        .ignoresSafeArea()
+        .onAppear {
+            saveGalleryIfNeeded()
         }
-        // navigasi ke SelectMusicView (pilih lagu)
-        .fullScreenCover(isPresented: $navigateToSelectMusicView) {
-            SelectMusicView()
-        }
-    }
-}
 
-// MARK: - Reusable Photo Stack Component
-struct PhotoStackView: View {
-    var photos: [String] = []
-    var capturedPhotos: [UIImage] = []
-    var photoWidth: CGFloat = 430
-    var photoHeight: CGFloat = 400
-    let onTap: () -> Void
-    
-    private var totalCount: Int {
-        !capturedPhotos.isEmpty ? capturedPhotos.count : photos.count
-    }
-    
-    @ViewBuilder
-    private func renderImage(at index: Int) -> some View {
-        if !capturedPhotos.isEmpty {
-            let safeIndex = max(0, min(index, capturedPhotos.count - 1))
-            Image(uiImage: capturedPhotos[safeIndex])
-                .resizable()
-                .scaledToFill()
-        } else if !photos.isEmpty {
-            let safeIndex = max(0, min(index, photos.count - 1))
-            Image(photos[safeIndex])
-                .resizable()
-                .scaledToFill()
-        } else {
-            Color.gray.opacity(0.3)
-        }
-    }
-    
-    var body: some View {
-        VStack(spacing: 8) {
-            ZStack {
-                // layer foto belakang
-                renderImage(at: min(2, totalCount - 1))
-                    .frame(width: photoWidth, height: photoHeight)
-                    .clipShape(RoundedRectangle(cornerRadius: photoHeight < 200 ? 10 : 16))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: photoHeight < 200 ? 10 : 16)
-                            .stroke(Color.white, lineWidth: photoHeight < 200 ? 1.5 : 2)
-                    )
-                    .rotationEffect(.degrees(-8))
-                
-                renderImage(at: min(1, totalCount - 1))
-                    .frame(width: photoWidth, height: photoHeight)
-                    .clipShape(RoundedRectangle(cornerRadius: photoHeight < 200 ? 10 : 16))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: photoHeight < 200 ? 10 : 16)
-                            .stroke(Color.white, lineWidth: photoHeight < 200 ? 1.5 : 2)
-                    )
-                    .rotationEffect(.degrees(-4))
-                
-                // foto yang paling depan
-                ZStack(alignment: .bottomTrailing) {
-                    renderImage(at: 0)
-                        .frame(width: photoWidth, height: photoHeight)
-                        .clipShape(RoundedRectangle(cornerRadius: photoHeight < 200 ? 10 : 16))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: photoHeight < 200 ? 10 : 16)
-                                .stroke(Color.white, lineWidth: photoHeight < 200 ? 1.5 : 2)
-                        )
-                        .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 4)
-                    
-                    // badge "+more"
-                    if totalCount > 3 {
-                        Text("+\(totalCount - 3) more")
-                            .font(.system(size: photoHeight < 200 ? 10 : 14, weight: .bold))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, photoHeight < 200 ? 6 : 10)
-                            .padding(.vertical, photoHeight < 200 ? 3 : 6)
-                            .background(Color.black.opacity(0.6))
-                            .cornerRadius(6)
-                            .padding(photoHeight < 200 ? 6 : 12)
-                    }
-                }
-            }
-            // buka modal gallery
-            .onTapGesture {
-                onTap()
-            }
-        }
-    }
-}
+        // MARK: Gallery
 
-// MARK: - Image Gallery Modal
-struct ImageGalleryModal: View {
-    var images: [String] = []
-    var capturedImages: [UIImage] = []
-    @Binding var isPresented: Bool
-    
-    @State private var scrollPosition: Int? = 0
-    
-    private var currentIndex: Int {
-        scrollPosition ?? 0
-    }
-    
-    private var totalCount: Int {
-        !capturedImages.isEmpty ? capturedImages.count : images.count
-    }
-    
-    @ViewBuilder
-    private func renderModalImage(at index: Int) -> some View {
-        if !capturedImages.isEmpty {
-            let safeIndex = max(0, min(index, capturedImages.count - 1))
-            Image(uiImage: capturedImages[safeIndex])
-                .resizable()
-                .scaledToFit()
-        } else if !images.isEmpty {
-            let safeIndex = max(0, min(index, images.count - 1))
-            Image(images[safeIndex])
-                .resizable()
-                .scaledToFit()
-        } else {
-            Color.gray.opacity(0.3)
+        .fullScreenCover(
+            isPresented: $showGallery
+        ) {
+            CompletionGalleryView(
+                images: fivePhotos,
+                selectedIndex: $galleryIndex,
+                isPresented: $showGallery
+            )
         }
-    }
-    
-    var body: some View {
-        GeometryReader { geometry in
-            let frameHeight = geometry.size.height * 0.85
-            
-            ZStack {
-                Color.black.opacity(0.85)
+
+        // MARK: Share 6 photos
+
+        .sheet(
+            isPresented: $showShareSheet
+        ) {
+            ShareSheetController(
+                items: sixShareItems
+            )
+            .presentationDetents([.medium, .large])
+        }
+
+        // MARK: Postcard
+
+        .fullScreenCover(
+            isPresented: $showPostcard
+        ) {
+            if let postcardImage {
+
+                TulisPostcardView(images: fivePhotos)
+
+            } else {
+
+                Color.white
                     .ignoresSafeArea()
-                
-                VStack {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        LazyHStack(spacing: 20) {
-                            ForEach(0..<totalCount, id: \.self) { index in
-                                renderModalImage(at: index)
-                                    .frame(width: geometry.size.width * 0.8, height: frameHeight)
-                                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                                    .id(index)
-                            }
-                        }
-                        .scrollTargetLayout()
-                        .padding(.horizontal, geometry.size.width * 0.1)
+            }
+        }
+    }
+
+    // MARK: - Photo
+
+    @ViewBuilder
+    private func completionPhoto(
+        index: Int,
+        width: CGFloat,
+        height: CGFloat
+    ) -> some View {
+
+        if fivePhotos.indices.contains(index) {
+
+            Button {
+                galleryIndex = index
+                showGallery = true
+            } label: {
+
+                Image(uiImage: fivePhotos[index])
+                    .resizable()
+                    .scaledToFill()
+                    .frame(
+                        width: width,
+                        height: height
+                    )
+                    .clipped()
+                    .background(Color.white)
+                    .overlay {
+                        Rectangle()
+                            .stroke(
+                                Color.white.opacity(0.95),
+                                lineWidth: 2
+                            )
                     }
-                    .scrollPosition(id: $scrollPosition, anchor: .center)
-                    .scrollTargetBehavior(.viewAligned(anchor: .center))
-                    
-                    if totalCount > 1 {
-                        HStack(spacing: 8) {
-                            ForEach(0..<totalCount, id: \.self) { index in
-                                Circle()
-                                    .fill(index == currentIndex ? Color.white : Color.gray.opacity(0.5))
-                                    .frame(width: 7, height: 7)
-                            }
-                        }
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.top, 8)
-                    }
+                    .shadow(
+                        color: .black.opacity(0.16),
+                        radius: 5,
+                        x: 0,
+                        y: 3
+                    )
+            }
+            .buttonStyle(.plain)
+
+        } else {
+
+            Color.clear
+                .frame(
+                    width: width,
+                    height: height
+                )
+        }
+    }
+
+    // MARK: - Gallery Save
+
+    private func saveGalleryIfNeeded() {
+
+        guard !didSaveGallery else {
+            return
+        }
+
+        guard !fivePhotos.isEmpty else {
+            return
+        }
+
+        didSaveGallery = true
+
+        GallerySession.save(
+            images: fivePhotos,
+            title: "Jarang Pulang",
+            into: modelContext
+        )
+    }
+
+    // MARK: - Photo Strip
+
+    private func makePhotoStrip(
+        from images: [UIImage]
+    ) -> UIImage? {
+
+        guard !images.isEmpty else {
+            return nil
+        }
+
+        let width: CGFloat = 700
+        let imageWidth: CGFloat = 545
+        let imageHeight: CGFloat = 215
+        let leftPadding: CGFloat = 78
+        let topPadding: CGFloat = 55
+        let gap: CGFloat = 11
+        let bottomPadding: CGFloat = 70
+
+        let height =
+            topPadding
+            + CGFloat(images.count) * imageHeight
+            + CGFloat(max(0, images.count - 1)) * gap
+            + bottomPadding
+
+        let renderer = UIGraphicsImageRenderer(
+            size: CGSize(
+                width: width,
+                height: height
+            )
+        )
+
+        return renderer.image { context in
+
+            UIColor.white.setFill()
+
+            context.cgContext.fill(
+                CGRect(
+                    x: 0,
+                    y: 0,
+                    width: width,
+                    height: height
+                )
+            )
+
+            for (index, image) in images.enumerated() {
+
+                let y =
+                    topPadding
+                    + CGFloat(index) * (imageHeight + gap)
+
+                let target = CGRect(
+                    x: leftPadding,
+                    y: y,
+                    width: imageWidth,
+                    height: imageHeight
+                )
+
+                let imageAspect =
+                    image.size.width /
+                    max(image.size.height, 1)
+
+                let targetAspect =
+                    target.width / target.height
+
+                var drawRect = target
+
+                if imageAspect > targetAspect {
+
+                    let h = target.height
+                    let w = h * imageAspect
+
+                    drawRect = CGRect(
+                        x: target.midX - w / 2,
+                        y: target.minY,
+                        width: w,
+                        height: h
+                    )
+
+                } else {
+
+                    let w = target.width
+                    let h = w / imageAspect
+
+                    drawRect = CGRect(
+                        x: target.minX,
+                        y: target.midY - h / 2,
+                        width: w,
+                        height: h
+                    )
                 }
-                .frame(width: geometry.size.width, height: frameHeight)
-                .clipped()
-                
-                // close button
-                VStack {
-                    HStack {
-                        Spacer()
-                        CloseIconButton {
-                            isPresented = false
-                        }
-                        .shadow(color: Color.black.opacity(0.25), radius: 8, x: 0, y: 4)
-                    }
-                    .padding(.trailing, 30)
-                    .padding(.top, 24)
-                    
+
+                context.cgContext.saveGState()
+
+                context.cgContext.addRect(target)
+                context.cgContext.clip()
+
+                image.draw(in: drawRect)
+
+                context.cgContext.restoreGState()
+            }
+
+            let formatter = DateFormatter()
+            formatter.locale = Locale(identifier: "id_ID")
+            formatter.dateFormat = "d/M/yyyy 'pada' HH:mm"
+
+            let text = formatter.string(
+                from: Date()
+            )
+
+            let attributes: [NSAttributedString.Key: Any] = [
+                .font: UIFont.italicSystemFont(
+                    ofSize: 25
+                ),
+                .foregroundColor: UIColor.black
+            ]
+
+            NSAttributedString(
+                string: text,
+                attributes: attributes
+            )
+            .draw(
+                at: CGPoint(
+                    x: leftPadding,
+                    y: height - bottomPadding + 8
+                )
+            )
+        }
+    }
+}
+
+// MARK: - Photo Strip View
+
+private struct PhotoStripView: View {
+
+    let image: UIImage?
+
+    var body: some View {
+
+        ZStack {
+
+            Color.white
+
+            if let image {
+
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFit()
+                    .padding(10)
+
+            } else {
+
+                VStack(spacing: 10) {
+
+                    Image(systemName: "photo")
+                        .font(.system(size: 36))
+
+                    Text("Foto")
+                        .font(.system(size: 18))
+                }
+                .foregroundStyle(.secondary)
+            }
+        }
+        .clipShape(Rectangle())
+        .overlay(
+            Rectangle()
+                .stroke(
+                    Color.white,
+                    lineWidth: 2
+                )
+        )
+        .shadow(
+            color: .black.opacity(0.14),
+            radius: 7,
+            x: 0,
+            y: 4
+        )
+    }
+}
+
+// MARK: - Share Popover
+
+private struct SharePopover: View {
+
+    let onPostcard: () -> Void
+    let onPhotos: () -> Void
+
+    var body: some View {
+
+        VStack(spacing: 0) {
+
+            Button(action: onPostcard) {
+
+                HStack(spacing: 14) {
+
+                    Image(systemName: "eyeglasses")
+                        .font(
+                            .system(
+                                size: 25,
+                                weight: .regular
+                            )
+                        )
+                        .frame(
+                            width: 34
+                        )
+
+                    Text("Bagikan sebagai postcard")
+                        .font(
+                            .system(
+                                size: 20,
+                                weight: .regular
+                            )
+                        )
+
                     Spacer()
                 }
+                .foregroundStyle(.black)
+                .padding(.horizontal, 20)
+                .frame(
+                    width: 370,
+                    height: 66
+                )
+            }
+            .buttonStyle(.plain)
+
+            Divider()
+                .padding(.horizontal, 18)
+
+            Button(action: onPhotos) {
+
+                HStack(spacing: 14) {
+
+                    Image(systemName: "book")
+                        .font(
+                            .system(
+                                size: 25,
+                                weight: .regular
+                            )
+                        )
+                        .frame(
+                            width: 34
+                        )
+
+                    Text("Bagikan sebagai foto")
+                        .font(
+                            .system(
+                                size: 20,
+                                weight: .regular
+                            )
+                        )
+
+                    Spacer()
+                }
+                .foregroundStyle(.black)
+                .padding(.horizontal, 20)
+                .frame(
+                    width: 370,
+                    height: 66
+                )
+            }
+            .buttonStyle(.plain)
+        }
+        .background(
+            RoundedRectangle(
+                cornerRadius: 26,
+                style: .continuous
+            )
+            .fill(Color.white)
+        )
+        .shadow(
+            color: .black.opacity(0.22),
+            radius: 14,
+            x: 0,
+            y: 7
+        )
+    }
+}
+
+// MARK: - Completion Button
+
+private struct CompletionButton: View {
+
+    let title: String
+    let icon: String
+    var isPrimary = false
+
+    let width: CGFloat
+    let height: CGFloat
+
+    let action: () -> Void
+
+    var body: some View {
+
+        Button(action: action) {
+
+            HStack(spacing: 10) {
+
+                Image(systemName: icon)
+                    .font(
+                        .system(
+                            size: height * 0.43,
+                            weight: .bold
+                        )
+                    )
+
+                Text(title)
+                    .font(
+                        .system(
+                            size: height * 0.34,
+                            weight: .bold
+                        )
+                    )
+            }
+            .foregroundStyle(.white)
+            .frame(
+                width: width,
+                height: height
+            )
+            .background {
+
+                if isPrimary {
+
+                    LinearGradient(
+                        colors: [
+                            Color(
+                                red: 0.51,
+                                green: 0.55,
+                                blue: 1.0
+                            ),
+                            Color(
+                                red: 0.10,
+                                green: 0.45,
+                                blue: 1.0
+                            )
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+
+                } else {
+
+                    Color(
+                        red: 0.20,
+                        green: 0.39,
+                        blue: 0.70
+                    )
+                }
+            }
+            .clipShape(Capsule())
+            .overlay(
+                Capsule()
+                    .stroke(
+                        Color.white.opacity(0.7),
+                        lineWidth: isPrimary ? 0 : 1.5
+                    )
+            )
+            .shadow(
+                color: .black.opacity(0.18),
+                radius: 7,
+                x: 0,
+                y: 4
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Share Sheet
+
+private struct ShareSheetController: UIViewControllerRepresentable {
+
+    let items: [Any]
+
+    func makeUIViewController(
+        context: Context
+    ) -> UIActivityViewController {
+
+        let controller = UIActivityViewController(
+            activityItems: items,
+            applicationActivities: nil
+        )
+
+        if let popover = controller.popoverPresentationController {
+
+            popover.sourceView = controller.view
+            popover.sourceRect = CGRect(
+                x: controller.view.bounds.midX,
+                y: controller.view.bounds.midY,
+                width: 0,
+                height: 0
+            )
+            popover.permittedArrowDirections = []
+        }
+
+        return controller
+    }
+
+    func updateUIViewController(
+        _ uiViewController: UIActivityViewController,
+        context: Context
+    ) {}
+}
+
+// MARK: - Gallery
+
+private struct CompletionGalleryView: View {
+
+    let images: [UIImage]
+
+    @Binding var selectedIndex: Int
+    @Binding var isPresented: Bool
+
+    var body: some View {
+
+        ZStack {
+
+            Color.black
+                .ignoresSafeArea()
+
+            TabView(
+                selection: $selectedIndex
+            ) {
+
+                ForEach(
+                    images.indices,
+                    id: \.self
+                ) { index in
+
+                    Image(uiImage: images[index])
+                        .resizable()
+                        .scaledToFit()
+                        .tag(index)
+                        .padding(30)
+                }
+            }
+            .tabViewStyle(
+                .page(indexDisplayMode: .automatic)
+            )
+
+            VStack {
+
+                HStack {
+
+                    Spacer()
+
+                    Button {
+
+                        isPresented = false
+
+                    } label: {
+
+                        Image(systemName: "xmark")
+                            .font(
+                                .system(
+                                    size: 20,
+                                    weight: .bold
+                                )
+                            )
+                            .foregroundStyle(.white)
+                            .frame(
+                                width: 48,
+                                height: 48
+                            )
+                            .background(
+                                Circle()
+                                    .fill(
+                                        Color.black.opacity(0.55)
+                                    )
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(
+                    .trailing,
+                    24
+                )
+                .padding(
+                    .top,
+                    20
+                )
+
+                Spacer()
             }
         }
         .ignoresSafeArea()
     }
 }
 
-// MARK: - Reusable Action Button Component
-struct CompletionActionButton: View {
-    let title: String
-    let systemIcon: String
-    var isPrimary: Bool = false
-    var width: CGFloat = 300
-    var height: CGFloat = 76
-    var fontSize: CGFloat = 26
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 6) {
-                Image(systemName: systemIcon)
-                    .font(.system(size: fontSize * 0.9, weight: .bold))
-                Text(title)
-                    .font(.system(size: fontSize, weight: .bold))
-            }
-            .foregroundColor(.white)
-            .frame(width: width, height: height)
-            .background(
-                Group {
-                    if isPrimary {
-                        LinearGradient(
-                            colors: [.gradient1, .gradient2, .gradient3],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    } else {
-                        Color.darkBlue.opacity(0.85)
-                    }
-                }
-            )
-            .cornerRadius(height / 2)
-            .overlay(
-                RoundedRectangle(cornerRadius: height / 2)
-                    .stroke(Color.white.opacity(0.6), lineWidth: isPrimary ? 0 : 1.5)
-            )
-        }
-    }
-}
-
-#Preview("Completion - Phone Landscape", traits: .landscapeLeft) {
-    CompletionView()
-}
-
-#Preview("Completion - iPad Landscape", traits: .landscapeRight) {
-    CompletionView()
+#Preview("Completion Landscape") {
+    CompletionView(
+        durationSeconds: 180,
+        capturedPhotos: []
+    )
+    .modelContainer(
+        for: [
+            GallerySession.self
+        ],
+        inMemory: true
+    )
 }

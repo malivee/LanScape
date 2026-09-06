@@ -83,6 +83,9 @@ struct PoseTrackingView: View {
     private var showCompletionView: Bool = false
 
     @State
+    private var showCustomizePhotoView: Bool = false
+
+    @State
     private var shutterFlashOpacity: Double = 0.0
 
     @State
@@ -211,6 +214,24 @@ struct PoseTrackingView: View {
         .onDisappear {
             handleDisappear()
         }
+        .fullScreenCover(isPresented: $showCustomizePhotoView) {
+            CustomizePhotoView(
+                photos: capturedPhotos
+            ) { editedPhotos in
+
+                // Receive the edited 5 photos
+                capturedPhotos = editedPhotos
+
+                // Close editor
+                showCustomizePhotoView = false
+
+                // Then open CompletionView
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    showCompletionView = true
+                }
+            }
+        }
+
         .fullScreenCover(isPresented: $showCompletionView) {
             CompletionView(
                 durationSeconds: sessionDuration > 0 ? sessionDuration : 180,
@@ -219,18 +240,17 @@ struct PoseTrackingView: View {
                     showCompletionView = false
                     restartSession()
                 },
-                onSelectMusic: {
-                    showCompletionView = false
-                    dismiss()
-                },
                 onMainMenu: {
                     showCompletionView = false
                     dismiss()
-                    NotificationCenter.default.post(name: NSNotification.Name("PopToRoot"), object: nil)
+
+                    NotificationCenter.default.post(
+                        name: NSNotification.Name("PopToRoot"),
+                        object: nil
+                    )
                 }
             )
-        }
-    }
+        }    }
 
     // =========================================================
     // MARK: - State Overlays
@@ -710,11 +730,15 @@ struct PoseTrackingView: View {
             withAnimation(.easeInOut(duration: 0.3)) {
                 captureState = .miniGameTutorial(game: selectedGame)
             }
-        } else {
-            // All 5 photos captured! Sequence completed!
+        }  else {
+            // All 5 photos captured!
             musicService.setVolume(0.75)
-            sessionDuration = Date().timeIntervalSince(sessionStartTime ?? Date())
-            showCompletionView = true
+
+            sessionDuration = Date().timeIntervalSince(sessionStartTime ?? Date()
+            )
+
+            // Open photo editor BEFORE CompletionView
+            showCustomizePhotoView = true
         }
     }
 
@@ -778,7 +802,7 @@ struct PoseTrackingView: View {
         } else {
             // Sequence completed
             sessionDuration = Date().timeIntervalSince(sessionStartTime ?? Date())
-            showCompletionView = true
+            showCustomizePhotoView = true
         }
     }
 

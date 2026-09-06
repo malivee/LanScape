@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 @main
 struct LanScapeApp: App {
@@ -12,6 +13,9 @@ struct LanScapeApp: App {
                 .onAppear {
                     AppPreloadService.shared.preloadAll()
                 }
+                .modelContainer(for: [
+                    GallerySession.self
+                ])
         }
     }
 }
