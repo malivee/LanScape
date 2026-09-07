@@ -3,7 +3,7 @@ import SwiftUI
 struct SelectMusicView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var selectedMusic: MusicData?
-    @State private var selectedIndex: Int? = 0
+    @State private var selectedIndex: Int? = nil
     @State private var navigateToPoseTracking = false
     @State private var isStartingSession = false
     @State private var previewPoseItem: (imageName: String, title: String)? = nil
@@ -184,7 +184,6 @@ struct SelectMusicView: View {
                 let index = selectedIndex ?? 0
                 DispatchQueue.main.async {
                     proxy.scrollTo(index, anchor: .center)
-                    selectMusic(at: index)
                 }
             }
         }
