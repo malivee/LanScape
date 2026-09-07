@@ -10,7 +10,9 @@ struct SayILoveYouChallengeView: View {
     let onSuccess: () -> Void
     let onFailure: () -> Void
     
-    @State private var timeRemaining: Int = 10
+    @StateObject private var speechService = SpeechRecognitionService()
+    
+    @State private var timeRemaining: Int = 12
     @State private var progress: CGFloat = 0.0
     @State private var timerTask: Task<Void, Never>? = nil
     @State private var isFinished: Bool = false
@@ -24,18 +26,18 @@ struct SayILoveYouChallengeView: View {
             Color.clear
                 .ignoresSafeArea()
             
-            // Floating hearts background effect
+            // Floating Hearts in background
             ForEach(0..<6, id: \.self) { i in
-                Text("💖")
-                    .font(.system(size: isPad ? 40 : 26))
+                Image(systemName: "heart.fill")
+                    .font(.system(size: isPad ? 36 : 24))
+                    .foregroundColor(Color(hex: "F43F5E").opacity(progress > 0.1 ? 0.8 : 0.0))
                     .position(
-                        x: CGFloat(100 + (i * 140)) .truncatingRemainder(dividingBy: 700) + 40,
-                        y: CGFloat(80 + (i * 70))
+                        x: CGFloat(80 + (i * 125)).truncatingRemainder(dividingBy: 700) + 30,
+                        y: CGFloat(80 + (i * 55))
                     )
-                    .opacity(progress > 0.2 ? 0.7 : 0.0)
-                    .scaleEffect(pulseHeart ? 1.2 : 0.8)
+                    .scaleEffect(pulseHeart ? 1.25 : 0.8)
                     .animation(
-                        .easeInOut(duration: 0.8 + Double(i) * 0.2).repeatForever(autoreverses: true),
+                        .easeInOut(duration: 0.7 + Double(i) * 0.15).repeatForever(autoreverses: true),
                         value: pulseHeart
                     )
             }
@@ -46,91 +48,119 @@ struct SayILoveYouChallengeView: View {
                 // 1. Timer Badge
                 HStack(spacing: 6) {
                     Image(systemName: "stopwatch.fill")
-                        .font(.system(size: isPad ? 16 : 12, weight: .bold))
+                        .font(.system(size: isPad ? 14 : 11, weight: .bold))
+                        .foregroundColor(Color(hex: "38BDF8"))
                     Text("\(timeRemaining)s")
-                        .font(.system(size: isPad ? 18 : 13, weight: .black, design: .rounded))
+                        .font(.system(size: isPad ? 17 : 12.5, weight: .black, design: .rounded))
+                        .foregroundColor(.white)
                 }
-                .foregroundColor(.white)
-                .padding(.horizontal, isPad ? 22 : 14)
-                .padding(.vertical, isPad ? 7 : 4.5)
-                .background(Color(hex: "2563EB"))
+                .padding(.horizontal, isPad ? 18 : 12)
+                .padding(.vertical, isPad ? 6 : 4)
+                .background(Color(hex: "0B0F19").opacity(0.88))
                 .clipShape(Capsule())
-                .shadow(color: Color(hex: "2563EB").opacity(0.4), radius: 8)
+                .overlay(
+                    Capsule().stroke(Color(hex: "38BDF8").opacity(0.4), lineWidth: 1)
+                )
+                .shadow(color: Color.black.opacity(0.4), radius: 8, y: 3)
                 
                 // 2. Action Prompt
-                Text("UCAPKAN 'I LOVE YOU' BERSAMA!")
-                    .font(.system(size: isPad ? 26 : 16, weight: .black, design: .rounded))
+                Text("UCAPKAN 'I LOVE YOU' ATAU 'AKU SAYANG KAMU'!")
+                    .font(.system(size: isPad ? 24 : 15.5, weight: .black, design: .rounded))
                     .foregroundColor(.white)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 24)
                     .shadow(color: .black.opacity(0.8), radius: 6, y: 3)
                 
-                // 3. Hero Circular Button with Pulsing Heart
-                Button(action: {
-                    let generator = UIImpactFeedbackGenerator(style: .medium)
-                    generator.impactOccurred()
-                    registerBoost(0.25)
-                }) {
-                    ZStack {
-                        Circle()
-                            .stroke(Color(hex: "EC4899"), lineWidth: isPad ? 6 : 4)
-                            .scaleEffect(pulseHeart ? 1.08 : 0.98)
-                            .opacity(pulseHeart ? 0.9 : 0.4)
-                            .animation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true), value: pulseHeart)
+                // 3. Hero Visual Display (Pure Speech Recognition, SF Symbol)
+                ZStack {
+                    Circle()
+                        .stroke(speechService.isKeywordDetected ? Color.green : Color(hex: "F43F5E"), lineWidth: isPad ? 6 : 4)
+                        .scaleEffect(pulseHeart ? 1.08 : 0.98)
+                        .opacity(pulseHeart ? 0.9 : 0.4)
+                        .animation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true), value: pulseHeart)
+                    
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color(hex: "1E293B").opacity(0.92),
+                                    Color(hex: "0F172A").opacity(0.96)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .overlay(
+                            Circle().stroke(Color(hex: "F43F5E").opacity(0.4), lineWidth: 1.5)
+                        )
+                        .shadow(color: (speechService.isKeywordDetected ? Color.green : Color(hex: "F43F5E")).opacity(0.5), radius: isPad ? 20 : 14)
+                    
+                    VStack(spacing: 4) {
+                        Image(systemName: "heart.fill")
+                            .font(.system(size: isPad ? 56 : 38))
+                            .foregroundColor(speechService.isKeywordDetected ? .green : Color(hex: "FDA4AF"))
+                            .scaleEffect(pulseHeart ? 1.15 : 0.95)
+                            .animation(.spring(response: 0.35, dampingFraction: 0.6).repeatForever(autoreverses: true), value: pulseHeart)
                         
-                        Circle()
-                            .fill(Color(hex: "155DFC"))
-                            .shadow(color: Color(hex: "EC4899").opacity(0.6), radius: isPad ? 24 : 16)
-                        
-                        VStack(spacing: 4) {
-                            Text("❤️")
-                                .font(.system(size: isPad ? 72 : 48))
-                                .scaleEffect(pulseHeart ? 1.15 : 0.95)
-                                .animation(.spring(response: 0.4, dampingFraction: 0.6).repeatForever(autoreverses: true), value: pulseHeart)
-                            
-                            Text("Kirim Cinta")
-                                .font(.system(size: isPad ? 13 : 9, weight: .bold, design: .rounded))
-                                .foregroundColor(Color(hex: "DBEAFE"))
-                        }
+                        Text(speechService.isKeywordDetected ? "Kata Cinta Terdeteksi!" : "Katakan Cinta")
+                            .font(.system(size: isPad ? 13 : 9, weight: .bold, design: .rounded))
+                            .foregroundColor(speechService.isKeywordDetected ? .green : Color(hex: "FFE4E6"))
                     }
-                    .frame(width: isPad ? 190 : 135, height: isPad ? 190 : 135)
                 }
-                .buttonStyle(ScaleBounceButtonStyle())
-                .padding(.vertical, isPad ? 6 : 2)
+                .frame(width: isPad ? 180 : 130, height: isPad ? 180 : 130)
+                .padding(.vertical, isPad ? 4 : 2)
                 
-                // 4. Progress Feedback & Cheer Banner
-                VStack(spacing: isPad ? 8 : 5) {
-                    Text(progress > 0.6 ? "SO SWEET BANGET...!" : "LETSGOOO...!!!")
-                        .font(.system(size: isPad ? 22 : 14, weight: .black, design: .rounded))
-                        .foregroundColor(Color(hex: "F472B6"))
+                // 4. Recognized Speech Subtitle (Transparent Feedback)
+                if !speechService.recognizedText.isEmpty {
+                    Text("\"\(speechService.recognizedText)\"")
+                        .font(.system(size: isPad ? 15 : 11, weight: .bold, design: .rounded))
+                        .foregroundColor(speechService.isKeywordDetected ? .green : Color(hex: "FDA4AF"))
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 4)
+                        .background(Color(hex: "0B0F19").opacity(0.85))
+                        .clipShape(Capsule())
+                        .overlay(
+                            Capsule().stroke(Color.white.opacity(0.12), lineWidth: 1)
+                        )
+                        .transition(.opacity)
+                }
+                
+                // 5. Progress Feedback
+                VStack(spacing: isPad ? 7 : 4) {
+                    Text(progress >= 1.0 ? "SO SWEET BANGETTT!" : "LETSGOOO...!!!")
+                        .font(.system(size: isPad ? 20 : 13.5, weight: .black, design: .rounded))
+                        .foregroundColor(Color(hex: "FB7185"))
                         .tracking(0.6)
                         .shadow(color: .black.opacity(0.8), radius: 4)
                     
                     GeometryReader { geo in
                         ZStack(alignment: .leading) {
-                            Capsule().fill(Color(hex: "111827").opacity(0.85))
+                            Capsule().fill(Color(hex: "0B0F19").opacity(0.85))
                             Capsule()
-                                .fill(LinearGradient(colors: [Color(hex: "EC4899"), Color(hex: "F43F5E")], startPoint: .leading, endPoint: .trailing))
+                                .fill(LinearGradient(colors: [Color(hex: "F43F5E"), Color(hex: "10B981")], startPoint: .leading, endPoint: .trailing))
                                 .frame(width: max(0, geo.size.width * min(1.0, progress)))
                                 .animation(.easeOut(duration: 0.15), value: progress)
                         }
                     }
-                    .frame(width: isPad ? 280 : 190, height: isPad ? 12 : 8)
+                    .frame(width: isPad ? 280 : 190, height: isPad ? 10 : 7)
                 }
                 
-                // 5. Helper Pill
+                // 6. Helper Pill
                 HStack(spacing: 6) {
-                    Image(systemName: "heart.fill")
-                        .font(.system(size: isPad ? 13 : 9, weight: .bold))
-                        .foregroundColor(Color(hex: "F472B6"))
-                    Text("Katakan 'I Love You!' ke mikrofon bersama-sama")
-                        .font(.system(size: isPad ? 13 : 9.5, weight: .semibold))
+                    Image(systemName: "mic.fill")
+                        .font(.system(size: isPad ? 12 : 9, weight: .bold))
+                        .foregroundColor(Color(hex: "FB7185"))
+                    Text("Ucapkan jelas ke arah mikrofon perangkat")
+                        .font(.system(size: isPad ? 12 : 9, weight: .semibold))
                 }
                 .foregroundColor(.white)
-                .padding(.horizontal, isPad ? 20 : 14)
+                .padding(.horizontal, isPad ? 18 : 12)
                 .padding(.vertical, isPad ? 6 : 4)
-                .background(Color(hex: "111827").opacity(0.85))
+                .background(Color(hex: "0B0F19").opacity(0.88))
                 .clipShape(Capsule())
+                .overlay(
+                    Capsule().stroke(Color.white.opacity(0.12), lineWidth: 1)
+                )
                 .padding(.top, isPad ? 4 : 2)
                 
                 Spacer()
@@ -147,15 +177,18 @@ struct SayILoveYouChallengeView: View {
     }
     
     private func startChallenge() {
-        audioMonitor.requestPermissionAndStart()
+        speechService.startListening {
+            Task { @MainActor in
+                registerBoost(1.0)
+            }
+        }
         
         timerTask = Task { @MainActor in
             while timeRemaining > 0 && !isFinished {
-                let vol = audioMonitor.normalizedVolume
-                if vol > 0.08 {
-                    registerBoost(vol * 0.30)
+                if speechService.isKeywordDetected {
+                    registerBoost(1.0)
+                    return
                 }
-                registerBoost(0.02)
                 
                 do {
                     try await Task.sleep(nanoseconds: 100_000_000)
@@ -204,14 +237,6 @@ struct SayILoveYouChallengeView: View {
     
     private func cleanup() {
         timerTask?.cancel()
-        audioMonitor.stopMonitoring()
-    }
-}
-
-private struct ScaleBounceButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.92 : 1.0)
-            .animation(.spring(response: 0.25, dampingFraction: 0.6), value: configuration.isPressed)
+        speechService.stopListening()
     }
 }

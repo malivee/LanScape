@@ -6,6 +6,8 @@
 	<string>Akses kamera diperlukan untuk mengambil foto pose bersama.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Akses mikrofon diperlukan untuk mendeteksi tepukan tangan dan teriakan pada interaksi seru.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Akses pengenalan suara diperlukan untuk mengenali ucapan pada mini game seperti I Love You.</string>
 	<key>UIRequiresFullScreen</key>
 	<true/>
 </dict>

@@ -412,18 +412,6 @@ struct PoseTrackingView: View {
             )
             .transition(.opacity)
 
-        case .screamMeter:
-            ScreamMeterChallengeView(
-                audioMonitor: audioMonitor,
-                onSuccess: {
-                    handleChallengeSuccess()
-                },
-                onFailure: {
-                    handleChallengeFailure()
-                }
-            )
-            .transition(.opacity)
-
         case .fastMove:
             FastMoveChallengeView(
                 motionService: motionService,
@@ -471,17 +459,9 @@ struct PoseTrackingView: View {
             )
             .transition(.opacity)
 
-        case .halfHeart:
-            HalfHeartChallengeView(
-                visionHandTracker: visionHandTracker,
-                motionService: motionService,
-                onSuccess: { handleChallengeSuccess() },
-                onFailure: { handleChallengeFailure() }
-            )
-            .transition(.opacity)
-
         case .batteryHug:
             BatteryHugChallengeView(
+                visionHandTracker: visionHandTracker,
                 motionService: motionService,
                 onSuccess: { handleChallengeSuccess() },
                 onFailure: { handleChallengeFailure() }
@@ -497,24 +477,9 @@ struct PoseTrackingView: View {
             )
             .transition(.opacity)
 
-        case .cheekToCheek:
-            CheekToCheekChallengeView(
-                motionService: motionService,
-                onSuccess: { handleChallengeSuccess() },
-                onFailure: { handleChallengeFailure() }
-            )
-            .transition(.opacity)
-
-        case .puffCheeks:
-            PuffCheeksChallengeView(
-                motionService: motionService,
-                onSuccess: { handleChallengeSuccess() },
-                onFailure: { handleChallengeFailure() }
-            )
-            .transition(.opacity)
-
         case .fishLips:
             FishLipsChallengeView(
+                visionHandTracker: visionHandTracker,
                 motionService: motionService,
                 onSuccess: { handleChallengeSuccess() },
                 onFailure: { handleChallengeFailure() }
@@ -523,16 +488,8 @@ struct PoseTrackingView: View {
 
         case .mouthOpen:
             MouthOpenChallengeView(
-                audioMonitor: audioMonitor,
-                motionService: motionService,
-                onSuccess: { handleChallengeSuccess() },
-                onFailure: { handleChallengeFailure() }
-            )
-            .transition(.opacity)
-
-        case .peekABoo:
-            PeekABooChallengeView(
                 visionHandTracker: visionHandTracker,
+                audioMonitor: audioMonitor,
                 motionService: motionService,
                 onSuccess: { handleChallengeSuccess() },
                 onFailure: { handleChallengeFailure() }
@@ -723,7 +680,7 @@ struct PoseTrackingView: View {
             let selectedGame = sessionMiniGames.indices.contains(gameIndex) ? sessionMiniGames[gameIndex] : (MiniGameCatalog.allGames[.handClap] ?? MiniGameCatalog.selectRandomChallenges(count: 1)[0])
             
             // Duck background music volume for audio-based games so voice/laughter is easily detected
-            if selectedGame.sensorType == .audioVoice || selectedGame.sensorType == .audioScream || selectedGame.sensorType == .audioClap || selectedGame.id == .mouthOpen {
+            if selectedGame.sensorType == .audioVoice || selectedGame.sensorType == .audioClap || selectedGame.id == .mouthOpen {
                 musicService.setVolume(0.25)
             }
             

@@ -2,6 +2,8 @@
 //  PreChallengeTutorialView.swift
 //  LanScape
 //
+//  Clean 3-second rapid tutorial card designed in Photobooth Dark Studio aesthetic.
+//
 
 import SwiftUI
 
@@ -10,16 +12,18 @@ struct PreChallengeTutorialView: View {
     let onStart: () -> Void
     var onExit: (() -> Void)? = nil
     
-    @State private var remainingSeconds: Int = 8
+    @State private var remainingSeconds: Int = 3
     @State private var timerTask: Task<Void, Never>? = nil
-    @State private var iconScale: CGFloat = 0.85
+    @State private var iconScale: CGFloat = 0.92
     
     var body: some View {
         let isPad = UIDevice.isIPad
+        let cardWidth: CGFloat = isPad ? 560 : 420
+        let cardHeight: CGFloat = isPad ? 340 : 255
         
         ZStack {
-            // Translucent backdrop allowing camera preview to remain visible
-            Color.black.opacity(0.40)
+            // Dark studio translucent backdrop
+            Color.black.opacity(0.55)
                 .ignoresSafeArea()
             
             // Top Exit Button
@@ -32,7 +36,7 @@ struct PreChallengeTutorialView: View {
                         }) {
                             ZStack {
                                 Circle()
-                                    .fill(Color.white.opacity(0.90))
+                                    .fill(Color.white.opacity(0.92))
                                     .frame(width: isPad ? 44 : 34, height: isPad ? 44 : 34)
                                     .shadow(color: .black.opacity(0.3), radius: 4)
                                 Image(systemName: "xmark")
@@ -51,121 +55,160 @@ struct PreChallengeTutorialView: View {
                 .zIndex(10)
             }
             
-            VStack(spacing: isPad ? 22 : 12) {
-                Spacer()
+            // Centered Studio Proofing Tutorial Card
+            ZStack {
+                // Card Background: Dark slate/navy studio glass
+                RoundedRectangle(cornerRadius: isPad ? 26 : 18)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color(hex: "0B0F19").opacity(0.96),
+                                Color(hex: "111827").opacity(0.98),
+                                Color(hex: "0F172A").opacity(0.96)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: isPad ? 26 : 18)
+                            .stroke(
+                                LinearGradient(
+                                    colors: [
+                                        Color(hex: "38BDF8").opacity(0.6),
+                                        Color(hex: "818CF8").opacity(0.2)
+                                    ],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 1.5
+                            )
+                    )
+                    .shadow(color: Color.black.opacity(0.6), radius: 28, y: 12)
                 
-                // 1. Top Preparation Badge
-                HStack(spacing: 8) {
-                    Image(systemName: "timer")
-                        .font(.system(size: isPad ? 18 : 13, weight: .bold))
-                    Text("PERSIAPAN TANTANGAN (\(remainingSeconds)s)")
-                        .font(.system(size: isPad ? 16 : 12, weight: .bold))
-                        .tracking(1.0)
-                }
-                .foregroundColor(.white)
-                .padding(.horizontal, isPad ? 22 : 14)
-                .padding(.vertical, isPad ? 8 : 5)
-                .background(Color(hex: "2563EB"))
-                .clipShape(Capsule())
-                .shadow(color: Color(hex: "2563EB").opacity(0.4), radius: 8)
-                
-                // 2. Animated Big Icon
-                Text(metadata.icon)
-                    .font(.system(size: isPad ? 90 : 54))
+                VStack(spacing: isPad ? 12 : 7) {
+                    // 1. Top Countdown Capsule Badge
+                    HStack(spacing: 6) {
+                        Image(systemName: "timer")
+                            .font(.system(size: isPad ? 13 : 10, weight: .bold))
+                            .foregroundColor(Color(hex: "38BDF8"))
+                        Text("MULAI DALAM \(remainingSeconds) DETIK")
+                            .font(.system(size: isPad ? 11 : 8.5, weight: .black))
+                            .tracking(1.4)
+                            .foregroundColor(.white)
+                    }
+                    .padding(.horizontal, isPad ? 14 : 10)
+                    .padding(.vertical, isPad ? 6 : 4)
+                    .background(Color.white.opacity(0.08))
+                    .clipShape(Capsule())
+                    .overlay(
+                        Capsule().stroke(Color(hex: "38BDF8").opacity(0.4), lineWidth: 1)
+                    )
+                    
+                    // 2. Animated SF Symbol Icon Badge
+                    ZStack {
+                        Circle()
+                            .fill(Color(hex: "1E293B").opacity(0.85))
+                            .frame(width: isPad ? 64 : 46, height: isPad ? 64 : 46)
+                        
+                        Circle()
+                            .stroke(
+                                LinearGradient(
+                                    colors: [Color(hex: "38BDF8"), Color(hex: "3B82F6")],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 2
+                            )
+                            .frame(width: isPad ? 64 : 46, height: isPad ? 64 : 46)
+                        
+                        Image(systemName: metadata.sfSymbol)
+                            .font(.system(size: isPad ? 32 : 23, weight: .bold))
+                            .foregroundColor(.white)
+                    }
                     .scaleEffect(iconScale)
-                    .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: iconScale)
-                    .shadow(color: .black.opacity(0.3), radius: 10, y: 5)
-                
-                // 3. Main Title (High Contrast & Visible from 2-3 meters)
-                Text(metadata.title)
-                    .font(.system(size: isPad ? 34 : 22, weight: .black, design: .rounded))
-                    .foregroundColor(.white)
-                    .multilineTextAlignment(.center)
-                    .shadow(color: .black.opacity(0.6), radius: 4, y: 2)
-                    .padding(.horizontal, 24)
-                
-                // 4. Instruction Card (Ultra-legible, High-Contrast)
-                VStack(spacing: isPad ? 10 : 6) {
-                    Text(metadata.tutorialInstruction)
-                        .font(.system(size: isPad ? 24 : 16, weight: .bold, design: .rounded))
+                    .animation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true), value: iconScale)
+                    
+                    // 3. Main Title
+                    Text(metadata.title)
+                        .font(.system(size: isPad ? 22 : 16, weight: .black, design: .rounded))
                         .foregroundColor(.white)
                         .multilineTextAlignment(.center)
-                        .lineSpacing(4)
-                        .padding(.horizontal, isPad ? 24 : 16)
+                        .lineLimit(1)
                     
-                    Text(metadata.tutorialTip)
-                        .font(.system(size: isPad ? 17 : 12, weight: .medium))
-                        .foregroundColor(Color(hex: "93C5FD")) // Soft bright blue
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, isPad ? 24 : 16)
+                    // 4. Instructions Container
+                    VStack(spacing: isPad ? 6 : 4) {
+                        Text(metadata.tutorialInstruction)
+                            .font(.system(size: isPad ? 14 : 10.5, weight: .bold, design: .rounded))
+                            .foregroundColor(.white)
+                            .multilineTextAlignment(.center)
+                            .lineLimit(2)
+                        
+                        HStack(spacing: 5) {
+                            Image(systemName: "lightbulb.fill")
+                                .font(.system(size: isPad ? 11 : 8.5))
+                                .foregroundColor(Color(hex: "FBBF24"))
+                            Text(metadata.tutorialTip)
+                                .font(.system(size: isPad ? 12 : 9, weight: .medium))
+                                .foregroundColor(Color(hex: "94A3B8"))
+                                .lineLimit(1)
+                        }
+                    }
+                    .padding(.horizontal, isPad ? 20 : 12)
+                    .padding(.vertical, isPad ? 8 : 5)
+                    .background(Color.white.opacity(0.04))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
                     
-                    // Smooth countdown progress bar
+                    // 5. 3-Second Linear Progress Bar
                     GeometryReader { geo in
                         ZStack(alignment: .leading) {
                             Capsule()
-                                .fill(Color(hex: "374151").opacity(0.8))
+                                .fill(Color.white.opacity(0.10))
                             
                             Capsule()
                                 .fill(
                                     LinearGradient(
-                                        colors: [Color(hex: "3B82F6"), Color(hex: "60A5FA")],
+                                        colors: [Color(hex: "38BDF8"), Color(hex: "10B981")],
                                         startPoint: .leading,
                                         endPoint: .trailing
                                     )
                                 )
-                                .frame(width: max(0, geo.size.width * CGFloat(remainingSeconds) / 8.0))
+                                .frame(width: max(0, geo.size.width * CGFloat(remainingSeconds) / 3.0))
                                 .animation(.linear(duration: 1.0), value: remainingSeconds)
                         }
                     }
-                    .frame(height: isPad ? 8 : 5)
+                    .frame(height: 3.5)
                     .padding(.horizontal, isPad ? 24 : 16)
-                    .padding(.top, isPad ? 8 : 4)
-                }
-                .padding(.vertical, isPad ? 20 : 12)
-                .padding(.horizontal, isPad ? 28 : 16)
-                .background(
-                    RoundedRectangle(cornerRadius: isPad ? 22 : 16)
-                        .fill(Color(hex: "111827").opacity(0.85))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: isPad ? 22 : 16)
-                                .stroke(Color(hex: "3B82F6").opacity(0.6), lineWidth: 1.5)
-                        )
-                )
-                .padding(.horizontal, isPad ? 60 : 30)
-                .shadow(color: Color(hex: "1D4ED8").opacity(0.2), radius: 12)
-                
-                // 5. Single Hero Ready Button ("MULAI SEKARANG ➔")
-                Button(action: {
-                    let generator = UIImpactFeedbackGenerator(style: .heavy)
-                    generator.impactOccurred()
-                    timerTask?.cancel()
-                    onStart()
-                }) {
-                    HStack(spacing: isPad ? 12 : 8) {
-                        Text("MULAI SEKARANG")
-                            .font(.system(size: isPad ? 20 : 15, weight: .black, design: .rounded))
-                        Image(systemName: "play.fill")
-                            .font(.system(size: isPad ? 16 : 12, weight: .bold))
+                    
+                    // 6. Action Button: "Mulai Sekarang ➔"
+                    Button(action: {
+                        let generator = UIImpactFeedbackGenerator(style: .heavy)
+                        generator.impactOccurred()
+                        timerTask?.cancel()
+                        onStart()
+                    }) {
+                        HStack(spacing: 6) {
+                            Text("Mulai Sekarang")
+                                .font(.system(size: isPad ? 13 : 10, weight: .bold, design: .rounded))
+                            Image(systemName: "play.fill")
+                                .font(.system(size: isPad ? 10 : 8, weight: .bold))
+                        }
+                        .foregroundColor(.black)
+                        .padding(.horizontal, isPad ? 20 : 14)
+                        .padding(.vertical, isPad ? 8 : 5.5)
+                        .background(Color.white)
+                        .clipShape(Capsule())
+                        .shadow(color: .white.opacity(0.2), radius: 6)
                     }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, isPad ? 44 : 26)
-                    .padding(.vertical, isPad ? 15 : 10)
-                    .background(Color(hex: "155DFC"))
-                    .clipShape(Capsule())
-                    .overlay(
-                        Capsule()
-                            .stroke(Color(hex: "3B82F6"), lineWidth: 2)
-                    )
-                    .shadow(color: Color(hex: "155DFC").opacity(0.6), radius: 14, y: 4)
+                    .buttonStyle(.plain)
+                    .padding(.top, 2)
                 }
-                .padding(.top, isPad ? 10 : 4)
-                
-                Spacer()
+                .padding(isPad ? 20 : 14)
             }
-            .padding(.vertical, 16)
+            .frame(width: cardWidth, height: cardHeight)
         }
         .onAppear {
-            iconScale = 1.15
+            iconScale = 1.08
             startCountdown()
         }
         .onDisappear {
@@ -184,11 +227,8 @@ struct PreChallengeTutorialView: View {
                 guard !Task.isCancelled else { return }
                 remainingSeconds -= 1
                 
-                // Light haptic tick on 3, 2, 1
-                if remainingSeconds <= 3 && remainingSeconds > 0 {
-                    let generator = UIImpactFeedbackGenerator(style: .light)
-                    generator.impactOccurred()
-                }
+                let generator = UIImpactFeedbackGenerator(style: .light)
+                generator.impactOccurred()
             }
             
             guard !Task.isCancelled else { return }
