@@ -1,10 +1,3 @@
-//
-//  GalleryView.swift
-//  stamppal
-//
-//  Created by Muhammad Alief Rahman Fardillah on 06/09/26.
-//
-
 import SwiftUI
 import SwiftData
 import UIKit
@@ -23,6 +16,9 @@ struct GalleryView: View {
     private var gallerySessions: [GallerySession]
 
     @State private var selectedSession: GallerySession?
+    @State private var isSelectionMode = false
+    @State private var selectedSessions: Set<GallerySession> = []
+    @State private var showDeleteConfirmation = false
 
     var body: some View {
 
@@ -32,7 +28,7 @@ struct GalleryView: View {
                 UIDevice.current.userInterfaceIdiom == .pad ||
                 geometry.size.height > 550
 
-            ZStack {
+            ZStack(alignment: .bottom) {
 
                 // MARK: Background
 
@@ -113,12 +109,17 @@ struct GalleryView: View {
 
                                     GalleryCard(
                                         session: session,
-                                        isPad: isPad
-                                    ) {
-
-                                        selectedSession =
-                                            session
-                                    }
+                                        isPad: isPad,
+                                        isSelectionMode: isSelectionMode,
+                                        isSelected: selectedSessions.contains(session),
+                                        onTap: {
+                                            if isSelectionMode {
+                                                toggleSelection(session)
+                                            } else {
+                                                selectedSession = session
+                                            }
+                                        }
+                                    )
                                 }
                             }
                             .padding(
@@ -131,10 +132,17 @@ struct GalleryView: View {
                             )
                             .padding(
                                 .bottom,
-                                40
+                                isSelectionMode ? 100 : 40
                             )
                         }
                     }
+                }
+
+                // MARK: Bottom Selection Toolbar
+
+                if isSelectionMode {
+                    selectionBottomToolbar(isPad: isPad)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
         }
@@ -146,8 +154,50 @@ struct GalleryView: View {
         ) { session in
             CompletionView(
                 durationSeconds: 0,
-                capturedPhotos: session.images
+                capturedPhotos: session.images,
+                isReadOnly: true
             )
+        }
+
+        // MARK: Delete Confirmation Dialog
+
+        .confirmationDialog(
+            "Hapus Sesi Foto?",
+            isPresented: $showDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Hapus \(selectedSessions.count) Sesi", role: .destructive) {
+                deleteSelectedSessions()
+            }
+            Button("Batal", role: .cancel) {}
+        } message: {
+            Text("Sesi foto yang dipilih akan dihapus secara permanen dari galeri.")
+        }
+    }
+
+    // MARK: - Selection Actions
+
+    private func toggleSelection(_ session: GallerySession) {
+        if selectedSessions.contains(session) {
+            selectedSessions.remove(session)
+        } else {
+            selectedSessions.insert(session)
+        }
+    }
+
+    private func deleteSelectedSessions() {
+        withAnimation {
+            for session in selectedSessions {
+                modelContext.delete(session)
+            }
+            do {
+                try modelContext.save()
+                print("✅ Selected sessions deleted.")
+            } catch {
+                print("❌ Failed to delete sessions: \(error.localizedDescription)")
+            }
+            selectedSessions.removeAll()
+            isSelectionMode = false
         }
     }
 
@@ -158,41 +208,9 @@ struct GalleryView: View {
     ) -> some View {
 
         HStack {
-
-            // Home
-
-            Button {
-
-                // Put your home navigation here.
-
-            } label: {
-
-                Image(
-                    systemName: "house.fill"
-                )
-                .font(
-                    .system(
-                        size: isPad ? 30 : 22,
-                        weight: .semibold
-                    )
-                )
-                .foregroundColor(.black)
-                .frame(
-                    width: isPad ? 68 : 56,
-                    height: isPad ? 68 : 56
-                )
-                .background(
-                    Color.white.opacity(0.55)
-                )
-                .clipShape(Circle())
-                .overlay(
-                    Circle()
-                        .stroke(
-                            Color.white.opacity(0.8),
-                            lineWidth: 1
-                        )
-                )
-            }
+            // Sisi kiri kosong untuk menjaga judul tetap simetris di tengah
+            Color.clear
+                .frame(width: isPad ? 80 : 60, height: isPad ? 44 : 36)
 
             Spacer()
 
@@ -223,39 +241,27 @@ struct GalleryView: View {
 
             Spacer()
 
-            // Sort
-
-            Button {
-
-                // Sorting can be added later.
-
-            } label: {
-
-                Image(
-                    systemName: "arrow.up.arrow.down"
-                )
-                .font(
-                    .system(
-                        size: isPad ? 30 : 22,
-                        weight: .medium
-                    )
-                )
-                .foregroundColor(.black)
-                .frame(
-                    width: isPad ? 68 : 56,
-                    height: isPad ? 68 : 56
-                )
-                .background(
-                    Color.white.opacity(0.55)
-                )
-                .clipShape(Circle())
-                .overlay(
-                    Circle()
-                        .stroke(
-                            Color.white.opacity(0.8),
-                            lineWidth: 1
-                        )
-                )
+            // Tombol Pilih / Batal (Toolbar Header Kanan)
+            if !gallerySessions.isEmpty {
+                Button {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        isSelectionMode.toggle()
+                        if !isSelectionMode {
+                            selectedSessions.removeAll()
+                        }
+                    }
+                } label: {
+                    Text(isSelectionMode ? "Batal" : "Pilih")
+                        .font(.system(size: isPad ? 20 : 16, weight: .bold))
+                        .foregroundColor(isSelectionMode ? .red : .blue)
+                        .padding(.horizontal, isPad ? 16 : 12)
+                        .padding(.vertical, isPad ? 10 : 6)
+                        .background(Color.white.opacity(0.8))
+                        .clipShape(Capsule())
+                }
+            } else {
+                Color.clear
+                    .frame(width: isPad ? 80 : 60, height: isPad ? 44 : 36)
             }
         }
         .padding(
@@ -266,6 +272,42 @@ struct GalleryView: View {
             .top,
             isPad ? 28 : 24
         )
+    }
+
+    // MARK: - Bottom Toolbar
+
+    private func selectionBottomToolbar(isPad: Bool) -> some View {
+        HStack {
+            Text("\(selectedSessions.count) dipilih")
+                .font(.system(size: isPad ? 20 : 16, weight: .medium))
+                .foregroundColor(.black)
+
+            Spacer()
+
+            Button {
+                showDeleteConfirmation = true
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "trash")
+                    Text("Hapus")
+                }
+                .font(.system(size: isPad ? 20 : 16, weight: .bold))
+                .foregroundColor(.white)
+                .padding(.horizontal, isPad ? 24 : 18)
+                .padding(.vertical, isPad ? 12 : 8)
+                .background(selectedSessions.isEmpty ? Color.gray : Color.red)
+                .clipShape(Capsule())
+                .shadow(color: Color.black.opacity(0.15), radius: 5, x: 0, y: 3)
+            }
+            .disabled(selectedSessions.isEmpty)
+        }
+        .padding(.horizontal, isPad ? 60 : 30)
+        .padding(.vertical, isPad ? 16 : 12)
+        .background(
+            Color.white.opacity(0.95)
+                .ignoresSafeArea(edges: .bottom)
+        )
+        .shadow(color: Color.black.opacity(0.12), radius: 10, x: 0, y: -4)
     }
 
     // MARK: - Decorative Lines
@@ -394,17 +436,15 @@ struct GalleryView: View {
 struct GalleryCard: View {
 
     let session: GallerySession
-
     let isPad: Bool
-
+    let isSelectionMode: Bool
+    let isSelected: Bool
     let onTap: () -> Void
 
     var body: some View {
 
         Button {
-
             onTap()
-
         } label: {
 
             VStack(
@@ -412,88 +452,59 @@ struct GalleryCard: View {
                 spacing: 0
             ) {
 
-                // MARK: Only First Photo
+                // MARK: Only First Photo & Selection Checkmark
 
-                ZStack(alignment: .bottomTrailing) {
+                ZStack(alignment: .topTrailing) {
 
-                    if let firstImage =
-                        session.images.first {
+                    ZStack(alignment: .bottomTrailing) {
 
-                        Image(
-                            uiImage: firstImage
-                        )
-                        .resizable()
-                        .scaledToFill()
-                        .frame(
-                            maxWidth: .infinity
-                        )
-                        .aspectRatio(
-                            1.43,
-                            contentMode: .fit
-                        )
-                        .clipped()
+                        if let firstImage = session.images.first {
 
-                    } else {
+                            Image(uiImage: firstImage)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(maxWidth: .infinity)
+                                .aspectRatio(1.43, contentMode: .fit)
+                                .clipped()
 
-                        Rectangle()
-                            .fill(
-                                Color.gray.opacity(0.15)
-                            )
-                            .aspectRatio(
-                                1.43,
-                                contentMode: .fit
-                            )
+                        } else {
+
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.15))
+                                .aspectRatio(1.43, contentMode: .fit)
+                        }
+
+                        // MARK: Photo Count Badge
+
+                        if session.photoCount > 1 {
+                            HStack(spacing: 5) {
+                                Image(systemName: "photo.stack.fill")
+                                    .font(.system(size: isPad ? 14 : 11, weight: .bold))
+
+                                Text("\(session.photoCount)")
+                                    .font(.system(size: isPad ? 14 : 11, weight: .bold))
+                            }
+                            .foregroundColor(.white)
+                            .padding(.horizontal, isPad ? 11 : 8)
+                            .padding(.vertical, isPad ? 7 : 5)
+                            .background(Color.black.opacity(0.60))
+                            .clipShape(Capsule())
+                            .padding(isPad ? 12 : 9)
+                        }
                     }
 
-                    // MARK: Photo Count
-
-                    if session.photoCount > 1 {
-
-                        HStack(spacing: 5) {
-
-                            Image(
-                                systemName:
-                                    "photo.stack.fill"
-                            )
-                            .font(
-                                .system(
-                                    size: isPad ? 14 : 11,
-                                    weight: .bold
-                                )
-                            )
-
-                            Text(
-                                "\(session.photoCount)"
-                            )
-                            .font(
-                                .system(
-                                    size: isPad ? 14 : 11,
-                                    weight: .bold
-                                )
-                            )
-                        }
-                        .foregroundColor(.white)
-                        .padding(
-                            .horizontal,
-                            isPad ? 11 : 8
-                        )
-                        .padding(
-                            .vertical,
-                            isPad ? 7 : 5
-                        )
-                        .background(
-                            Color.black.opacity(0.60)
-                        )
-                        .clipShape(Capsule())
-                        .padding(
-                            isPad ? 12 : 9
-                        )
+                    // Selection Checkmark Circle Overlay
+                    if isSelectionMode {
+                        Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                            .font(.system(size: isPad ? 26 : 20, weight: .bold))
+                            .foregroundColor(isSelected ? .blue : .white)
+                            .background(Circle().fill(Color.black.opacity(0.2)))
+                            .padding(isPad ? 12 : 9)
                     }
                 }
                 .clipShape(
                     RoundedRectangle(
-                        cornerRadius:
-                            isPad ? 20 : 15,
+                        cornerRadius: isPad ? 20 : 15,
                         style: .continuous
                     )
                 )
@@ -516,9 +527,7 @@ struct GalleryCard: View {
                         .lineLimit(1)
 
                     Text(
-                        formattedDate(
-                            session.date
-                        )
+                        formattedDate(session.date)
                     )
                     .font(
                         .system(
@@ -539,8 +548,7 @@ struct GalleryCard: View {
             .background(Color.white)
             .clipShape(
                 RoundedRectangle(
-                    cornerRadius:
-                        isPad ? 22 : 17,
+                    cornerRadius: isPad ? 22 : 17,
                     style: .continuous
                 )
             )
@@ -550,37 +558,25 @@ struct GalleryCard: View {
                 x: 0,
                 y: 5
             )
+            .overlay(
+                RoundedRectangle(cornerRadius: isPad ? 22 : 17)
+                    .stroke(isSelected ? Color.blue : Color.clear, lineWidth: 3)
+            )
         }
         .buttonStyle(.plain)
     }
 
     // MARK: Date
 
-    private func formattedDate(
-        _ date: Date
-    ) -> String {
+    private func formattedDate(_ date: Date) -> String {
 
-        let formatter =
-            DateFormatter()
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "id_ID")
+        formatter.dateFormat = "dd MMMM yyyy"
 
-        formatter.locale =
-            Locale(
-                identifier: "id_ID"
-            )
-
-        formatter.dateFormat =
-            "dd MMMM yyyy"
-
-        return formatter.string(
-            from: date
-        )
+        return formatter.string(from: date)
     }
 }
-
-
-// MARK: - Gallery Detail
-
-//
 
 
 // MARK: - Save Gallery Session
@@ -594,43 +590,26 @@ extension GallerySession {
     ) {
 
         guard !images.isEmpty else {
-            print(
-                "⚠️ GallerySession: tidak ada gambar."
-            )
+            print("⚠️ GallerySession: tidak ada gambar.")
             return
         }
 
-        let session =
-            GallerySession(
-                title: title,
-                date: Date(),
-                images: Array(
-                    images.prefix(5)
-                )
-            )
+        let session = GallerySession(
+            title: title,
+            date: Date(),
+            images: Array(images.prefix(5))
+        )
 
         modelContext.insert(session)
 
         do {
-
             try modelContext.save()
 
-            print(
-                "✅ Gallery session saved:"
-                + " \(session.id.uuidString)"
-            )
-
-            print(
-                "📸 Photos saved:"
-                + " \(session.photoCount)"
-            )
+            print("✅ Gallery session saved: \(session.id.uuidString)")
+            print("📸 Photos saved: \(session.photoCount)")
 
         } catch {
-
-            print(
-                "❌ Failed to save gallery:"
-                + " \(error.localizedDescription)"
-            )
+            print("❌ Failed to save gallery: \(error.localizedDescription)")
         }
     }
 }
@@ -642,6 +621,5 @@ extension GallerySession {
     "Gallery View",
     traits: .landscapeLeft
 ) {
-
     GalleryView()
 }
