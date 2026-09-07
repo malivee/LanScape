@@ -44,65 +44,52 @@ struct DoubleThumbsUpChallengeView: View {
             VStack(spacing: isPad ? 16 : 8) {
                 Spacer()
                 
-                // 1. Sleek Frosted Timer Badge
+                // 1. Clean White Frosted Timer Badge
                 HStack(spacing: 6) {
                     Image(systemName: "stopwatch.fill")
                         .font(.system(size: isPad ? 14 : 11, weight: .bold))
-                        .foregroundColor(Color(hex: "EF4444"))
+                        .foregroundColor(timeRemaining <= 3 ? Color(red: 0.85, green: 0.15, blue: 0.2) : Color(red: 0.15, green: 0.35, blue: 0.8))
                     Text("\(timeRemaining)s")
-                        .font(.system(size: isPad ? 16 : 12, weight: .black, design: .rounded))
-                        .foregroundColor(.white)
+                        .font(.system(size: isPad ? 16 : 12, weight: .bold, design: .rounded))
+                        .foregroundColor(.black)
                 }
                 .padding(.horizontal, isPad ? 16 : 11)
                 .padding(.vertical, isPad ? 6 : 4)
-                .background(Color(hex: "0F172A").opacity(0.85))
+                .background(Color.white.opacity(0.92))
                 .clipShape(Capsule())
-                .overlay(
-                    Capsule().stroke(Color.white.opacity(0.18), lineWidth: 1)
-                )
-                .shadow(color: Color.black.opacity(0.35), radius: 6, y: 2)
+                .shadow(color: Color.black.opacity(0.18), radius: 6, y: 2)
                 
                 // 2. Action Prompt
                 Text("ACUNGKAN JEMPOL MANTAP!")
-                    .font(.system(size: isPad ? 24 : 16, weight: .black, design: .rounded))
+                    .font(.system(size: isPad ? 24 : 16, weight: .bold, design: .rounded))
                     .foregroundColor(.white)
                     .tracking(0.6)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 24)
-                    .shadow(color: .black.opacity(0.8), radius: 6, y: 3)
+                    .shadow(color: .black.opacity(0.7), radius: 6, y: 2)
                 
-                // 3. Hero Visual Display (Dark Studio Proof Ring, Non-Touch)
+                // 3. Hero Visual Display (Clean White Photobooth Orb)
                 ZStack {
                     Circle()
-                        .stroke(visionHandTracker.isThumbsUpDetected ? Color(hex: "10B981") : Color(hex: "F59E0B").opacity(0.5), lineWidth: isPad ? 6 : 4)
+                        .stroke(visionHandTracker.isThumbsUpDetected ? Color(hex: "10B981") : Color(red: 0.15, green: 0.45, blue: 0.95).opacity(0.5), lineWidth: isPad ? 6 : 4)
                         .scaleEffect(bounceThumbs ? 1.08 : 0.98)
                         .opacity(bounceThumbs ? 0.9 : 0.4)
                         .animation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true), value: bounceThumbs)
                     
                     Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [Color(hex: "1E293B").opacity(0.92), Color(hex: "0F172A").opacity(0.96)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .overlay(
-                            Circle().stroke(Color.white.opacity(0.14), lineWidth: 1.5)
-                        )
-                        .shadow(color: (visionHandTracker.isThumbsUpDetected ? Color(hex: "10B981") : Color(hex: "F59E0B")).opacity(0.4), radius: isPad ? 22 : 14)
+                        .fill(Color.white.opacity(0.94))
+                        .shadow(color: Color.black.opacity(0.15), radius: 12, y: 5)
                     
                     VStack(spacing: 8) {
                         Image(systemName: "hand.thumbsup.fill")
                             .font(.system(size: isPad ? 54 : 36))
-                            .foregroundColor(.white)
+                            .foregroundColor(visionHandTracker.isThumbsUpDetected ? Color(hex: "10B981") : Color(red: 0.15, green: 0.35, blue: 0.8))
                             .scaleEffect(bounceThumbs ? 1.15 : 0.95)
                             .animation(.spring(response: 0.4, dampingFraction: 0.6).repeatForever(autoreverses: true), value: bounceThumbs)
-                            .shadow(color: (visionHandTracker.isThumbsUpDetected ? Color(hex: "10B981") : Color(hex: "F59E0B")).opacity(0.5), radius: 6)
                         
                         Text(visionHandTracker.isThumbsUpDetected ? "Jempol Terdeteksi!" : "Acungkan Jempol")
-                            .font(.system(size: isPad ? 13 : 9, weight: .bold, design: .rounded))
-                            .foregroundColor(visionHandTracker.isThumbsUpDetected ? Color(hex: "D1FAE5") : Color(hex: "FEF3C7"))
+                            .font(.system(size: isPad ? 13 : 9.5, weight: .bold, design: .rounded))
+                            .foregroundColor(visionHandTracker.isThumbsUpDetected ? Color(hex: "059669") : Color(hex: "1E293B"))
                     }
                 }
                 .frame(width: isPad ? 190 : 135, height: isPad ? 190 : 135)
@@ -111,14 +98,14 @@ struct DoubleThumbsUpChallengeView: View {
                 // 4. Progress Feedback
                 VStack(spacing: isPad ? 7 : 4) {
                     Text(progress > 0.6 ? "MANTAP SEKALI!" : "LETSGOOO...!!!")
-                        .font(.system(size: isPad ? 20 : 13, weight: .black, design: .rounded))
-                        .foregroundColor(Color(hex: "FCD34D"))
+                        .font(.system(size: isPad ? 20 : 13, weight: .bold, design: .rounded))
+                        .foregroundColor(.white)
                         .tracking(1.0)
-                        .shadow(color: .black.opacity(0.8), radius: 4)
+                        .shadow(color: .black.opacity(0.7), radius: 4)
                     
                     GeometryReader { geo in
                         ZStack(alignment: .leading) {
-                            Capsule().fill(Color(hex: "0F172A").opacity(0.85))
+                            Capsule().fill(Color.white.opacity(0.35))
                             Capsule()
                                 .fill(LinearGradient(colors: [Color(hex: "F59E0B"), Color(hex: "10B981")], startPoint: .leading, endPoint: .trailing))
                                 .frame(width: max(0, geo.size.width * min(1.0, progress)))
@@ -128,22 +115,20 @@ struct DoubleThumbsUpChallengeView: View {
                     .frame(width: isPad ? 280 : 190, height: isPad ? 10 : 7)
                 }
                 
-                // 5. Helper Pill
+                // 5. Clean White Helper Pill
                 HStack(spacing: 6) {
                     Image(systemName: "hand.thumbsup.fill")
                         .font(.system(size: isPad ? 12 : 9, weight: .bold))
-                        .foregroundColor(Color(hex: "FCD34D"))
+                        .foregroundColor(Color(red: 0.15, green: 0.35, blue: 0.8))
                     Text("Acungkan jempol ke depan kamera bersama-sama (\(Int(progress * 100))%)")
                         .font(.system(size: isPad ? 12 : 9.5, weight: .semibold))
-                        .foregroundColor(.white)
+                        .foregroundColor(.black)
                 }
                 .padding(.horizontal, isPad ? 18 : 12)
                 .padding(.vertical, isPad ? 6 : 4)
-                .background(Color(hex: "0B0F19").opacity(0.85))
+                .background(Color.white.opacity(0.92))
                 .clipShape(Capsule())
-                .overlay(
-                    Capsule().stroke(Color.white.opacity(0.12), lineWidth: 1)
-                )
+                .shadow(color: Color.black.opacity(0.18), radius: 6, y: 2)
                 .padding(.top, isPad ? 4 : 2)
                 
                 Spacer()

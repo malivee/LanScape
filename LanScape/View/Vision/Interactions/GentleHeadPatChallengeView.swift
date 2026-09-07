@@ -44,66 +44,51 @@ struct GentleHeadPatChallengeView: View {
             VStack(spacing: isPad ? 16 : 8) {
                 Spacer()
                 
-                // 1. Timer Badge
+                // 1. Clean White Frosted Timer Badge
                 HStack(spacing: 6) {
                     Image(systemName: "stopwatch.fill")
                         .font(.system(size: isPad ? 14 : 11, weight: .bold))
-                        .foregroundColor(Color(hex: "38BDF8"))
+                        .foregroundColor(timeRemaining <= 3 ? Color(red: 0.85, green: 0.15, blue: 0.2) : Color(red: 0.15, green: 0.35, blue: 0.8))
                     Text("\(timeRemaining)s")
-                        .font(.system(size: isPad ? 17 : 12.5, weight: .black, design: .rounded))
-                        .foregroundColor(.white)
+                        .font(.system(size: isPad ? 17 : 12.5, weight: .bold, design: .rounded))
+                        .foregroundColor(.black)
                 }
                 .padding(.horizontal, isPad ? 18 : 12)
                 .padding(.vertical, isPad ? 6 : 4)
-                .background(Color(hex: "0B0F19").opacity(0.88))
+                .background(Color.white.opacity(0.92))
                 .clipShape(Capsule())
-                .overlay(
-                    Capsule().stroke(Color(hex: "38BDF8").opacity(0.4), lineWidth: 1)
-                )
-                .shadow(color: Color.black.opacity(0.4), radius: 8, y: 3)
+                .shadow(color: Color.black.opacity(0.18), radius: 6, y: 2)
                 
                 // 2. Action Prompt
                 Text("ELUS KEPALA DENGAN LEMBUT!")
-                    .font(.system(size: isPad ? 24 : 15.5, weight: .black, design: .rounded))
+                    .font(.system(size: isPad ? 24 : 15.5, weight: .bold, design: .rounded))
                     .foregroundColor(.white)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 24)
-                    .shadow(color: .black.opacity(0.8), radius: 6, y: 3)
+                    .shadow(color: .black.opacity(0.7), radius: 6, y: 2)
                 
-                // 3. Hero Visual Display (Pure Vision, Non-Touch)
+                // 3. Hero Visual Display (Clean White Photobooth Orb)
                 ZStack {
                     Circle()
-                        .stroke(visionHandTracker.isHandAboveFace ? Color.green : Color(hex: "F472B6"), lineWidth: isPad ? 6 : 4)
+                        .stroke(visionHandTracker.isHandAboveFace ? Color.green : Color(hex: "EC4899"), lineWidth: isPad ? 6 : 4)
                         .scaleEffect(flowerBloom ? 1.08 : 0.98)
                         .opacity(flowerBloom ? 0.9 : 0.4)
                         .animation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true), value: flowerBloom)
                     
                     Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    Color(hex: "1E293B").opacity(0.92),
-                                    Color(hex: "0F172A").opacity(0.96)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .overlay(
-                            Circle().stroke(Color(hex: "F472B6").opacity(0.4), lineWidth: 1.5)
-                        )
-                        .shadow(color: (visionHandTracker.isHandAboveFace ? Color.green : Color(hex: "F472B6")).opacity(0.5), radius: isPad ? 20 : 14)
+                        .fill(Color.white.opacity(0.94))
+                        .shadow(color: Color.black.opacity(0.15), radius: 12, y: 5)
                     
                     VStack(spacing: 8) {
                         Image(systemName: "hand.raised.fingers.spread.fill")
                             .font(.system(size: isPad ? 52 : 34))
-                            .foregroundColor(Color(hex: "F472B6"))
+                            .foregroundColor(Color(hex: "EC4899"))
                             .scaleEffect(flowerBloom ? 1.12 : 0.95)
                             .animation(.spring(response: 0.4, dampingFraction: 0.6).repeatForever(autoreverses: true), value: flowerBloom)
                         
                         Text(visionHandTracker.isHandAboveFace ? "Mengelus Kepala!" : "Elus Kepala")
-                            .font(.system(size: isPad ? 13 : 9, weight: .bold, design: .rounded))
-                            .foregroundColor(visionHandTracker.isHandAboveFace ? .green : Color(hex: "FCE7F3"))
+                            .font(.system(size: isPad ? 13 : 9.5, weight: .bold, design: .rounded))
+                            .foregroundColor(visionHandTracker.isHandAboveFace ? Color(hex: "059669") : Color(hex: "1E293B"))
                     }
                 }
                 .frame(width: isPad ? 180 : 130, height: isPad ? 180 : 130)
@@ -112,16 +97,16 @@ struct GentleHeadPatChallengeView: View {
                 // 4. Progress Feedback
                 VStack(spacing: isPad ? 7 : 4) {
                     Text(progress > 0.6 ? "BUNGA BERMEKARAN!" : "LETSGOOO...!!!")
-                        .font(.system(size: isPad ? 20 : 13.5, weight: .black, design: .rounded))
-                        .foregroundColor(Color(hex: "F472B6"))
+                        .font(.system(size: isPad ? 20 : 13.5, weight: .bold, design: .rounded))
+                        .foregroundColor(.white)
                         .tracking(0.6)
-                        .shadow(color: .black.opacity(0.8), radius: 4)
+                        .shadow(color: .black.opacity(0.7), radius: 4)
                     
                     GeometryReader { geo in
                         ZStack(alignment: .leading) {
-                            Capsule().fill(Color(hex: "0B0F19").opacity(0.85))
+                            Capsule().fill(Color.white.opacity(0.35))
                             Capsule()
-                                .fill(LinearGradient(colors: [Color(hex: "F472B6"), Color(hex: "10B981")], startPoint: .leading, endPoint: .trailing))
+                                .fill(LinearGradient(colors: [Color(hex: "EC4899"), Color(hex: "10B981")], startPoint: .leading, endPoint: .trailing))
                                 .frame(width: max(0, geo.size.width * min(1.0, progress)))
                                 .animation(.easeOut(duration: 0.15), value: progress)
                         }
@@ -129,23 +114,20 @@ struct GentleHeadPatChallengeView: View {
                     .frame(width: isPad ? 280 : 190, height: isPad ? 10 : 7)
                 }
                 
-                // 5. Helper Pill
+                // 5. Clean White Helper Pill
                 HStack(spacing: 6) {
                     Image(systemName: "sparkles")
                         .font(.system(size: isPad ? 12 : 9, weight: .bold))
-                        .foregroundColor(Color(hex: "F472B6"))
+                        .foregroundColor(Color(hex: "EC4899"))
                     Text("Posisikan tangan lembut di atas kepala teman/pasangan (\(Int(progress * 100))%)")
                         .font(.system(size: isPad ? 12 : 9, weight: .semibold))
+                        .foregroundColor(.black)
                 }
-                .foregroundColor(.white)
                 .padding(.horizontal, isPad ? 18 : 12)
                 .padding(.vertical, isPad ? 6 : 4)
-                .background(Color(hex: "0B0F19").opacity(0.88))
+                .background(Color.white.opacity(0.92))
                 .clipShape(Capsule())
-                .overlay(
-                    Capsule().stroke(Color.white.opacity(0.12), lineWidth: 1)
-                )
-                .padding(.top, isPad ? 4 : 2)
+                .shadow(color: Color.black.opacity(0.18), radius: 6, y: 2)
                 .padding(.top, isPad ? 4 : 2)
                 
                 Spacer()

@@ -27,6 +27,14 @@ struct GalleryView: View {
             let isPad =
                 UIDevice.current.userInterfaceIdiom == .pad ||
                 geometry.size.height > 550
+            let screenW = geometry.size.width
+            let columns = isPad
+                ? [GridItem(.flexible(), spacing: 32), GridItem(.flexible(), spacing: 32), GridItem(.flexible(), spacing: 32)]
+                : (screenW < 750
+                    ? [GridItem(.flexible(), spacing: 14), GridItem(.flexible(), spacing: 14)]
+                    : [GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16)])
+            let gridSpacing: CGFloat = isPad ? 36 : (screenW < 750 ? 16 : 20)
+            let horizontalPad: CGFloat = isPad ? 80 : 20
 
             ZStack(alignment: .bottom) {
 
@@ -83,24 +91,8 @@ struct GalleryView: View {
                         ) {
 
                             LazyVGrid(
-                                columns: [
-
-                                    GridItem(
-                                        .flexible(),
-                                        spacing: isPad ? 40 : 28
-                                    ),
-
-                                    GridItem(
-                                        .flexible(),
-                                        spacing: isPad ? 40 : 28
-                                    ),
-
-                                    GridItem(
-                                        .flexible(),
-                                        spacing: isPad ? 40 : 28
-                                    )
-                                ],
-                                spacing: isPad ? 42 : 30
+                                columns: columns,
+                                spacing: gridSpacing
                             ) {
 
                                 ForEach(
@@ -124,15 +116,15 @@ struct GalleryView: View {
                             }
                             .padding(
                                 .horizontal,
-                                isPad ? 120 : 55
+                                horizontalPad
                             )
                             .padding(
                                 .top,
-                                isPad ? 36 : 28
+                                isPad ? 28 : 14
                             )
                             .padding(
                                 .bottom,
-                                isSelectionMode ? 100 : 40
+                                isSelectionMode ? 100 : 36
                             )
                         }
                     }
@@ -210,7 +202,7 @@ struct GalleryView: View {
         HStack {
             // Sisi kiri kosong untuk menjaga judul tetap simetris di tengah
             Color.clear
-                .frame(width: isPad ? 80 : 60, height: isPad ? 44 : 36)
+                .frame(width: isPad ? 80 : 48, height: isPad ? 44 : 32)
 
             Spacer()
 
@@ -219,7 +211,7 @@ struct GalleryView: View {
                 Text("Galeri Foto")
                     .font(
                         .system(
-                            size: isPad ? 42 : 30,
+                            size: isPad ? 36 : 20,
                             weight: .bold
                         )
                     )
@@ -230,7 +222,7 @@ struct GalleryView: View {
                 )
                 .font(
                     .system(
-                        size: isPad ? 23 : 17,
+                        size: isPad ? 18 : 11.5,
                         weight: .medium
                     )
                 )
@@ -252,25 +244,25 @@ struct GalleryView: View {
                     }
                 } label: {
                     Text(isSelectionMode ? "Batal" : "Pilih")
-                        .font(.system(size: isPad ? 20 : 16, weight: .bold))
+                        .font(.system(size: isPad ? 18 : 13, weight: .bold))
                         .foregroundColor(isSelectionMode ? .red : .blue)
-                        .padding(.horizontal, isPad ? 16 : 12)
-                        .padding(.vertical, isPad ? 10 : 6)
-                        .background(Color.white.opacity(0.8))
+                        .padding(.horizontal, isPad ? 16 : 10)
+                        .padding(.vertical, isPad ? 8 : 4)
+                        .background(Color.white.opacity(0.85))
                         .clipShape(Capsule())
                 }
             } else {
                 Color.clear
-                    .frame(width: isPad ? 80 : 60, height: isPad ? 44 : 36)
+                    .frame(width: isPad ? 80 : 48, height: isPad ? 44 : 32)
             }
         }
         .padding(
             .horizontal,
-            isPad ? 42 : 30
+            isPad ? 42 : 20
         )
         .padding(
             .top,
-            isPad ? 28 : 24
+            isPad ? 24 : 10
         )
     }
 
@@ -279,7 +271,7 @@ struct GalleryView: View {
     private func selectionBottomToolbar(isPad: Bool) -> some View {
         HStack {
             Text("\(selectedSessions.count) dipilih")
-                .font(.system(size: isPad ? 20 : 16, weight: .medium))
+                .font(.system(size: isPad ? 18 : 13, weight: .medium))
                 .foregroundColor(.black)
 
             Spacer()
@@ -291,23 +283,23 @@ struct GalleryView: View {
                     Image(systemName: "trash")
                     Text("Hapus")
                 }
-                .font(.system(size: isPad ? 20 : 16, weight: .bold))
+                .font(.system(size: isPad ? 18 : 13, weight: .bold))
                 .foregroundColor(.white)
-                .padding(.horizontal, isPad ? 24 : 18)
-                .padding(.vertical, isPad ? 12 : 8)
+                .padding(.horizontal, isPad ? 22 : 14)
+                .padding(.vertical, isPad ? 10 : 6)
                 .background(selectedSessions.isEmpty ? Color.gray : Color.red)
                 .clipShape(Capsule())
                 .shadow(color: Color.black.opacity(0.15), radius: 5, x: 0, y: 3)
             }
             .disabled(selectedSessions.isEmpty)
         }
-        .padding(.horizontal, isPad ? 60 : 30)
-        .padding(.vertical, isPad ? 16 : 12)
+        .padding(.horizontal, isPad ? 60 : 24)
+        .padding(.vertical, isPad ? 14 : 8)
         .background(
             Color.white.opacity(0.95)
                 .ignoresSafeArea(edges: .bottom)
         )
-        .shadow(color: Color.black.opacity(0.12), radius: 10, x: 0, y: -4)
+        .shadow(color: Color.black.opacity(0.12), radius: 8, x: 0, y: -3)
     }
 
     // MARK: - Decorative Lines
@@ -502,7 +494,7 @@ struct GalleryCard: View {
                             .padding(isPad ? 12 : 9)
                     }
                 }
-                .clipShape(
+        .clipShape(
                     RoundedRectangle(
                         cornerRadius: isPad ? 20 : 15,
                         style: .continuous
@@ -513,13 +505,13 @@ struct GalleryCard: View {
 
                 VStack(
                     alignment: .leading,
-                    spacing: isPad ? 5 : 3
+                    spacing: isPad ? 4 : 2
                 ) {
 
                     Text(session.title)
                         .font(
                             .system(
-                                size: isPad ? 25 : 19,
+                                size: isPad ? 22 : 14,
                                 weight: .semibold
                             )
                         )
@@ -531,36 +523,36 @@ struct GalleryCard: View {
                     )
                     .font(
                         .system(
-                            size: isPad ? 19 : 15
+                            size: isPad ? 16 : 11
                         )
                     )
                     .foregroundColor(.gray)
                 }
                 .padding(
                     .horizontal,
-                    isPad ? 18 : 14
+                    isPad ? 16 : 10
                 )
                 .padding(
                     .vertical,
-                    isPad ? 15 : 12
+                    isPad ? 12 : 8
                 )
             }
             .background(Color.white)
             .clipShape(
                 RoundedRectangle(
-                    cornerRadius: isPad ? 22 : 17,
+                    cornerRadius: isPad ? 20 : 13,
                     style: .continuous
                 )
             )
             .shadow(
                 color: Color.black.opacity(0.14),
-                radius: 8,
+                radius: isPad ? 8 : 4,
                 x: 0,
-                y: 5
+                y: isPad ? 5 : 2
             )
             .overlay(
-                RoundedRectangle(cornerRadius: isPad ? 22 : 17)
-                    .stroke(isSelected ? Color.blue : Color.clear, lineWidth: 3)
+                RoundedRectangle(cornerRadius: isPad ? 20 : 13)
+                    .stroke(isSelected ? Color.blue : Color.clear, lineWidth: isPad ? 3 : 2)
             )
         }
         .buttonStyle(.plain)

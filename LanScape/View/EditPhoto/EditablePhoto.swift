@@ -111,6 +111,9 @@ struct CustomizePhotoView: View {
     var body: some View {
 
         GeometryReader { geometry in
+            let isPad = UIDevice.current.userInterfaceIdiom == .pad || geometry.size.height >= 550
+            let screenW = geometry.size.width
+            let screenH = geometry.size.height
 
             ZStack {
 
@@ -129,25 +132,24 @@ struct CustomizePhotoView: View {
 
                     // MARK: Sticker / Image Panel
 
-                    editorSidePanel
+                    editorSidePanel(isPad: isPad)
                         .frame(
-                            width: min(
-                                geometry.size.width * 0.19,
-                                330
-                            )
+                            width: isPad
+                                ? min(screenW * 0.22, 280)
+                                : min(screenW * 0.25, 195)
                         )
 
-                    Spacer(minLength: 30)
+                    Spacer(minLength: isPad ? 24 : 10)
 
                     // MARK: Photo Area
 
-                    photoArea
+                    photoArea(isPad: isPad)
                         .frame(
-                            maxWidth: geometry.size.width * 0.70,
-                            maxHeight: geometry.size.height * 0.76
+                            maxWidth: isPad ? screenW * 0.68 : screenW * 0.63,
+                            maxHeight: isPad ? screenH * 0.76 : screenH * 0.74
                         )
 
-                    Spacer(minLength: 30)
+                    Spacer(minLength: isPad ? 24 : 10)
                 }
 
                 // MARK: Top Title
@@ -157,7 +159,7 @@ struct CustomizePhotoView: View {
                     Text("Yuk, hias foto kalian!")
                         .font(
                             .system(
-                                size: 42,
+                                size: isPad ? 34 : 18,
                                 weight: .bold
                             )
                         )
@@ -165,7 +167,7 @@ struct CustomizePhotoView: View {
 
                     Spacer()
                 }
-                .padding(.top, 35)
+                .padding(.top, isPad ? 24 : 8)
 
                 // MARK: Done Button
 
@@ -184,14 +186,14 @@ struct CustomizePhotoView: View {
                             Image(systemName: "checkmark")
                                 .font(
                                     .system(
-                                        size: 34,
-                                        weight: .medium
+                                        size: isPad ? 26 : 17,
+                                        weight: .bold
                                     )
                                 )
                                 .foregroundStyle(.white)
                                 .frame(
-                                    width: 96,
-                                    height: 96
+                                    width: isPad ? 64 : 40,
+                                    height: isPad ? 64 : 40
                                 )
                                 .background(
                                     Circle()
@@ -199,10 +201,15 @@ struct CustomizePhotoView: View {
                                             Color.blue
                                         )
                                 )
+                                .shadow(
+                                    color: .black.opacity(0.18),
+                                    radius: 6,
+                                    y: 3
+                                )
                         }
                         .buttonStyle(.plain)
-                        .padding(.trailing, 45)
-                        .padding(.top, 35)
+                        .padding(.trailing, isPad ? 36 : 16)
+                        .padding(.top, isPad ? 20 : 8)
                     }
 
                     Spacer()
@@ -233,81 +240,79 @@ struct CustomizePhotoView: View {
                             )
                             .font(
                                 .system(
-                                    size: 45,
+                                    size: isPad ? 30 : 20,
                                     weight: .medium
                                 )
                             )
                             .foregroundStyle(.black)
                             .frame(
-                                width: 110,
-                                height: 110
+                                width: isPad ? 70 : 44,
+                                height: isPad ? 70 : 44
                             )
                             .background(
                                 Circle()
                                     .fill(
-                                        Color.white.opacity(0.65)
+                                        Color.white.opacity(0.85)
                                     )
                             )
                             .shadow(
                                 color: .black.opacity(0.15),
-                                radius: 8,
-                                y: 5
+                                radius: 6,
+                                y: 3
                             )
                         }
                         .buttonStyle(.plain)
 
                         Spacer()
                     }
-                    .padding(.leading, 55)
-                    .padding(.bottom, 25)
+                    .padding(.leading, isPad ? 40 : 16)
+                    .padding(.bottom, isPad ? 20 : 10)
                 }
             }
         }
-}
+    }
 
     // MARK: - Side Panel
 
-    private var editorSidePanel: some View {
+    private func editorSidePanel(isPad: Bool) -> some View {
 
         VStack(
             alignment: .leading,
-            spacing: 18
+            spacing: isPad ? 14 : 6
         ) {
 
             Text("Stiker")
                 .font(
                     .system(
-                        size: 32,
+                        size: isPad ? 26 : 15,
                         weight: .bold
                     )
                 )
 
             Text("Geser stiker ke foto")
                 .font(
-                    .system(size: 20)
+                    .system(size: isPad ? 16 : 10)
                 )
                 .foregroundStyle(.secondary)
 
-            stickerGrid
+            stickerGrid(isPad: isPad)
 
             Divider()
-                .padding(.vertical, 5)
-
-            
+                .padding(.vertical, isPad ? 5 : 2)
 
             Spacer()
         }
-        .padding(22)
+        .padding(isPad ? 20 : 10)
         .background(
             RoundedRectangle(
-                cornerRadius: 25
+                cornerRadius: isPad ? 24 : 14
             )
             .fill(
                 Color.white.opacity(0.25)
             )
             .overlay(
                 RoundedRectangle(
-                    cornerRadius: 25
+                    cornerRadius: isPad ? 24 : 14
                 )
                 .stroke(
                     Color.white.opacity(0.7),
@@ -315,12 +320,12 @@ struct CustomizePhotoView: View {
                 )
             )
         )
-        .padding(.leading, 55)
+        .padding(.leading, isPad ? 40 : 16)
     }
 
     // MARK: - Stickers
 
-    private var stickerGrid: some View {
+    private func stickerGrid(isPad: Bool) -> some View {
 
         let stickers = [
             "🌸",
@@ -340,13 +345,13 @@ struct CustomizePhotoView: View {
             "🎩"
         ]
 
+        let columns = isPad
+            ? [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]
+            : [GridItem(.flexible()), GridItem(.flexible())]
+
         return LazyVGrid(
-            columns: [
-                GridItem(.flexible()),
-                GridItem(.flexible()),
-                GridItem(.flexible())
-            ],
-            spacing: 12
+            columns: columns,
+            spacing: isPad ? 10 : 6
         ) {
 
             ForEach(
@@ -361,14 +366,14 @@ struct CustomizePhotoView: View {
                 } label: {
 
                     Text(sticker)
-                        .font(.system(size: 37))
+                        .font(.system(size: isPad ? 32 : 20))
                         .frame(
                             maxWidth: .infinity,
-                            minHeight: 62
+                            minHeight: isPad ? 54 : 34
                         )
                         .background(
                             RoundedRectangle(
-                                cornerRadius: 8
+                                cornerRadius: isPad ? 8 : 6
                             )
                             .fill(
                                 Color.blue.opacity(0.12)
@@ -382,15 +387,16 @@ struct CustomizePhotoView: View {
 
     // MARK: - Photo Area
 
-    private var photoArea: some View {
+    private func photoArea(isPad: Bool) -> some View {
 
-        VStack(spacing: 20) {
+        VStack(spacing: isPad ? 16 : 8) {
 
-            HStack(spacing: 22) {
+            HStack(spacing: isPad ? 18 : 8) {
 
                 // Previous - leading side of the photo
                 navigationButton(
-                    systemName: "chevron.left"
+                    systemName: "chevron.left",
+                    isPad: isPad
                 ) {
                     previousPhoto()
                 }
@@ -410,20 +416,21 @@ struct CustomizePhotoView: View {
                     )
                     .clipShape(
                         RoundedRectangle(
-                            cornerRadius: 24
+                            cornerRadius: isPad ? 22 : 14
                         )
                     )
                     .shadow(
                         color: .black.opacity(0.22),
-                        radius: 12,
-                        y: 8
+                        radius: isPad ? 12 : 6,
+                        y: isPad ? 8 : 4
                     )
                     .frame(maxWidth: .infinity)
                 }
 
                 // Next - trailing side of the photo
                 navigationButton(
-                    systemName: "chevron.right"
+                    systemName: "chevron.right",
+                    isPad: isPad
                 ) {
                     nextPhoto()
                 }
@@ -432,7 +439,7 @@ struct CustomizePhotoView: View {
 
             // MARK: Dots
 
-            HStack(spacing: 14) {
+            HStack(spacing: isPad ? 12 : 8) {
 
                 ForEach(
                     pages.indices,
@@ -446,12 +453,12 @@ struct CustomizePhotoView: View {
                             : Color.gray.opacity(0.55)
                         )
                         .frame(
-                            width: index == currentIndex
-                            ? 13
-                            : 11,
-                            height: index == currentIndex
-                            ? 13
-                            : 11
+                            width: isPad
+                                ? (index == currentIndex ? 12 : 10)
+                                : (index == currentIndex ? 8 : 6),
+                            height: isPad
+                                ? (index == currentIndex ? 12 : 10)
+                                : (index == currentIndex ? 8 : 6)
                         )
                         .animation(
                             .easeInOut(duration: 0.2),
@@ -466,6 +473,7 @@ struct CustomizePhotoView: View {
 
     private func navigationButton(
         systemName: String,
+        isPad: Bool,
         action: @escaping () -> Void
     ) -> some View {
 
@@ -474,14 +482,14 @@ struct CustomizePhotoView: View {
             Image(systemName: systemName)
                 .font(
                     .system(
-                        size: 30,
-                        weight: .medium
+                        size: isPad ? 24 : 16,
+                        weight: .semibold
                     )
                 )
                 .foregroundStyle(.black)
                 .frame(
-                    width: 70,
-                    height: 70
+                    width: isPad ? 54 : 36,
+                    height: isPad ? 54 : 36
                 )
                 .background(
                     Circle()
@@ -491,8 +499,8 @@ struct CustomizePhotoView: View {
                 )
                 .shadow(
                     color: .black.opacity(0.12),
-                    radius: 8,
-                    y: 4
+                    radius: isPad ? 8 : 4,
+                    y: isPad ? 4 : 2
                 )
         }
         .buttonStyle(.plain)

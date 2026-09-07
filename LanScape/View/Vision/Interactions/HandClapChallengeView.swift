@@ -10,7 +10,7 @@ import SwiftUI
 struct HandClapChallengeView: View {
     @ObservedObject var audioMonitor: AudioLevelMonitor
     var visionHandTracker: VisionHandTrackingService? = nil
-    let targetClaps: Int = 20
+    let targetClaps: Int = 10
     let timeLimit: Int = 20
     
     var onClapTriggered: (() -> Void)? = nil
@@ -41,44 +41,41 @@ struct HandClapChallengeView: View {
             VStack(spacing: isPad ? 14 : 7) {
                 Spacer()
                 
-                // 1. Frosted Dark Studio Timer Badge
+                // 1. Clean White Frosted Timer Badge
                 HStack(spacing: 6) {
                     Image(systemName: "stopwatch.fill")
                         .font(.system(size: isPad ? 14 : 11, weight: .bold))
-                        .foregroundColor(Color(hex: "38BDF8"))
+                        .foregroundColor(secondsRemaining <= 3 ? Color(red: 0.85, green: 0.15, blue: 0.2) : Color(red: 0.15, green: 0.35, blue: 0.8))
                     Text("\(secondsRemaining)s")
-                        .font(.system(size: isPad ? 17 : 12.5, weight: .black, design: .rounded))
-                        .foregroundColor(.white)
+                        .font(.system(size: isPad ? 17 : 12.5, weight: .bold, design: .rounded))
+                        .foregroundColor(.black)
                 }
                 .padding(.horizontal, isPad ? 18 : 12)
                 .padding(.vertical, isPad ? 6 : 4)
-                .background(Color(hex: "0B0F19").opacity(0.88))
+                .background(Color.white.opacity(0.92))
                 .clipShape(Capsule())
-                .overlay(
-                    Capsule().stroke(Color(hex: "38BDF8").opacity(0.4), lineWidth: 1)
-                )
-                .shadow(color: Color.black.opacity(0.4), radius: 8, y: 3)
+                .shadow(color: Color.black.opacity(0.18), radius: 8, y: 3)
                 
                 // 2. Action Prompt
                 Text("AYO TEPUK TANGAN BERSAMA!")
-                    .font(.system(size: isPad ? 24 : 15.5, weight: .black, design: .rounded))
+                    .font(.system(size: isPad ? 26 : 16.5, weight: .bold, design: .rounded))
                     .foregroundColor(.white)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 24)
-                    .shadow(color: .black.opacity(0.8), radius: 6, y: 3)
+                    .shadow(color: .black.opacity(0.7), radius: 6, y: 2)
                 
-                // 3. Central Clapping Display (SF Symbol, Non-Touch)
+                // 3. Central Clapping Display (Clean White Photobooth Orb)
                 ZStack {
                     // Outer progress track
                     Circle()
-                        .stroke(Color.white.opacity(0.12), lineWidth: isPad ? 7 : 5)
+                        .stroke(Color.white.opacity(0.3), lineWidth: isPad ? 7 : 5)
                         .frame(width: circleSize + (isPad ? 12 : 8), height: circleSize + (isPad ? 12 : 8))
                     
                     Circle()
                         .trim(from: 0, to: progress)
                         .stroke(
                             LinearGradient(
-                                colors: [Color(hex: "38BDF8"), Color(hex: "34D399")],
+                                colors: [Color(red: 0.15, green: 0.45, blue: 0.95), Color(red: 0.1, green: 0.8, blue: 0.5)],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             ),
@@ -88,33 +85,21 @@ struct HandClapChallengeView: View {
                         .rotationEffect(.degrees(-90))
                         .animation(.easeOut(duration: 0.15), value: progress)
                     
-                    // Center studio orb
+                    // Center clean white orb
                     Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    Color(hex: "1E293B").opacity(0.92),
-                                    Color(hex: "0F172A").opacity(0.96)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
+                        .fill(Color.white.opacity(0.94))
                         .frame(width: circleSize - (isPad ? 8 : 6), height: circleSize - (isPad ? 8 : 6))
-                        .overlay(
-                            Circle().stroke(Color(hex: "38BDF8").opacity(0.4), lineWidth: 1.5)
-                        )
-                        .shadow(color: Color.black.opacity(0.5), radius: 14, y: 6)
+                        .shadow(color: Color.black.opacity(0.15), radius: 12, y: 5)
                     
                     VStack(spacing: isPad ? 6 : 4) {
                         Image(systemName: "hands.clap.fill")
                             .font(.system(size: isPad ? 46 : 28))
-                            .foregroundColor(Color(hex: "38BDF8"))
+                            .foregroundColor(Color(red: 0.15, green: 0.35, blue: 0.8))
                             .scaleEffect(bounceScale)
                         
                         Text("\(currentClaps)/\(targetClaps)")
-                            .font(.system(size: isPad ? 20 : 13, weight: .heavy, design: .rounded))
-                            .foregroundColor(.white)
+                            .font(.system(size: isPad ? 20 : 13, weight: .bold, design: .rounded))
+                            .foregroundColor(.black)
                             .tracking(0.6)
                     }
                 }
@@ -123,17 +108,17 @@ struct HandClapChallengeView: View {
                 
                 // 4. Progress Feedback
                 VStack(spacing: isPad ? 7 : 4) {
-                    Text(currentClaps >= targetClaps ? "TEPUK TANGAN LENGKAP 20x!" : "LETSGOOO...!!!")
-                        .font(.system(size: isPad ? 20 : 13.5, weight: .black, design: .rounded))
-                        .foregroundColor(Color(hex: "38BDF8"))
+                    Text(currentClaps >= targetClaps ? "TEPUK TANGAN LENGKAP 10x!" : "LETSGOOO...!!!")
+                        .font(.system(size: isPad ? 20 : 13.5, weight: .bold, design: .rounded))
+                        .foregroundColor(.white)
                         .tracking(0.6)
-                        .shadow(color: .black.opacity(0.8), radius: 4)
+                        .shadow(color: .black.opacity(0.7), radius: 4)
                     
                     GeometryReader { geo in
                         ZStack(alignment: .leading) {
-                            Capsule().fill(Color(hex: "0B0F19").opacity(0.85))
+                            Capsule().fill(Color.white.opacity(0.35))
                             Capsule()
-                                .fill(LinearGradient(colors: [Color(hex: "38BDF8"), Color(hex: "34D399")], startPoint: .leading, endPoint: .trailing))
+                                .fill(LinearGradient(colors: [Color(red: 0.15, green: 0.45, blue: 0.95), Color(red: 0.1, green: 0.8, blue: 0.5)], startPoint: .leading, endPoint: .trailing))
                                 .frame(width: max(0, geo.size.width * min(1.0, progress)))
                                 .animation(.easeOut(duration: 0.15), value: progress)
                         }
@@ -141,22 +126,20 @@ struct HandClapChallengeView: View {
                     .frame(width: isPad ? 280 : 190, height: isPad ? 10 : 7)
                 }
                 
-                // 5. Helper Pill
+                // 5. Clean White Helper Pill
                 HStack(spacing: 6) {
                     Image(systemName: "hands.clap.fill")
-                        .font(.system(size: isPad ? 12 : 9, weight: .bold))
-                        .foregroundColor(Color(hex: "38BDF8"))
-                    Text("Tepuk tangan di depan kamera sampai 20 kali (\(currentClaps)/\(targetClaps))")
-                        .font(.system(size: isPad ? 12 : 9, weight: .semibold))
+                        .font(.system(size: isPad ? 13 : 10, weight: .bold))
+                        .foregroundColor(Color(red: 0.15, green: 0.35, blue: 0.8))
+                    Text("Tepuk tangan di depan kamera 10 kali (\(currentClaps)/\(targetClaps))")
+                        .font(.system(size: isPad ? 13 : 10, weight: .semibold))
+                        .foregroundColor(.black)
                 }
-                .foregroundColor(.white)
                 .padding(.horizontal, isPad ? 18 : 12)
-                .padding(.vertical, isPad ? 6 : 4)
-                .background(Color(hex: "0B0F19").opacity(0.88))
+                .padding(.vertical, isPad ? 7 : 4.5)
+                .background(Color.white.opacity(0.92))
                 .clipShape(Capsule())
-                .overlay(
-                    Capsule().stroke(Color.white.opacity(0.12), lineWidth: 1)
-                )
+                .shadow(color: Color.black.opacity(0.18), radius: 6, y: 2)
                 .padding(.top, isPad ? 3 : 1)
                 
                 Spacer()

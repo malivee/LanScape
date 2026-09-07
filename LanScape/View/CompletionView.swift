@@ -71,34 +71,31 @@ struct CompletionView: View {
 
             let width = geometry.size.width
             let height = geometry.size.height
-            let isPad = UIDevice.current.userInterfaceIdiom == .pad || width >= 900
+            let isPad = UIDevice.current.userInterfaceIdiom == .pad || height >= 550
 
-            let horizontalPadding: CGFloat = isPad ? 42 : 24
-            let titleHeight: CGFloat = isPad ? 70 : 54
-            let bottomButtonHeight: CGFloat = isPad ? 72 : 58
-            let bottomAreaHeight: CGFloat = isPad ? 105 : 82
+            let horizontalPadding: CGFloat = isPad ? 42 : 20
+            let titleHeight: CGFloat = isPad ? 60 : 38
+            let bottomButtonHeight: CGFloat = isPad ? 64 : 42
+            let bottomAreaHeight: CGFloat = isPad ? 90 : 54
 
-            let contentTop = max(
-                isPad ? 135 : 100,
-                titleHeight + 42
-            )
+            let contentTop: CGFloat = isPad ? 104 : 56
+            let contentBottom: CGFloat = height - bottomAreaHeight - (isPad ? 12 : 6)
 
-            let contentBottom = height - bottomAreaHeight - 18
-
-            let photoAreaHeight = max(
-                300,
+            let maxPhotoH: CGFloat = isPad ? 640 : 230
+            let photoAreaHeight: CGFloat = max(
+                140.0,
                 min(
-                    680,
+                    maxPhotoH,
                     contentBottom - contentTop
                 )
             )
 
             let stripWidth = min(
-                isPad ? 265 : 190,
-                width * 0.22
+                isPad ? 250 : 150,
+                width * 0.20
             )
 
-            let gridGap: CGFloat = isPad ? 24 : 14
+            let gridGap: CGFloat = isPad ? 20 : 10
 
             let availableGridWidth = width
                 - (horizontalPadding * 2)
@@ -106,28 +103,31 @@ struct CompletionView: View {
                 - gridGap
 
             let cellWidth = max(
-                130,
+                90,
                 min(
-                    isPad ? 390 : 300,
+                    isPad ? 380 : 260,
                     (availableGridWidth - gridGap) / 2
                 )
             )
 
             let cellHeight = max(
-                95,
+                40,
                 (photoAreaHeight - (gridGap * 2)) / 3
             )
 
-            let shareButtonWidth: CGFloat = isReadOnly ? (isPad ? 928 : 776) : (isPad ? 300 : 250)
+            let bottomBtnWidth: CGFloat = isPad ? 280 : 170
+            let shareButtonWidth: CGFloat = min(
+                width - (horizontalPadding * 2),
+                isReadOnly ? (isPad ? 880 : 460) : bottomBtnWidth
+            )
 
             ZStack {
 
-                // MARK: Background - Premium Dark Studio Canvas
+                // MARK: Background - Light Pastel Sky Blue
                 LinearGradient(
                     colors: [
-                        Color(hex: "0B0F19"),
-                        Color(hex: "111827"),
-                        Color(hex: "0F172A")
+                        Color(red: 0.84, green: 0.92, blue: 1.00),
+                        Color(red: 0.73, green: 0.86, blue: 1.00)
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
@@ -149,38 +149,42 @@ struct CompletionView: View {
                 // MARK: Main layout
                 VStack(spacing: 0) {
 
-                    // TITLE & SESSION STATUS
-                    VStack(spacing: isPad ? 8 : 4) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "checkmark.seal.fill")
-                                .font(.system(size: isPad ? 14 : 11, weight: .bold))
-                                .foregroundColor(Color(hex: "10B981"))
-                            Text("SESI FOTO SELESAI")
-                                .font(.system(size: isPad ? 13 : 10, weight: .bold))
-                                .tracking(1.4)
-                                .foregroundColor(Color(hex: "60A5FA"))
-                        }
-                        .padding(.horizontal, isPad ? 14 : 10)
-                        .padding(.vertical, isPad ? 5 : 3.5)
-                        .background(Color(hex: "1E293B").opacity(0.9))
-                        .clipShape(Capsule())
-                        .overlay(
-                            Capsule().stroke(Color.white.opacity(0.12), lineWidth: 1)
-                        )
-                        
-                        Text("Semua Momen Tersimpan Rapi!")
-                            .font(.system(size: isPad ? 36 : 24, weight: .black, design: .rounded))
-                            .foregroundColor(.white)
-                            .tracking(0.4)
-                        
-                        Text("\(fivePhotos.count) Foto Kompak • \(formattedDuration) • Tersimpan di Galeri")
-                            .font(.system(size: isPad ? 14 : 11, weight: .medium))
-                            .foregroundColor(Color(hex: "94A3B8"))
-                    }
-                    .frame(height: titleHeight + (isPad ? 24 : 16), alignment: .center)
-                    .padding(.top, isPad ? 22 : 12)
+                    // TOP NAVIGATION BAR & TITLE
+                    ZStack {
+                        if isReadOnly {
+                            HStack {
+                                Button {
+                                    dismiss()
+                                } label: {
+                                    Image(systemName: "xmark")
+                                        .font(.system(size: isPad ? 20 : 15, weight: .bold))
+                                        .foregroundStyle(.black)
+                                        .frame(width: isPad ? 48 : 34, height: isPad ? 48 : 34)
+                                        .background(Circle().fill(.white.opacity(0.85)))
+                                        .shadow(color: .black.opacity(0.12), radius: 4)
+                                }
+                                .buttonStyle(.plain)
 
-                    Spacer(minLength: 8)
+                                Spacer()
+                            }
+                            .padding(.horizontal, horizontalPadding)
+                        }
+
+                        // TITLE
+                        VStack(spacing: isPad ? 4 : 2) {
+                            Text("Tersimpan di galeri!")
+                                .font(.system(size: isPad ? 32 : 19, weight: .bold))
+                                .foregroundStyle(.black)
+                            
+                            Text("\(fivePhotos.count) Foto Kompak • \(formattedDuration)")
+                                .font(.system(size: isPad ? 14 : 11, weight: .medium))
+                                .foregroundColor(Color.black.opacity(0.6))
+                        }
+                    }
+                    .frame(height: titleHeight + (isPad ? 12 : 6), alignment: .center)
+                    .padding(.top, isPad ? 16 : 8)
+
+                    Spacer(minLength: isPad ? 8 : 4)
 
                     // PHOTO AREA
                     HStack(alignment: .top, spacing: gridGap) {
@@ -214,41 +218,26 @@ struct CompletionView: View {
                                 completionPhoto(index: 4, width: cellWidth, height: cellHeight)
 
 
-                                // 6th Slot: Designed Photobooth Keepsake Card
+                                // 6th Slot: Clean White Postcard Card
                                 ZStack {
                                     RoundedRectangle(cornerRadius: isPad ? 12 : 8)
-                                        .fill(Color(hex: "1E293B").opacity(0.85))
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: isPad ? 12 : 8)
-                                                .stroke(
-                                                    LinearGradient(
-                                                        colors: [Color(hex: "38BDF8").opacity(0.5), Color(hex: "818CF8").opacity(0.2)],
-                                                        startPoint: .topLeading,
-                                                        endPoint: .bottomTrailing
-                                                    ),
-                                                    lineWidth: 1.5
-                                                )
-                                        )
+                                        .fill(Color.white)
+                                        .shadow(color: .black.opacity(0.12), radius: isPad ? 6 : 3, y: isPad ? 3 : 2)
                                     
-                                    VStack(spacing: isPad ? 6 : 4) {
-                                        Image(systemName: "sparkles")
-                                            .font(.system(size: isPad ? 26 : 18, weight: .bold))
-                                            .foregroundColor(Color(hex: "38BDF8"))
+                                    VStack(spacing: isPad ? 4 : 2) {
+                                        Image(systemName: "heart.fill")
+                                            .font(.system(size: isPad ? 22 : 14, weight: .bold))
+                                            .foregroundColor(Color(red: 0.20, green: 0.39, blue: 0.70))
                                         
-                                        Text("LanScape Studio")
-                                            .font(.system(size: isPad ? 16 : 12, weight: .bold))
-                                            .foregroundColor(.white)
+                                        Text("LanScape")
+                                            .font(.system(size: isPad ? 15 : 10.5, weight: .bold))
+                                            .foregroundColor(.black)
                                         
-                                        Text("5 Momen Kompak Berhasil")
-                                            .font(.system(size: isPad ? 12 : 9.5, weight: .medium))
-                                            .foregroundColor(Color(hex: "94A3B8"))
-                                        
-                                        Text("Ketuk foto untuk layar penuh")
-                                            .font(.system(size: isPad ? 10 : 8, weight: .regular))
-                                            .foregroundColor(Color(hex: "64748B"))
-                                            .padding(.top, 2)
+                                        Text("Momen Berhasil Disimpan")
+                                            .font(.system(size: isPad ? 11 : 8, weight: .medium))
+                                            .foregroundColor(Color.black.opacity(0.6))
                                     }
-                                    .padding(8)
+                                    .padding(isPad ? 6 : 3)
                                 }
                                 .frame(
                                     width: cellWidth,
@@ -268,13 +257,13 @@ struct CompletionView: View {
                     Spacer(minLength: 0)
 
                     // BOTTOM BUTTONS AREA
-                    HStack(spacing: isPad ? 28 : 18) {
+                    HStack(spacing: isPad ? 24 : 12) {
 
                         if !isReadOnly {
                             CompletionButton(
                                 title: "Pose Ulang",
                                 icon: "arrow.counterclockwise",
-                                width: isPad ? 300 : 250,
+                                width: bottomBtnWidth,
                                 height: bottomButtonHeight
                             ) {
                                 showShareMenu = false
@@ -288,7 +277,7 @@ struct CompletionView: View {
                             CompletionButton(
                                 title: "Menu Utama",
                                 icon: "house.fill",
-                                width: isPad ? 300 : 250,
+                                width: bottomBtnWidth,
                                 height: bottomButtonHeight
                             ) {
                                 showShareMenu = false
@@ -315,6 +304,7 @@ struct CompletionView: View {
                         .overlay(alignment: .bottom) {
                             if showShareMenu {
                                 SharePopover(
+                                    isPad: isPad,
                                     onPostcard: {
                                         showShareMenu = false
                                         DispatchQueue.main.async {
@@ -329,8 +319,8 @@ struct CompletionView: View {
                                         }
                                     }
                                 )
-                                .frame(width: 370)
-                                .offset(y: -(bottomButtonHeight + 14))
+                                .frame(width: isPad ? 370 : 270)
+                                .offset(y: -(bottomButtonHeight + 10))
                                 .transition(
                                     .opacity.combined(
                                         with: .scale(scale: 0.94, anchor: .bottom)
@@ -341,7 +331,7 @@ struct CompletionView: View {
                         }
                     }
                     .frame(height: bottomAreaHeight, alignment: .bottom)
-                    .padding(.bottom, isPad ? 26 : 18)
+                    .padding(.bottom, isPad ? 22 : 12)
                 }
                 .frame(width: width, height: height)
             }
@@ -508,57 +498,58 @@ struct CompletionView: View {
 
 private struct SharePopover: View {
 
+    var isPad: Bool = false
     let onPostcard: () -> Void
     let onPhotos: () -> Void
 
     var body: some View {
         VStack(spacing: 0) {
             Button(action: onPostcard) {
-                HStack(spacing: 14) {
+                HStack(spacing: isPad ? 14 : 10) {
                     Image(systemName: "eyeglasses")
-                        .font(.system(size: 25, weight: .regular))
-                        .frame(width: 34)
+                        .font(.system(size: isPad ? 24 : 17, weight: .regular))
+                        .frame(width: isPad ? 34 : 26)
 
                     Text("Bagikan sebagai postcard")
-                        .font(.system(size: 20, weight: .regular))
+                        .font(.system(size: isPad ? 19 : 13.5, weight: .regular))
 
                     Spacer()
                 }
                 .foregroundStyle(.black)
-                .padding(.horizontal, 20)
-                .frame(maxWidth: .infinity, minHeight: 66)
+                .padding(.horizontal, isPad ? 20 : 14)
+                .frame(maxWidth: .infinity, minHeight: isPad ? 62 : 44)
             }
             .buttonStyle(.plain)
 
             Divider()
-                .padding(.horizontal, 18)
+                .padding(.horizontal, isPad ? 18 : 12)
 
             Button(action: onPhotos) {
-                HStack(spacing: 14) {
+                HStack(spacing: isPad ? 14 : 10) {
                     Image(systemName: "book")
-                        .font(.system(size: 25, weight: .regular))
-                        .frame(width: 34)
+                        .font(.system(size: isPad ? 24 : 17, weight: .regular))
+                        .frame(width: isPad ? 34 : 26)
 
                     Text("Bagikan sebagai foto")
-                        .font(.system(size: 20, weight: .regular))
+                        .font(.system(size: isPad ? 19 : 13.5, weight: .regular))
 
                     Spacer()
                 }
                 .foregroundStyle(.black)
-                .padding(.horizontal, 20)
-                .frame(maxWidth: .infinity, minHeight: 66)
+                .padding(.horizontal, isPad ? 20 : 14)
+                .frame(maxWidth: .infinity, minHeight: isPad ? 62 : 44)
             }
             .buttonStyle(.plain)
         }
         .background(
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
+            RoundedRectangle(cornerRadius: isPad ? 24 : 16, style: .continuous)
                 .fill(Color.white)
         )
         .shadow(
             color: .black.opacity(0.22),
-            radius: 14,
+            radius: isPad ? 14 : 8,
             x: 0,
-            y: 7
+            y: isPad ? 7 : 4
         )
     }
 }

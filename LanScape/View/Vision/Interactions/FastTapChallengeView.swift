@@ -102,18 +102,16 @@ struct FastTapChallengeView: View {
                         HStack(spacing: 6) {
                             Image(systemName: "stopwatch.fill")
                                 .font(.system(size: isPad ? 14 : 11, weight: .bold))
-                                .foregroundColor(Color(hex: "EF4444"))
+                                .foregroundColor(secondsRemaining <= 3 ? Color(red: 0.85, green: 0.15, blue: 0.2) : Color(red: 0.15, green: 0.35, blue: 0.8))
                             Text("\(secondsRemaining)s")
-                                .font(.system(size: isPad ? 16 : 12, weight: .black, design: .rounded))
-                                .foregroundColor(.white)
+                                .font(.system(size: isPad ? 16 : 12, weight: .bold, design: .rounded))
+                                .foregroundColor(.black)
                         }
                         .padding(.horizontal, isPad ? 14 : 10)
                         .padding(.vertical, isPad ? 6 : 4)
-                        .background(Color(hex: "111827").opacity(0.85))
+                        .background(Color.white.opacity(0.92))
                         .clipShape(Capsule())
-                        .overlay(
-                            Capsule().stroke(Color.white.opacity(0.15), lineWidth: 1)
-                        )
+                        .shadow(color: Color.black.opacity(0.18), radius: 6, y: 2)
                         
                         Text("HANCURKAN BOLA DENGAN TANGAN!")
                             .font(.system(size: isPad ? 26 : 16, weight: .black, design: .rounded))
@@ -176,7 +174,7 @@ struct FastTapChallengeView: View {
                                 LinearGradient(colors: [Color(hex: "EF4444"), Color(hex: "F59E0B")], startPoint: .topLeading, endPoint: .bottomTrailing) :
                                 (visionHandTracker.isHandAtCenter ?
                                  LinearGradient(colors: [Color(hex: "10B981"), Color(hex: "059669")], startPoint: .topLeading, endPoint: .bottomTrailing) :
-                                 LinearGradient(colors: [Color(hex: "1E293B").opacity(0.95), Color(hex: "0F172A").opacity(0.98)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                                 LinearGradient(colors: [Color(hex: "3B82F6"), Color(hex: "1D4ED8")], startPoint: .topLeading, endPoint: .bottomTrailing))
                             )
                             .frame(width: circleSize - (isPad ? 8 : 6), height: circleSize - (isPad ? 8 : 6))
                             .scaleEffect(bounceScale)
@@ -211,15 +209,16 @@ struct FastTapChallengeView: View {
                         HStack(spacing: 6) {
                             Image(systemName: "target")
                                 .font(.system(size: isPad ? 13 : 9, weight: .bold))
-                                .foregroundColor(Color(hex: "38BDF8"))
+                                .foregroundColor(Color(red: 0.15, green: 0.35, blue: 0.8))
                             Text("Arahkan tangan langsung ke target di tengah (\(currentTaps)/\(targetTaps))")
                                 .font(.system(size: isPad ? 13 : 9.5, weight: .semibold))
+                                .foregroundColor(.black)
                         }
-                        .foregroundColor(.white)
                         .padding(.horizontal, isPad ? 20 : 14)
                         .padding(.vertical, isPad ? 6 : 4)
-                        .background(Color(hex: "111827").opacity(0.85))
+                        .background(Color.white.opacity(0.92))
                         .clipShape(Capsule())
+                        .shadow(color: Color.black.opacity(0.18), radius: 6, y: 2)
                     }
                     .padding(.bottom, isPad ? 24 : 10)
                 }

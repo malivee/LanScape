@@ -39,20 +39,22 @@ struct FacePenaltyLiveOverlay: View {
                     )
                 }
                 
-                // Funny status indicator badge at top-center under header
+                // Funny status indicator badge at top-center comfortably below the header progress bar
+                let isPad = UIDevice.current.userInterfaceIdiom == .pad || geometry.size.height > 550
                 VStack {
-                    HStack(spacing: 8) {
+                    HStack(spacing: isPad ? 8 : 6) {
                         Text(penaltyService.currentPenaltySticker.rawValue)
+                            .font(.system(size: isPad ? 18 : 14))
                         Text("HUKUMAN AKTIF: \(penaltyService.currentPenaltySticker.title)")
-                            .font(.system(size: 16, weight: .black, design: .rounded))
+                            .font(.system(size: isPad ? 16 : 12, weight: .black, design: .rounded))
                     }
                     .foregroundColor(.white)
-                    .padding(.horizontal, 18)
-                    .padding(.vertical, 7)
+                    .padding(.horizontal, isPad ? 18 : 14)
+                    .padding(.vertical, isPad ? 7 : 5)
                     .background(Color.red.opacity(0.85))
                     .clipShape(Capsule())
                     .shadow(color: .black.opacity(0.3), radius: 6)
-                    .padding(.top, 74)
+                    .padding(.top, isPad ? 122 : 84)
                     
                     Spacer()
                 }

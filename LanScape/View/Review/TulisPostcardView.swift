@@ -52,6 +52,11 @@ struct TulisPostcardView: View {
     
     var body: some View {
         GeometryReader { geometry in
+            let isPad = UIDevice.current.userInterfaceIdiom == .pad || geometry.size.height >= 550
+            let screenW = geometry.size.width
+            let navBtnSize: CGFloat = isPad ? 52 : 36
+            let stripWidth: CGFloat = isPad ? min(280, screenW * 0.22) : min(160, screenW * 0.20)
+
             ZStack {
                 LinearGradient(
                     colors: [
@@ -72,9 +77,9 @@ struct TulisPostcardView: View {
                             dismiss()
                         } label: {
                             Image(systemName: "chevron.left")
-                                .font(.system(size: 27, weight: .medium))
+                                .font(.system(size: isPad ? 22 : 16, weight: .semibold))
                                 .foregroundStyle(.black)
-                                .frame(width: 68, height: 68)
+                                .frame(width: navBtnSize, height: navBtnSize)
                                 .background(
                                     Circle()
                                         .fill(.white.opacity(0.42))
@@ -83,11 +88,11 @@ struct TulisPostcardView: View {
 
                         Spacer()
 
-                        VStack(spacing: 4) {
+                        VStack(spacing: 2) {
                             Text("Tulis Postcard")
                                 .font(
                                     .system(
-                                        size: min(42, geometry.size.width * 0.034),
+                                        size: isPad ? 32 : 18,
                                         weight: .bold
                                     )
                                 )
@@ -96,7 +101,7 @@ struct TulisPostcardView: View {
                             Text("Tulis pesan bermakna untuk orang tersayang")
                                 .font(
                                     .system(
-                                        size: min(24, geometry.size.width * 0.019),
+                                        size: isPad ? 16 : 11,
                                         weight: .medium
                                     )
                                 )
@@ -109,33 +114,32 @@ struct TulisPostcardView: View {
                             showHelp = true
                         } label: {
                             Image(systemName: "questionmark")
-                                .font(.system(size: 25, weight: .medium))
+                                .font(.system(size: isPad ? 20 : 15, weight: .semibold))
                                 .foregroundStyle(.black)
-                                .frame(width: 68, height: 68)
+                                .frame(width: navBtnSize, height: navBtnSize)
                                 .background(
                                     Circle()
                                         .fill(.white.opacity(0.42))
                                 )
                         }
                     }
-                    .padding(.horizontal, 42)
-                    .padding(.top, 32)
+                    .padding(.horizontal, isPad ? 42 : 20)
+                    .padding(.top, isPad ? 20 : 8)
 
-                    Spacer()
-                        .frame(height: 42)
+                    Spacer(minLength: isPad ? 12 : 6)
 
                     // MARK: Main Content
 
                     HStack(
                         alignment: .top,
-                        spacing: 44
+                        spacing: isPad ? 32 : 14
                     ) {
 
                         // MARK: Photo Strip Replacement
                         PhotoStripView(images: collageImages)
-                            .frame(width: geometry.size.width * 0.235)
+                            .frame(width: stripWidth)
 
-                        VStack(spacing: 38) {
+                        VStack(spacing: isPad ? 18 : 8) {
 
                             PostcardWritingArea(
                                 canvasIsEmpty: $canvasIsEmpty,
@@ -143,7 +147,8 @@ struct TulisPostcardView: View {
                                 canvasSize: $canvasSize,
                                 generatedStamp: $generatedStamp,
                                 isGeneratingStamp: $isGeneratingStamp,
-                                selectedTool: $selectedTool
+                                selectedTool: $selectedTool,
+                                isPad: isPad
                             )
                             .frame(
                                 maxWidth: .infinity,
@@ -153,19 +158,16 @@ struct TulisPostcardView: View {
                             Button {
                                 generateStampAndSend()
                             } label: {
-                                HStack(spacing: 12) {
+                                HStack(spacing: 10) {
                                     if isGeneratingStamp || isSending {
                                         ProgressView()
                                             .tint(.white)
-                                            .scaleEffect(1.1)
+                                            .scaleEffect(isPad ? 1.0 : 0.85)
 
                                         Text(isSending ? "Mengirim..." : "Membuat Postcard...")
                                             .font(
                                                 .system(
-                                                    size: min(
-                                                        28,
-                                                        geometry.size.width * 0.022
-                                                    ),
+                                                    size: isPad ? 20 : 14,
                                                     weight: .semibold
                                                 )
                                             )
@@ -173,10 +175,7 @@ struct TulisPostcardView: View {
                                         Text("Kirim Postcard")
                                             .font(
                                                 .system(
-                                                    size: min(
-                                                        30,
-                                                        geometry.size.width * 0.024
-                                                    ),
+                                                    size: isPad ? 22 : 15,
                                                     weight: .semibold
                                                 )
                                             )
@@ -184,10 +183,7 @@ struct TulisPostcardView: View {
                                         Image(systemName: "paperplane.fill")
                                             .font(
                                                 .system(
-                                                    size: min(
-                                                        29,
-                                                        geometry.size.width * 0.023
-                                                    ),
+                                                    size: isPad ? 20 : 14,
                                                     weight: .medium
                                                 )
                                             )
@@ -196,11 +192,11 @@ struct TulisPostcardView: View {
                                 .foregroundStyle(.white)
                                 .frame(
                                     maxWidth: .infinity,
-                                    minHeight: 68
+                                    minHeight: isPad ? 58 : 42
                                 )
                                 .background(
                                     RoundedRectangle(
-                                        cornerRadius: 23,
+                                        cornerRadius: isPad ? 20 : 14,
                                         style: .continuous
                                     )
                                     .fill(
@@ -225,8 +221,8 @@ struct TulisPostcardView: View {
                             maxHeight: .infinity
                         )
                     }
-                    .padding(.horizontal, 95)
-                    .padding(.bottom, 58)
+                    .padding(.horizontal, isPad ? 60 : 20)
+                    .padding(.bottom, isPad ? 24 : 8)
                 }
 
                 if isSending {
@@ -394,6 +390,7 @@ struct PostcardWritingArea: View {
     @Binding var generatedStamp: UIImage?
     @Binding var isGeneratingStamp: Bool
     @Binding var selectedTool: PostcardDrawingTool
+    var isPad: Bool = false
 
     var body: some View {
         GeometryReader { geometry in
@@ -402,15 +399,15 @@ struct PostcardWritingArea: View {
                 // MARK: White Postcard
 
                 RoundedRectangle(
-                    cornerRadius: 16,
+                    cornerRadius: isPad ? 16 : 12,
                     style: .continuous
                 )
                 .fill(.white)
                 .shadow(
                     color: .black.opacity(0.15),
-                    radius: 9,
+                    radius: isPad ? 9 : 5,
                     x: 0,
-                    y: 5
+                    y: isPad ? 5 : 3
                 )
 
                 // MARK: PencilKit Canvas
@@ -423,7 +420,7 @@ struct PostcardWritingArea: View {
                                 Text("Tulis pesan di sini")
                                     .font(
                                         .system(
-                                            size: 23,
+                                            size: isPad ? 22 : 14,
                                             weight: .regular
                                         )
                                     )
@@ -437,8 +434,8 @@ struct PostcardWritingArea: View {
 
                             Spacer()
                         }
-                        .padding(.top, 30)
-                        .padding(.leading, 30)
+                        .padding(.top, isPad ? 24 : 12)
+                        .padding(.leading, isPad ? 24 : 12)
                         .allowsHitTesting(false)
                     }
 
@@ -451,7 +448,7 @@ struct PostcardWritingArea: View {
                 }
                 .clipShape(
                     RoundedRectangle(
-                        cornerRadius: 16,
+                        cornerRadius: isPad ? 16 : 12,
                         style: .continuous
                     )
                 )
@@ -464,13 +461,14 @@ struct PostcardWritingArea: View {
 
                         StampView(
                             image: generatedStamp,
-                            isGenerating: isGeneratingStamp
+                            isGenerating: isGeneratingStamp,
+                            isPad: isPad
                         )
                     }
 
                     Spacer()
                 }
-                .padding(28)
+                .padding(isPad ? 20 : 10)
                 .allowsHitTesting(false)
 
                 // MARK: PencilKit Tools
@@ -482,12 +480,13 @@ struct PostcardWritingArea: View {
                         Spacer()
 
                         PencilKitToolbar(
-                            selectedTool: $selectedTool
+                            selectedTool: $selectedTool,
+                            isPad: isPad
                         )
                     }
                 }
-                .padding(.trailing, 22)
-                .padding(.bottom, 24)
+                .padding(.trailing, isPad ? 18 : 10)
+                .padding(.bottom, isPad ? 18 : 10)
             }
             .onAppear {
                 canvasSize = geometry.size
@@ -504,39 +503,42 @@ struct PostcardWritingArea: View {
 struct PencilKitToolbar: View {
 
     @Binding var selectedTool: PostcardDrawingTool
+    var isPad: Bool = false
 
     var body: some View {
         VStack(spacing: 0) {
 
             ToolButton(
                 systemName: "pencil",
-                isSelected: selectedTool == .pencil
+                isSelected: selectedTool == .pencil,
+                isPad: isPad
             ) {
                 selectedTool = .pencil
             }
 
             Divider()
-                .frame(width: 34)
+                .frame(width: isPad ? 32 : 22)
                 .opacity(0.25)
 
             ToolButton(
                 systemName: "eraser",
-                isSelected: selectedTool == .eraser
+                isSelected: selectedTool == .eraser,
+                isPad: isPad
             ) {
                 selectedTool = .eraser
             }
         }
-        .padding(7)
+        .padding(isPad ? 6 : 4)
         .background(
             RoundedRectangle(
-                cornerRadius: 18,
+                cornerRadius: isPad ? 18 : 12,
                 style: .continuous
             )
             .fill(.white.opacity(0.96))
         )
         .overlay(
             RoundedRectangle(
-                cornerRadius: 18,
+                cornerRadius: isPad ? 18 : 12,
                 style: .continuous
             )
             .stroke(
@@ -546,7 +548,7 @@ struct PencilKitToolbar: View {
         )
         .shadow(
             color: .black.opacity(0.16),
-            radius: 8,
+            radius: isPad ? 8 : 4,
             x: 0,
             y: 3
         )
@@ -557,6 +559,7 @@ struct ToolButton: View {
 
     let systemName: String
     let isSelected: Bool
+    var isPad: Bool = false
     let action: () -> Void
 
     var body: some View {
@@ -564,7 +567,7 @@ struct ToolButton: View {
             Image(systemName: systemName)
                 .font(
                     .system(
-                        size: 22,
+                        size: isPad ? 20 : 14,
                         weight: .medium
                     )
                 )
@@ -572,8 +575,8 @@ struct ToolButton: View {
                     isSelected ? .white : .black
                 )
                 .frame(
-                    width: 50,
-                    height: 50
+                    width: isPad ? 46 : 32,
+                    height: isPad ? 46 : 32
                 )
                 .background(
                     Circle()
@@ -701,8 +704,12 @@ struct StampView: View {
 
     let image: UIImage?
     let isGenerating: Bool
+    var isPad: Bool = false
 
     var body: some View {
+        let stampW: CGFloat = isPad ? 105 : 65
+        let stampH: CGFloat = isPad ? 126 : 78
+
         ZStack {
 
             if let image {
@@ -711,14 +718,14 @@ struct StampView: View {
                     .scaledToFill()
 
             } else if isGenerating {
-                VStack(spacing: 10) {
+                VStack(spacing: isPad ? 8 : 4) {
                     ProgressView()
-                        .scaleEffect(1.15)
+                        .scaleEffect(isPad ? 1.1 : 0.8)
 
                     Text("Membuat...")
                         .font(
                             .system(
-                                size: 13,
+                                size: isPad ? 13 : 9.5,
                                 weight: .medium
                             )
                         )
@@ -726,14 +733,14 @@ struct StampView: View {
                 }
 
             } else {
-                VStack(spacing: 6) {
+                VStack(spacing: isPad ? 5 : 2) {
                     Image(systemName: "seal")
-                        .font(.system(size: 27))
+                        .font(.system(size: isPad ? 24 : 16))
 
                     Text("Prangko")
                         .font(
                             .system(
-                                size: 18,
+                                size: isPad ? 16 : 10,
                                 weight: .medium
                             )
                         )
@@ -741,10 +748,11 @@ struct StampView: View {
                 .foregroundStyle(.gray)
             }
         }
-        .frame(width: 125, height: 150)
+        .frame(width: stampW, height: stampH)
         .background(
             Color.gray.opacity(0.25)
         )
+        .clipShape(RoundedRectangle(cornerRadius: isPad ? 8 : 6))
         .clipped()
     }
 }

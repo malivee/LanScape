@@ -43,33 +43,30 @@ struct FanSmokeChallengeView: View {
             VStack(spacing: isPad ? 16 : 8) {
                 Spacer()
                 
-                // 1. Timer Badge
+                // 1. Clean White Frosted Timer Badge
                 HStack(spacing: 6) {
                     Image(systemName: "stopwatch.fill")
                         .font(.system(size: isPad ? 14 : 11, weight: .bold))
-                        .foregroundColor(Color(hex: "38BDF8"))
+                        .foregroundColor(timeRemaining <= 3 ? Color(red: 0.85, green: 0.15, blue: 0.2) : Color(red: 0.15, green: 0.35, blue: 0.8))
                     Text("\(timeRemaining)s")
-                        .font(.system(size: isPad ? 17 : 12.5, weight: .black, design: .rounded))
-                        .foregroundColor(.white)
+                        .font(.system(size: isPad ? 17 : 12.5, weight: .bold, design: .rounded))
+                        .foregroundColor(.black)
                 }
                 .padding(.horizontal, isPad ? 18 : 12)
                 .padding(.vertical, isPad ? 6 : 4)
-                .background(Color(hex: "0B0F19").opacity(0.88))
+                .background(Color.white.opacity(0.92))
                 .clipShape(Capsule())
-                .overlay(
-                    Capsule().stroke(Color(hex: "38BDF8").opacity(0.4), lineWidth: 1)
-                )
-                .shadow(color: Color.black.opacity(0.4), radius: 8, y: 3)
+                .shadow(color: Color.black.opacity(0.18), radius: 6, y: 2)
                 
                 // 2. Action Prompt
                 Text("AYO KIPAS TANGAN NAIK TURUN!")
-                    .font(.system(size: isPad ? 24 : 15.5, weight: .black, design: .rounded))
+                    .font(.system(size: isPad ? 24 : 15.5, weight: .bold, design: .rounded))
                     .foregroundColor(.white)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 24)
-                    .shadow(color: .black.opacity(0.8), radius: 6, y: 3)
+                    .shadow(color: .black.opacity(0.7), radius: 6, y: 2)
                 
-                // 3. Hero Visual Display with Satay Graphic (Pure Vision Hands & Motion, Non-Touch)
+                // 3. Hero Visual Display with Satay Graphic (Clean White Photobooth Orb)
                 ZStack {
                     Circle()
                         .stroke(Color(hex: "F59E0B"), lineWidth: isPad ? 6 : 4)
@@ -78,20 +75,8 @@ struct FanSmokeChallengeView: View {
                         .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: smokeWobble)
                     
                     Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    Color(hex: "1E293B").opacity(0.92),
-                                    Color(hex: "0F172A").opacity(0.96)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .overlay(
-                            Circle().stroke(Color(hex: "F59E0B").opacity(0.4), lineWidth: 1.5)
-                        )
-                        .shadow(color: Color(hex: "F59E0B").opacity(0.5), radius: isPad ? 20 : 14)
+                        .fill(Color.white.opacity(0.94))
+                        .shadow(color: Color.black.opacity(0.15), radius: 12, y: 5)
                     
                     VStack(spacing: 8) {
                         Image(systemName: "wind")
@@ -101,8 +86,8 @@ struct FanSmokeChallengeView: View {
                             .animation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true), value: smokeWobble)
                         
                         Text("Kipas Tangan")
-                            .font(.system(size: isPad ? 13 : 9, weight: .bold, design: .rounded))
-                            .foregroundColor(Color(hex: "FEF3C7"))
+                            .font(.system(size: isPad ? 13 : 9.5, weight: .bold, design: .rounded))
+                            .foregroundColor(Color(hex: "1E293B"))
                     }
                 }
                 .frame(width: isPad ? 180 : 130, height: isPad ? 180 : 130)
@@ -111,14 +96,14 @@ struct FanSmokeChallengeView: View {
                 // 4. Progress Feedback & Cheer Banner
                 VStack(spacing: isPad ? 7 : 4) {
                     Text(progress > 0.6 ? "ASAPNYA SUDAH HILANG!" : "LETSGOOO...!!!")
-                        .font(.system(size: isPad ? 20 : 13.5, weight: .black, design: .rounded))
-                        .foregroundColor(Color(hex: "FCD34D"))
+                        .font(.system(size: isPad ? 20 : 13.5, weight: .bold, design: .rounded))
+                        .foregroundColor(.white)
                         .tracking(0.6)
-                        .shadow(color: .black.opacity(0.8), radius: 4)
+                        .shadow(color: .black.opacity(0.7), radius: 4)
                     
                     GeometryReader { geo in
                         ZStack(alignment: .leading) {
-                            Capsule().fill(Color(hex: "0B0F19").opacity(0.85))
+                            Capsule().fill(Color.white.opacity(0.35))
                             Capsule()
                                 .fill(LinearGradient(colors: [Color(hex: "F59E0B"), Color(hex: "10B981")], startPoint: .leading, endPoint: .trailing))
                                 .frame(width: max(0, geo.size.width * min(1.0, progress)))
@@ -128,23 +113,20 @@ struct FanSmokeChallengeView: View {
                     .frame(width: isPad ? 280 : 190, height: isPad ? 10 : 7)
                 }
                 
-                // 5. Helper Pill
+                // 5. Clean White Helper Pill
                 HStack(spacing: 6) {
                     Image(systemName: "wind")
                         .font(.system(size: isPad ? 12 : 9, weight: .bold))
-                        .foregroundColor(Color(hex: "FCD34D"))
+                        .foregroundColor(Color(hex: "F59E0B"))
                     Text("Gerakkan tangan naik turun seperti mengipasi sate")
                         .font(.system(size: isPad ? 12 : 9, weight: .semibold))
+                        .foregroundColor(.black)
                 }
-                .foregroundColor(.white)
                 .padding(.horizontal, isPad ? 18 : 12)
                 .padding(.vertical, isPad ? 6 : 4)
-                .background(Color(hex: "0B0F19").opacity(0.88))
+                .background(Color.white.opacity(0.92))
                 .clipShape(Capsule())
-                .overlay(
-                    Capsule().stroke(Color.white.opacity(0.12), lineWidth: 1)
-                )
-                .padding(.top, isPad ? 4 : 2)
+                .shadow(color: Color.black.opacity(0.18), radius: 6, y: 2)
                 .padding(.top, isPad ? 4 : 2)
                 
                 Spacer()

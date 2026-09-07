@@ -36,47 +36,44 @@ struct FastMoveChallengeView: View {
                     HStack(spacing: 4) {
                         Image(systemName: "timer")
                             .font(.system(size: isPad ? 13 : 10, weight: .bold))
-                            .foregroundColor(Color(hex: "EF4444"))
+                            .foregroundColor(secondsRemaining <= 3 ? Color(red: 0.85, green: 0.15, blue: 0.2) : Color(red: 0.15, green: 0.35, blue: 0.8))
                         Text("\(secondsRemaining)s")
                             .font(.system(size: isPad ? 14 : 11, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundColor(.black)
                     }
-                    .padding(.horizontal, isPad ? 12 : 9)
-                    .padding(.vertical, isPad ? 5 : 3)
-                    .background(Color(hex: "111827").opacity(0.85))
+                    .padding(.horizontal, isPad ? 14 : 10)
+                    .padding(.vertical, isPad ? 6 : 4)
+                    .background(Color.white.opacity(0.92))
                     .clipShape(Capsule())
-                    .overlay(
-                        Capsule()
-                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                    )
+                    .shadow(color: Color.black.opacity(0.18), radius: 6, y: 2)
                     
                     Text("GERAK SECEPAT MUNGKIN")
                         .font(.system(size: isPad ? 26 : 16, weight: .bold))
                         .foregroundColor(.white)
                         .tracking(0.6)
-                        .shadow(color: .black.opacity(0.8), radius: 6, y: 3)
+                        .shadow(color: .black.opacity(0.7), radius: 6, y: 2)
                     
                     Text("Goyangkan tubuh santai atau lambaikan tangan bersama")
                         .font(.system(size: isPad ? 14 : 10, weight: .medium))
-                        .foregroundColor(Color(hex: "E2E8F0"))
+                        .foregroundColor(.white.opacity(0.9))
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 24)
-                        .shadow(color: .black.opacity(0.8), radius: 4)
+                        .shadow(color: .black.opacity(0.7), radius: 4)
                 }
                 .padding(.top, isPad ? 24 : 10)
                 
                 Spacer()
                 
-                // Central Motion Meter (Pure Vision Motion, Non-Touch)
+                // Central Motion Meter (Clean White Photobooth Orb)
                 ZStack {
                     Circle()
-                        .stroke(Color.white.opacity(0.12), lineWidth: isPad ? 7 : 5)
+                        .stroke(Color.white.opacity(0.3), lineWidth: isPad ? 7 : 5)
                         .frame(width: circleSize + (isPad ? 12 : 8), height: circleSize + (isPad ? 12 : 8))
                     
                     Circle()
                         .trim(from: 0, to: progress)
                         .stroke(
-                            LinearGradient(colors: [Color(hex: "38BDF8"), Color(hex: "10B981")], startPoint: .topLeading, endPoint: .bottomTrailing),
+                            LinearGradient(colors: [Color(red: 0.15, green: 0.45, blue: 0.95), Color(hex: "10B981")], startPoint: .topLeading, endPoint: .bottomTrailing),
                             style: StrokeStyle(lineWidth: isPad ? 7 : 5, lineCap: .round)
                         )
                         .frame(width: circleSize + (isPad ? 12 : 8), height: circleSize + (isPad ? 12 : 8))
@@ -84,31 +81,19 @@ struct FastMoveChallengeView: View {
                         .animation(.easeOut(duration: 0.15), value: progress)
                     
                     Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    Color(hex: "1E293B").opacity(0.92),
-                                    Color(hex: "0F172A").opacity(0.96)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
+                        .fill(Color.white.opacity(0.94))
                         .frame(width: circleSize - (isPad ? 8 : 6), height: circleSize - (isPad ? 8 : 6))
-                        .overlay(
-                            Circle().stroke(Color(hex: "38BDF8").opacity(0.4), lineWidth: 1.5)
-                        )
-                        .shadow(color: Color.black.opacity(0.5), radius: 14, y: 6)
+                        .shadow(color: Color.black.opacity(0.15), radius: 12, y: 5)
                     
                     VStack(spacing: isPad ? 6 : 4) {
                         Image(systemName: "figure.walk.motion")
                             .font(.system(size: isPad ? 44 : 28))
-                            .foregroundColor(Color(hex: "38BDF8"))
+                            .foregroundColor(Color(red: 0.15, green: 0.35, blue: 0.8))
                             .scaleEffect(bounceScale)
                         
                         Text("\(Int(progress * 100))%")
                             .font(.system(size: isPad ? 17 : 11, weight: .bold, design: .rounded))
-                            .foregroundColor(.white)
+                            .foregroundColor(.black)
                             .tracking(0.5)
                     }
                 }
@@ -120,25 +105,23 @@ struct FastMoveChallengeView: View {
                 VStack(spacing: isPad ? 7 : 4) {
                     Text("LETSGOOO...!!!")
                         .font(.system(size: isPad ? 19 : 13, weight: .black, design: .rounded))
-                        .foregroundColor(Color(hex: "38BDF8"))
+                        .foregroundColor(.white)
                         .tracking(1.4)
-                        .shadow(color: .black.opacity(0.8), radius: 4)
+                        .shadow(color: .black.opacity(0.7), radius: 4)
                     
                     HStack(spacing: 6) {
                         Image(systemName: "figure.walk.motion")
                             .font(.system(size: isPad ? 12 : 9, weight: .bold))
-                            .foregroundColor(Color(hex: "38BDF8"))
+                            .foregroundColor(Color(red: 0.15, green: 0.35, blue: 0.8))
                         Text("Goyang badan bersama di depan kamera (\(Int(progress * 100))%)")
                             .font(.system(size: isPad ? 12 : 9, weight: .semibold))
+                            .foregroundColor(.black)
                     }
-                    .foregroundColor(.white)
                     .padding(.horizontal, isPad ? 18 : 12)
                     .padding(.vertical, isPad ? 6 : 4)
-                    .background(Color(hex: "0B0F19").opacity(0.88))
+                    .background(Color.white.opacity(0.92))
                     .clipShape(Capsule())
-                    .overlay(
-                        Capsule().stroke(Color.white.opacity(0.12), lineWidth: 1)
-                    )
+                    .shadow(color: Color.black.opacity(0.18), radius: 6, y: 2)
                 }
                 .padding(.bottom, isPad ? 24 : 10)
             }

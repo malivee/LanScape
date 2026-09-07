@@ -55,120 +55,82 @@ struct PreChallengeTutorialView: View {
                 .zIndex(10)
             }
             
-            // Centered Studio Proofing Tutorial Card
+            // Centered Clean Photobooth Tutorial Card
             ZStack {
-                // Card Background: Dark slate/navy studio glass
+                // Card Background: Clean White Card
                 RoundedRectangle(cornerRadius: isPad ? 26 : 18)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color(hex: "0B0F19").opacity(0.96),
-                                Color(hex: "111827").opacity(0.98),
-                                Color(hex: "0F172A").opacity(0.96)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: isPad ? 26 : 18)
-                            .stroke(
-                                LinearGradient(
-                                    colors: [
-                                        Color(hex: "38BDF8").opacity(0.6),
-                                        Color(hex: "818CF8").opacity(0.2)
-                                    ],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ),
-                                lineWidth: 1.5
-                            )
-                    )
-                    .shadow(color: Color.black.opacity(0.6), radius: 28, y: 12)
+                    .fill(Color.white)
+                    .shadow(color: Color.black.opacity(0.18), radius: 24, y: 10)
                 
                 VStack(spacing: isPad ? 12 : 7) {
-                    // 1. Top Countdown Capsule Badge
+                    // 1. Top Countdown Capsule Badge (Soft Pastel Blue)
                     HStack(spacing: 6) {
                         Image(systemName: "timer")
                             .font(.system(size: isPad ? 13 : 10, weight: .bold))
-                            .foregroundColor(Color(hex: "38BDF8"))
+                            .foregroundColor(Color(red: 0.12, green: 0.35, blue: 0.85))
                         Text("MULAI DALAM \(remainingSeconds) DETIK")
-                            .font(.system(size: isPad ? 11 : 8.5, weight: .black))
-                            .tracking(1.4)
-                            .foregroundColor(.white)
+                            .font(.system(size: isPad ? 11 : 8.5, weight: .bold))
+                            .tracking(1.2)
+                            .foregroundColor(Color(red: 0.12, green: 0.35, blue: 0.85))
                     }
                     .padding(.horizontal, isPad ? 14 : 10)
                     .padding(.vertical, isPad ? 6 : 4)
-                    .background(Color.white.opacity(0.08))
+                    .background(Color(red: 0.88, green: 0.94, blue: 1.00))
                     .clipShape(Capsule())
-                    .overlay(
-                        Capsule().stroke(Color(hex: "38BDF8").opacity(0.4), lineWidth: 1)
-                    )
                     
                     // 2. Animated SF Symbol Icon Badge
                     ZStack {
                         Circle()
-                            .fill(Color(hex: "1E293B").opacity(0.85))
-                            .frame(width: isPad ? 64 : 46, height: isPad ? 64 : 46)
-                        
-                        Circle()
-                            .stroke(
-                                LinearGradient(
-                                    colors: [Color(hex: "38BDF8"), Color(hex: "3B82F6")],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ),
-                                lineWidth: 2
-                            )
+                            .fill(Color(red: 0.90, green: 0.94, blue: 1.00))
                             .frame(width: isPad ? 64 : 46, height: isPad ? 64 : 46)
                         
                         Image(systemName: metadata.sfSymbol)
-                            .font(.system(size: isPad ? 32 : 23, weight: .bold))
-                            .foregroundColor(.white)
+                            .font(.system(size: isPad ? 30 : 21, weight: .bold))
+                            .foregroundColor(Color(red: 0.10, green: 0.28, blue: 0.75))
                     }
                     .scaleEffect(iconScale)
                     .animation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true), value: iconScale)
                     
-                    // 3. Main Title
+                    // 3. Main Title (Crisp Black Bold)
                     Text(metadata.title)
-                        .font(.system(size: isPad ? 22 : 16, weight: .black, design: .rounded))
-                        .foregroundColor(.white)
+                        .font(.system(size: isPad ? 22 : 16, weight: .bold, design: .rounded))
+                        .foregroundColor(.black)
                         .multilineTextAlignment(.center)
                         .lineLimit(1)
                     
                     // 4. Instructions Container
                     VStack(spacing: isPad ? 6 : 4) {
                         Text(metadata.tutorialInstruction)
-                            .font(.system(size: isPad ? 14 : 10.5, weight: .bold, design: .rounded))
-                            .foregroundColor(.white)
+                            .font(.system(size: isPad ? 14 : 10.5, weight: .semibold, design: .rounded))
+                            .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.30))
                             .multilineTextAlignment(.center)
                             .lineLimit(2)
                         
                         HStack(spacing: 5) {
                             Image(systemName: "lightbulb.fill")
                                 .font(.system(size: isPad ? 11 : 8.5))
-                                .foregroundColor(Color(hex: "FBBF24"))
+                                .foregroundColor(Color(red: 0.92, green: 0.65, blue: 0.05))
                             Text(metadata.tutorialTip)
                                 .font(.system(size: isPad ? 12 : 9, weight: .medium))
-                                .foregroundColor(Color(hex: "94A3B8"))
+                                .foregroundColor(Color(red: 0.45, green: 0.50, blue: 0.60))
                                 .lineLimit(1)
                         }
                     }
                     .padding(.horizontal, isPad ? 20 : 12)
                     .padding(.vertical, isPad ? 8 : 5)
-                    .background(Color.white.opacity(0.04))
+                    .background(Color(red: 0.96, green: 0.97, blue: 0.99))
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     
                     // 5. 3-Second Linear Progress Bar
                     GeometryReader { geo in
                         ZStack(alignment: .leading) {
                             Capsule()
-                                .fill(Color.white.opacity(0.10))
+                                .fill(Color(red: 0.90, green: 0.92, blue: 0.96))
                             
                             Capsule()
                                 .fill(
                                     LinearGradient(
-                                        colors: [Color(hex: "38BDF8"), Color(hex: "10B981")],
+                                        colors: [Color(red: 0.15, green: 0.45, blue: 0.95), Color(red: 0.1, green: 0.8, blue: 0.5)],
                                         startPoint: .leading,
                                         endPoint: .trailing
                                     )
@@ -177,10 +139,10 @@ struct PreChallengeTutorialView: View {
                                 .animation(.linear(duration: 1.0), value: remainingSeconds)
                         }
                     }
-                    .frame(height: 3.5)
+                    .frame(height: 4)
                     .padding(.horizontal, isPad ? 24 : 16)
                     
-                    // 6. Action Button: "Mulai Sekarang ➔"
+                    // 6. Action Button: "Mulai Sekarang ▶" (Deep Royal Navy Pill matching reference)
                     Button(action: {
                         let generator = UIImpactFeedbackGenerator(style: .heavy)
                         generator.impactOccurred()
@@ -193,12 +155,12 @@ struct PreChallengeTutorialView: View {
                             Image(systemName: "play.fill")
                                 .font(.system(size: isPad ? 10 : 8, weight: .bold))
                         }
-                        .foregroundColor(.black)
+                        .foregroundColor(.white)
                         .padding(.horizontal, isPad ? 20 : 14)
                         .padding(.vertical, isPad ? 8 : 5.5)
-                        .background(Color.white)
+                        .background(Color(red: 0.04, green: 0.11, blue: 0.38))
                         .clipShape(Capsule())
-                        .shadow(color: .white.opacity(0.2), radius: 6)
+                        .shadow(color: Color(red: 0.04, green: 0.11, blue: 0.38).opacity(0.3), radius: 6, y: 3)
                     }
                     .buttonStyle(.plain)
                     .padding(.top, 2)

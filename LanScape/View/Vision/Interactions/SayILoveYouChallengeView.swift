@@ -45,33 +45,30 @@ struct SayILoveYouChallengeView: View {
             VStack(spacing: isPad ? 16 : 8) {
                 Spacer()
                 
-                // 1. Timer Badge
+                // 1. Clean White Frosted Timer Badge
                 HStack(spacing: 6) {
                     Image(systemName: "stopwatch.fill")
                         .font(.system(size: isPad ? 14 : 11, weight: .bold))
-                        .foregroundColor(Color(hex: "38BDF8"))
+                        .foregroundColor(timeRemaining <= 3 ? Color(red: 0.85, green: 0.15, blue: 0.2) : Color(red: 0.15, green: 0.35, blue: 0.8))
                     Text("\(timeRemaining)s")
-                        .font(.system(size: isPad ? 17 : 12.5, weight: .black, design: .rounded))
-                        .foregroundColor(.white)
+                        .font(.system(size: isPad ? 17 : 12.5, weight: .bold, design: .rounded))
+                        .foregroundColor(.black)
                 }
                 .padding(.horizontal, isPad ? 18 : 12)
                 .padding(.vertical, isPad ? 6 : 4)
-                .background(Color(hex: "0B0F19").opacity(0.88))
+                .background(Color.white.opacity(0.92))
                 .clipShape(Capsule())
-                .overlay(
-                    Capsule().stroke(Color(hex: "38BDF8").opacity(0.4), lineWidth: 1)
-                )
-                .shadow(color: Color.black.opacity(0.4), radius: 8, y: 3)
+                .shadow(color: Color.black.opacity(0.18), radius: 6, y: 2)
                 
                 // 2. Action Prompt
                 Text("UCAPKAN 'I LOVE YOU' ATAU 'AKU SAYANG KAMU'!")
-                    .font(.system(size: isPad ? 24 : 15.5, weight: .black, design: .rounded))
+                    .font(.system(size: isPad ? 24 : 15.5, weight: .bold, design: .rounded))
                     .foregroundColor(.white)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 24)
-                    .shadow(color: .black.opacity(0.8), radius: 6, y: 3)
+                    .shadow(color: .black.opacity(0.7), radius: 6, y: 2)
                 
-                // 3. Hero Visual Display (Pure Speech Recognition, SF Symbol)
+                // 3. Hero Visual Display (Clean White Photobooth Orb)
                 ZStack {
                     Circle()
                         .stroke(speechService.isKeywordDetected ? Color.green : Color(hex: "F43F5E"), lineWidth: isPad ? 6 : 4)
@@ -80,62 +77,48 @@ struct SayILoveYouChallengeView: View {
                         .animation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true), value: pulseHeart)
                     
                     Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    Color(hex: "1E293B").opacity(0.92),
-                                    Color(hex: "0F172A").opacity(0.96)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .overlay(
-                            Circle().stroke(Color(hex: "F43F5E").opacity(0.4), lineWidth: 1.5)
-                        )
-                        .shadow(color: (speechService.isKeywordDetected ? Color.green : Color(hex: "F43F5E")).opacity(0.5), radius: isPad ? 20 : 14)
+                        .fill(Color.white.opacity(0.94))
+                        .shadow(color: Color.black.opacity(0.15), radius: 12, y: 5)
                     
                     VStack(spacing: 4) {
                         Image(systemName: "heart.fill")
                             .font(.system(size: isPad ? 56 : 38))
-                            .foregroundColor(speechService.isKeywordDetected ? .green : Color(hex: "FDA4AF"))
+                            .foregroundColor(speechService.isKeywordDetected ? .green : Color(hex: "F43F5E"))
                             .scaleEffect(pulseHeart ? 1.15 : 0.95)
                             .animation(.spring(response: 0.35, dampingFraction: 0.6).repeatForever(autoreverses: true), value: pulseHeart)
                         
                         Text(speechService.isKeywordDetected ? "Kata Cinta Terdeteksi!" : "Katakan Cinta")
-                            .font(.system(size: isPad ? 13 : 9, weight: .bold, design: .rounded))
-                            .foregroundColor(speechService.isKeywordDetected ? .green : Color(hex: "FFE4E6"))
+                            .font(.system(size: isPad ? 13 : 9.5, weight: .bold, design: .rounded))
+                            .foregroundColor(speechService.isKeywordDetected ? Color(hex: "059669") : Color(hex: "1E293B"))
                     }
                 }
                 .frame(width: isPad ? 180 : 130, height: isPad ? 180 : 130)
                 .padding(.vertical, isPad ? 4 : 2)
                 
-                // 4. Recognized Speech Subtitle (Transparent Feedback)
+                // 4. Recognized Speech Subtitle (Clean Pill)
                 if !speechService.recognizedText.isEmpty {
                     Text("\"\(speechService.recognizedText)\"")
                         .font(.system(size: isPad ? 15 : 11, weight: .bold, design: .rounded))
-                        .foregroundColor(speechService.isKeywordDetected ? .green : Color(hex: "FDA4AF"))
+                        .foregroundColor(speechService.isKeywordDetected ? Color(hex: "059669") : Color(hex: "BE123C"))
                         .padding(.horizontal, 16)
-                        .padding(.vertical, 4)
-                        .background(Color(hex: "0B0F19").opacity(0.85))
+                        .padding(.vertical, 5)
+                        .background(Color.white.opacity(0.92))
                         .clipShape(Capsule())
-                        .overlay(
-                            Capsule().stroke(Color.white.opacity(0.12), lineWidth: 1)
-                        )
+                        .shadow(color: Color.black.opacity(0.15), radius: 6, y: 2)
                         .transition(.opacity)
                 }
                 
                 // 5. Progress Feedback
                 VStack(spacing: isPad ? 7 : 4) {
                     Text(progress >= 1.0 ? "SO SWEET BANGETTT!" : "LETSGOOO...!!!")
-                        .font(.system(size: isPad ? 20 : 13.5, weight: .black, design: .rounded))
-                        .foregroundColor(Color(hex: "FB7185"))
+                        .font(.system(size: isPad ? 20 : 13.5, weight: .bold, design: .rounded))
+                        .foregroundColor(.white)
                         .tracking(0.6)
-                        .shadow(color: .black.opacity(0.8), radius: 4)
+                        .shadow(color: .black.opacity(0.7), radius: 4)
                     
                     GeometryReader { geo in
                         ZStack(alignment: .leading) {
-                            Capsule().fill(Color(hex: "0B0F19").opacity(0.85))
+                            Capsule().fill(Color.white.opacity(0.35))
                             Capsule()
                                 .fill(LinearGradient(colors: [Color(hex: "F43F5E"), Color(hex: "10B981")], startPoint: .leading, endPoint: .trailing))
                                 .frame(width: max(0, geo.size.width * min(1.0, progress)))
@@ -145,22 +128,20 @@ struct SayILoveYouChallengeView: View {
                     .frame(width: isPad ? 280 : 190, height: isPad ? 10 : 7)
                 }
                 
-                // 6. Helper Pill
+                // 6. Clean White Helper Pill
                 HStack(spacing: 6) {
                     Image(systemName: "mic.fill")
                         .font(.system(size: isPad ? 12 : 9, weight: .bold))
-                        .foregroundColor(Color(hex: "FB7185"))
+                        .foregroundColor(Color(hex: "F43F5E"))
                     Text("Ucapkan jelas ke arah mikrofon perangkat")
                         .font(.system(size: isPad ? 12 : 9, weight: .semibold))
+                        .foregroundColor(.black)
                 }
-                .foregroundColor(.white)
                 .padding(.horizontal, isPad ? 18 : 12)
                 .padding(.vertical, isPad ? 6 : 4)
-                .background(Color(hex: "0B0F19").opacity(0.88))
+                .background(Color.white.opacity(0.92))
                 .clipShape(Capsule())
-                .overlay(
-                    Capsule().stroke(Color.white.opacity(0.12), lineWidth: 1)
-                )
+                .shadow(color: Color.black.opacity(0.18), radius: 6, y: 2)
                 .padding(.top, isPad ? 4 : 2)
                 
                 Spacer()
