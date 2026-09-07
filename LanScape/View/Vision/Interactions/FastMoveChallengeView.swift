@@ -29,10 +29,6 @@ struct FastMoveChallengeView: View {
             // Completely transparent background so camera preview remains 100% visible & clear
             Color.clear
                 .ignoresSafeArea()
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    boostMotion()
-                }
             
             VStack(spacing: 0) {
                 // Top Header: Timer Pill, Title, Subtitle
@@ -71,65 +67,78 @@ struct FastMoveChallengeView: View {
                 
                 Spacer()
                 
-                // Central Interactive Circle
-                Button {
-                    boostMotion()
-                } label: {
-                    ZStack {
-                        Circle()
-                            .stroke(Color(hex: "3B82F6").opacity(0.35), lineWidth: isPad ? 7 : 5)
-                            .frame(width: circleSize + (isPad ? 12 : 8), height: circleSize + (isPad ? 12 : 8))
-                        
-                        Circle()
-                            .stroke(Color.white.opacity(0.12), lineWidth: isPad ? 4 : 3)
-                            .frame(width: circleSize, height: circleSize)
-                        
-                        Circle()
-                            .trim(from: 0, to: progress)
-                            .stroke(
-                                Color(hex: "60A5FA"),
-                                style: StrokeStyle(lineWidth: isPad ? 6 : 4, lineCap: .round)
+                // Central Motion Meter (Pure Vision Motion, Non-Touch)
+                ZStack {
+                    Circle()
+                        .stroke(Color.white.opacity(0.12), lineWidth: isPad ? 7 : 5)
+                        .frame(width: circleSize + (isPad ? 12 : 8), height: circleSize + (isPad ? 12 : 8))
+                    
+                    Circle()
+                        .trim(from: 0, to: progress)
+                        .stroke(
+                            LinearGradient(colors: [Color(hex: "38BDF8"), Color(hex: "10B981")], startPoint: .topLeading, endPoint: .bottomTrailing),
+                            style: StrokeStyle(lineWidth: isPad ? 7 : 5, lineCap: .round)
+                        )
+                        .frame(width: circleSize + (isPad ? 12 : 8), height: circleSize + (isPad ? 12 : 8))
+                        .rotationEffect(.degrees(-90))
+                        .animation(.easeOut(duration: 0.15), value: progress)
+                    
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color(hex: "1E293B").opacity(0.92),
+                                    Color(hex: "0F172A").opacity(0.96)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
                             )
-                            .frame(width: circleSize, height: circleSize)
-                            .rotationEffect(.degrees(-90))
-                            .animation(.easeOut(duration: 0.15), value: progress)
+                        )
+                        .frame(width: circleSize - (isPad ? 8 : 6), height: circleSize - (isPad ? 8 : 6))
+                        .overlay(
+                            Circle().stroke(Color(hex: "38BDF8").opacity(0.4), lineWidth: 1.5)
+                        )
+                        .shadow(color: Color.black.opacity(0.5), radius: 14, y: 6)
+                    
+                    VStack(spacing: isPad ? 6 : 4) {
+                        Image(systemName: "figure.walk.motion")
+                            .font(.system(size: isPad ? 44 : 28))
+                            .foregroundColor(Color(hex: "38BDF8"))
+                            .scaleEffect(bounceScale)
                         
-                        Circle()
-                            .fill(Color(hex: "155DFC"))
-                            .frame(width: circleSize - (isPad ? 8 : 6), height: circleSize - (isPad ? 8 : 6))
-                            .shadow(color: Color(hex: "155DFC").opacity(0.6), radius: isPad ? 20 : 12)
-                        
-                        VStack(spacing: isPad ? 4 : 2) {
-                            Text("🏃")
-                                .font(.system(size: isPad ? 52 : 32))
-                                .scaleEffect(bounceScale)
-                            
-                            Text("\(Int(progress * 100))%")
-                                .font(.system(size: isPad ? 16 : 10.5, weight: .bold))
-                                .foregroundColor(.white)
-                                .tracking(0.5)
-                        }
+                        Text("\(Int(progress * 100))%")
+                            .font(.system(size: isPad ? 17 : 11, weight: .bold, design: .rounded))
+                            .foregroundColor(.white)
+                            .tracking(0.5)
                     }
                 }
-                .buttonStyle(.plain)
+                .frame(width: isPad ? 180 : 130, height: isPad ? 180 : 130)
                 
                 Spacer()
                 
                 // Bottom: Cheer + Helper Pill
-                VStack(spacing: isPad ? 8 : 5) {
+                VStack(spacing: isPad ? 7 : 4) {
                     Text("LETSGOOO...!!!")
-                        .font(.system(size: isPad ? 19 : 13, weight: .heavy))
-                        .foregroundColor(.white)
+                        .font(.system(size: isPad ? 19 : 13, weight: .black, design: .rounded))
+                        .foregroundColor(Color(hex: "38BDF8"))
                         .tracking(1.4)
                         .shadow(color: .black.opacity(0.8), radius: 4)
                     
-                    Text("Gerakan tubuh santai atau sentuh layar (\(Int(progress * 100))%)")
-                        .font(.system(size: isPad ? 13 : 9.5, weight: .medium))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, isPad ? 20 : 13)
-                        .padding(.vertical, isPad ? 7 : 4.5)
-                        .background(Color(hex: "111827").opacity(0.85))
-                        .clipShape(Capsule())
+                    HStack(spacing: 6) {
+                        Image(systemName: "figure.walk.motion")
+                            .font(.system(size: isPad ? 12 : 9, weight: .bold))
+                            .foregroundColor(Color(hex: "38BDF8"))
+                        Text("Goyang badan bersama di depan kamera (\(Int(progress * 100))%)")
+                            .font(.system(size: isPad ? 12 : 9, weight: .semibold))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, isPad ? 18 : 12)
+                    .padding(.vertical, isPad ? 6 : 4)
+                    .background(Color(hex: "0B0F19").opacity(0.88))
+                    .clipShape(Capsule())
+                    .overlay(
+                        Capsule().stroke(Color.white.opacity(0.12), lineWidth: 1)
+                    )
                 }
                 .padding(.bottom, isPad ? 24 : 10)
             }

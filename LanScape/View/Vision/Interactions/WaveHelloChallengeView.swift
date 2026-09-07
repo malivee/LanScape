@@ -44,93 +44,106 @@ struct WaveHelloChallengeView: View {
             VStack(spacing: isPad ? 16 : 8) {
                 Spacer()
                 
-                // 1. Timer Badge
+                // 1. Sleek Frosted Timer Badge
                 HStack(spacing: 6) {
                     Image(systemName: "stopwatch.fill")
-                        .font(.system(size: isPad ? 16 : 12, weight: .bold))
+                        .font(.system(size: isPad ? 14 : 11, weight: .bold))
+                        .foregroundColor(Color(hex: "EF4444"))
                     Text("\(timeRemaining)s")
-                        .font(.system(size: isPad ? 18 : 13, weight: .black, design: .rounded))
+                        .font(.system(size: isPad ? 16 : 12, weight: .black, design: .rounded))
+                        .foregroundColor(.white)
                 }
-                .foregroundColor(.white)
-                .padding(.horizontal, isPad ? 22 : 14)
-                .padding(.vertical, isPad ? 7 : 4.5)
-                .background(Color(hex: "2563EB"))
+                .padding(.horizontal, isPad ? 16 : 11)
+                .padding(.vertical, isPad ? 6 : 4)
+                .background(Color(hex: "0F172A").opacity(0.85))
                 .clipShape(Capsule())
-                .shadow(color: Color(hex: "2563EB").opacity(0.4), radius: 8)
+                .overlay(
+                    Capsule().stroke(Color.white.opacity(0.18), lineWidth: 1)
+                )
+                .shadow(color: Color.black.opacity(0.35), radius: 6, y: 2)
                 
                 // 2. Action Prompt
                 Text("LAMBAIKAN TANGAN KE KAMERA!")
-                    .font(.system(size: isPad ? 26 : 16, weight: .black, design: .rounded))
+                    .font(.system(size: isPad ? 24 : 16, weight: .black, design: .rounded))
                     .foregroundColor(.white)
+                    .tracking(0.6)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 24)
                     .shadow(color: .black.opacity(0.8), radius: 6, y: 3)
                 
-                // 3. Hero Circular Button with Waving Hand
-                Button(action: {
-                    let generator = UIImpactFeedbackGenerator(style: .medium)
-                    generator.impactOccurred()
-                    registerBoost(0.25)
-                }) {
-                    ZStack {
-                        Circle()
-                            .stroke(Color(hex: "3B82F6"), lineWidth: isPad ? 6 : 4)
-                            .scaleEffect(waveHand ? 1.08 : 0.98)
-                            .opacity(waveHand ? 0.9 : 0.4)
-                            .animation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true), value: waveHand)
+                // 3. Hero Visual Display with Waving Hand (Dark Studio Proof Ring, Non-Touch)
+                ZStack {
+                    Circle()
+                        .stroke(visionHandTracker.isWavingDetected ? Color(hex: "10B981") : Color(hex: "38BDF8").opacity(0.5), lineWidth: isPad ? 6 : 4)
+                        .scaleEffect(waveHand ? 1.08 : 0.98)
+                        .opacity(waveHand ? 0.9 : 0.4)
+                        .animation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true), value: waveHand)
+                    
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [Color(hex: "1E293B").opacity(0.92), Color(hex: "0F172A").opacity(0.96)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .overlay(
+                            Circle().stroke(Color.white.opacity(0.14), lineWidth: 1.5)
+                        )
+                        .shadow(color: (visionHandTracker.isWavingDetected ? Color(hex: "10B981") : Color(hex: "38BDF8")).opacity(0.4), radius: isPad ? 22 : 14)
+                    
+                    VStack(spacing: 8) {
+                        Image(systemName: "hand.wave.fill")
+                            .font(.system(size: isPad ? 56 : 38))
+                            .foregroundColor(.white)
+                            .rotationEffect(.degrees(waveHand ? 18 : -18))
+                            .animation(.easeInOut(duration: 0.35).repeatForever(autoreverses: true), value: waveHand)
+                            .shadow(color: (visionHandTracker.isWavingDetected ? Color(hex: "10B981") : Color(hex: "38BDF8")).opacity(0.5), radius: 6)
                         
-                        Circle()
-                            .fill(Color(hex: "155DFC"))
-                            .shadow(color: Color(hex: "3B82F6").opacity(0.6), radius: isPad ? 24 : 16)
-                        
-                        VStack(spacing: 4) {
-                            Text("👋")
-                                .font(.system(size: isPad ? 72 : 48))
-                                .rotationEffect(.degrees(waveHand ? 18 : -18))
-                                .animation(.easeInOut(duration: 0.35).repeatForever(autoreverses: true), value: waveHand)
-                            
-                            Text("Say Halo")
-                                .font(.system(size: isPad ? 13 : 9, weight: .bold, design: .rounded))
-                                .foregroundColor(Color(hex: "DBEAFE"))
-                        }
+                        Text(visionHandTracker.isWavingDetected ? "Lambaian Terdeteksi!" : "Lambaikan Tangan")
+                            .font(.system(size: isPad ? 13 : 9, weight: .bold, design: .rounded))
+                            .foregroundColor(visionHandTracker.isWavingDetected ? Color(hex: "D1FAE5") : Color(hex: "BAE6FD"))
                     }
-                    .frame(width: isPad ? 190 : 135, height: isPad ? 190 : 135)
                 }
-                .buttonStyle(ScaleBounceButtonStyle())
-                .padding(.vertical, isPad ? 6 : 2)
+                .frame(width: isPad ? 190 : 135, height: isPad ? 190 : 135)
+                .padding(.vertical, isPad ? 4 : 2)
                 
                 // 4. Progress Feedback
-                VStack(spacing: isPad ? 8 : 5) {
+                VStack(spacing: isPad ? 7 : 4) {
                     Text(progress > 0.6 ? "HALOO SEMUANYA!" : "LETSGOOO...!!!")
-                        .font(.system(size: isPad ? 22 : 14, weight: .black, design: .rounded))
-                        .foregroundColor(Color(hex: "60A5FA"))
-                        .tracking(0.6)
+                        .font(.system(size: isPad ? 20 : 13, weight: .black, design: .rounded))
+                        .foregroundColor(Color(hex: "38BDF8"))
+                        .tracking(1.0)
                         .shadow(color: .black.opacity(0.8), radius: 4)
                     
                     GeometryReader { geo in
                         ZStack(alignment: .leading) {
-                            Capsule().fill(Color(hex: "111827").opacity(0.85))
+                            Capsule().fill(Color(hex: "0F172A").opacity(0.85))
                             Capsule()
-                                .fill(LinearGradient(colors: [Color(hex: "3B82F6"), Color(hex: "10B981")], startPoint: .leading, endPoint: .trailing))
+                                .fill(LinearGradient(colors: [Color(hex: "38BDF8"), Color(hex: "10B981")], startPoint: .leading, endPoint: .trailing))
                                 .frame(width: max(0, geo.size.width * min(1.0, progress)))
                                 .animation(.easeOut(duration: 0.15), value: progress)
                         }
                     }
-                    .frame(width: isPad ? 280 : 190, height: isPad ? 12 : 8)
+                    .frame(width: isPad ? 280 : 190, height: isPad ? 10 : 7)
                 }
                 
                 // 5. Helper Pill
                 HStack(spacing: 6) {
                     Image(systemName: "hand.wave.fill")
-                        .font(.system(size: isPad ? 13 : 9, weight: .bold))
-                    Text("Lambaikan tangan bersama menyapa kamera 'Halo!'")
-                        .font(.system(size: isPad ? 13 : 9.5, weight: .semibold))
+                        .font(.system(size: isPad ? 12 : 9, weight: .bold))
+                        .foregroundColor(Color(hex: "38BDF8"))
+                    Text("Lambaikan tangan bersama menyapa kamera 'Halo!' (\(Int(progress * 100))%)")
+                        .font(.system(size: isPad ? 12 : 9.5, weight: .semibold))
+                        .foregroundColor(.white)
                 }
-                .foregroundColor(.white)
-                .padding(.horizontal, isPad ? 20 : 14)
+                .padding(.horizontal, isPad ? 18 : 12)
                 .padding(.vertical, isPad ? 6 : 4)
-                .background(Color(hex: "111827").opacity(0.85))
+                .background(Color(hex: "0B0F19").opacity(0.85))
                 .clipShape(Capsule())
+                .overlay(
+                    Capsule().stroke(Color.white.opacity(0.12), lineWidth: 1)
+                )
                 .padding(.top, isPad ? 4 : 2)
                 
                 Spacer()
@@ -153,12 +166,18 @@ struct WaveHelloChallengeView: View {
         
         timerTask = Task { @MainActor in
             while timeRemaining > 0 && !isFinished {
-                if !visionHandTracker.detectedHandPoints.isEmpty {
-                    registerBoost(0.04)
+                var gainedProgress = false
+                if visionHandTracker.isWavingDetected {
+                    registerBoost(0.038)
+                    gainedProgress = true
                 }
                 let motion = motionService.instantMotion
-                if motion > 0.01 {
-                    registerBoost(motion * 0.35)
+                if motion > 0.03 && !visionHandTracker.detectedHandPoints.isEmpty {
+                    registerBoost(min(0.025, motion * 0.18))
+                    gainedProgress = true
+                }
+                if !gainedProgress && progress > 0 {
+                    progress = max(0, progress - 0.008)
                 }
                 
                 do {
@@ -208,7 +227,6 @@ struct WaveHelloChallengeView: View {
     
     private func cleanup() {
         timerTask?.cancel()
-        visionHandTracker.isTrackingActive = false
         motionService.reset()
     }
 }

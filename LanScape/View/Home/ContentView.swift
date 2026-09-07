@@ -11,6 +11,7 @@ struct ContentView: View {
     @State private var navigateToSelectMusic = false
     @State private var navigateToGallery = false
     @State private var showHelp = false
+    @State private var showMiniGameTest = false
     
     var body: some View {
         NavigationStack {
@@ -45,10 +46,24 @@ struct ContentView: View {
                         .blur(radius: isPad ? 80 : 50)
                         .offset(y: isPad ? 60 : 30)
                     
-                    // Top Help Button
+                    // Top Bar Buttons: Test Mini Game & Help
                     VStack {
-                        HStack {
+                        HStack(spacing: isPad ? 14 : 10) {
                             Spacer()
+                            
+                            // Mini Game Test Hub Button
+                            Button {
+                                showMiniGameTest = true
+                            } label: {
+                                Image(systemName: "gamecontroller.fill")
+                                    .font(.system(size: isPad ? 17 : 13, weight: .bold))
+                                    .foregroundStyle(.darkBlue)
+                                    .frame(width: isPad ? 42 : 36, height: isPad ? 42 : 36)
+                                    .background(Color.white.opacity(0.92))
+                                    .clipShape(Circle())
+                                    .shadow(color: .black.opacity(0.12), radius: 4, y: 2)
+                            }
+                            
                             Button {
                                 showHelp = true
                             } label: {
@@ -123,6 +138,9 @@ struct ContentView: View {
             }
             .fullScreenCover(isPresented: $showHelp) {
                 TutorialGuideView()
+            }
+            .fullScreenCover(isPresented: $showMiniGameTest) {
+                MiniGameTestView()
             }
             .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("PopToRoot"))) { _ in
                 navigateToSelectMusic = false

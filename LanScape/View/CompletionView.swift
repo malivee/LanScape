@@ -122,12 +122,12 @@ struct CompletionView: View {
 
             ZStack {
 
-                // MARK: Background
-
+                // MARK: Background - Premium Dark Studio Canvas
                 LinearGradient(
                     colors: [
-                        Color(red: 0.84, green: 0.92, blue: 1.00),
-                        Color(red: 0.73, green: 0.86, blue: 1.00)
+                        Color(hex: "0B0F19"),
+                        Color(hex: "111827"),
+                        Color(hex: "0F172A")
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
@@ -147,36 +147,40 @@ struct CompletionView: View {
                 }
 
                 // MARK: Main layout
-
                 VStack(spacing: 0) {
 
-                    // TOP NAVIGATION BAR
-                    ZStack {
-                        if isReadOnly {
-                            HStack {
-                                Button {
-                                    dismiss()
-                                } label: {
-                                    Image(systemName: "xmark")
-                                        .font(.system(size: isPad ? 22 : 18, weight: .bold))
-                                        .foregroundStyle(.black)
-                                        .frame(width: isPad ? 52 : 42, height: isPad ? 52 : 42)
-                                        .background(Circle().fill(.white.opacity(0.6)))
-                                }
-                                .buttonStyle(.plain)
-
-                                Spacer()
-                            }
-                            .padding(.horizontal, horizontalPadding)
+                    // TITLE & SESSION STATUS
+                    VStack(spacing: isPad ? 8 : 4) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "checkmark.seal.fill")
+                                .font(.system(size: isPad ? 14 : 11, weight: .bold))
+                                .foregroundColor(Color(hex: "10B981"))
+                            Text("SESI FOTO SELESAI")
+                                .font(.system(size: isPad ? 13 : 10, weight: .bold))
+                                .tracking(1.4)
+                                .foregroundColor(Color(hex: "60A5FA"))
                         }
-
-                        // TITLE
-                        Text("Tersimpan di galeri!")
-                            .font(.system(size: isPad ? 42 : 32, weight: .bold))
-                            .foregroundStyle(.black)
+                        .padding(.horizontal, isPad ? 14 : 10)
+                        .padding(.vertical, isPad ? 5 : 3.5)
+                        .background(Color(hex: "1E293B").opacity(0.9))
+                        .clipShape(Capsule())
+                        .overlay(
+                            Capsule().stroke(Color.white.opacity(0.12), lineWidth: 1)
+                        )
+                        
+                        Text("Semua Momen Tersimpan Rapi!")
+                            .font(.system(size: isPad ? 36 : 24, weight: .black, design: .rounded))
+                            .foregroundColor(.white)
+                            .tracking(0.4)
+                        
+                        Text("\(fivePhotos.count) Foto Kompak • \(formattedDuration) • Tersimpan di Galeri")
+                            .font(.system(size: isPad ? 14 : 11, weight: .medium))
+                            .foregroundColor(Color(hex: "94A3B8"))
                     }
-                    .frame(height: titleHeight, alignment: .center)
-                    .padding(.top, isPad ? 32 : 22)
+                    .frame(height: titleHeight + (isPad ? 24 : 16), alignment: .center)
+                    .padding(.top, isPad ? 22 : 12)
+
+                    Spacer(minLength: 8)
 
                     // PHOTO AREA
                     HStack(alignment: .top, spacing: gridGap) {
@@ -193,7 +197,7 @@ struct CompletionView: View {
                         .buttonStyle(.plain)
                         .frame(width: stripWidth, height: photoAreaHeight)
 
-                        // RIGHT: 5 PHOTOS
+                        // RIGHT: 5 PHOTOS + 1 KEEPSAKE STAMP CARD (NO EMPTY SLOTS)
                         VStack(spacing: gridGap) {
 
                             HStack(spacing: gridGap) {
@@ -209,8 +213,47 @@ struct CompletionView: View {
                             HStack(spacing: gridGap) {
                                 completionPhoto(index: 4, width: cellWidth, height: cellHeight)
 
-                                Color.clear
-                                    .frame(width: cellWidth, height: cellHeight)
+
+                                // 6th Slot: Designed Photobooth Keepsake Card
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: isPad ? 12 : 8)
+                                        .fill(Color(hex: "1E293B").opacity(0.85))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: isPad ? 12 : 8)
+                                                .stroke(
+                                                    LinearGradient(
+                                                        colors: [Color(hex: "38BDF8").opacity(0.5), Color(hex: "818CF8").opacity(0.2)],
+                                                        startPoint: .topLeading,
+                                                        endPoint: .bottomTrailing
+                                                    ),
+                                                    lineWidth: 1.5
+                                                )
+                                        )
+                                    
+                                    VStack(spacing: isPad ? 6 : 4) {
+                                        Image(systemName: "sparkles")
+                                            .font(.system(size: isPad ? 26 : 18, weight: .bold))
+                                            .foregroundColor(Color(hex: "38BDF8"))
+                                        
+                                        Text("LanScape Studio")
+                                            .font(.system(size: isPad ? 16 : 12, weight: .bold))
+                                            .foregroundColor(.white)
+                                        
+                                        Text("5 Momen Kompak Berhasil")
+                                            .font(.system(size: isPad ? 12 : 9.5, weight: .medium))
+                                            .foregroundColor(Color(hex: "94A3B8"))
+                                        
+                                        Text("Ketuk foto untuk layar penuh")
+                                            .font(.system(size: isPad ? 10 : 8, weight: .regular))
+                                            .foregroundColor(Color(hex: "64748B"))
+                                            .padding(.top, 2)
+                                    }
+                                    .padding(8)
+                                }
+                                .frame(
+                                    width: cellWidth,
+                                    height: cellHeight
+                                )
                             }
                         }
                         .frame(
@@ -562,13 +605,13 @@ private struct CompletionButton: View {
             .overlay(
                 Capsule()
                     .stroke(
-                        Color.white.opacity(0.7),
-                        lineWidth: isPrimary ? 0 : 1.5
+                        Color.white.opacity(isPrimary ? 0.25 : 0.16),
+                        lineWidth: 1.2
                     )
             )
             .shadow(
-                color: .black.opacity(0.18),
-                radius: 7,
+                color: isPrimary ? Color(hex: "2563EB").opacity(0.4) : Color.black.opacity(0.2),
+                radius: 8,
                 x: 0,
                 y: 4
             )

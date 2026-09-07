@@ -30,7 +30,7 @@ struct BlowCandleChallengeView: View {
                     let isExtinguished = progress > CGFloat(index + 1) / 3.0
                     VStack(spacing: 2) {
                         Text(isExtinguished ? "💨" : "🔥")
-                            .font(.system(size: isPad ? 28 : 18))
+                            .font(.system(size: isPad ? 32 : 22))
                             .scaleEffect(flameFlicker ? 1.15 : 0.85)
                             .animation(.easeInOut(duration: 0.25).repeatForever(autoreverses: true), value: flameFlicker)
                         
@@ -48,91 +48,104 @@ struct BlowCandleChallengeView: View {
                 // 1. Timer Badge
                 HStack(spacing: 6) {
                     Image(systemName: "stopwatch.fill")
-                        .font(.system(size: isPad ? 16 : 12, weight: .bold))
+                        .font(.system(size: isPad ? 14 : 11, weight: .bold))
+                        .foregroundColor(Color(hex: "38BDF8"))
                     Text("\(timeRemaining)s")
-                        .font(.system(size: isPad ? 18 : 13, weight: .black, design: .rounded))
+                        .font(.system(size: isPad ? 17 : 12.5, weight: .black, design: .rounded))
+                        .foregroundColor(.white)
                 }
-                .foregroundColor(.white)
-                .padding(.horizontal, isPad ? 22 : 14)
-                .padding(.vertical, isPad ? 7 : 4.5)
-                .background(Color(hex: "2563EB"))
+                .padding(.horizontal, isPad ? 18 : 12)
+                .padding(.vertical, isPad ? 6 : 4)
+                .background(Color(hex: "0B0F19").opacity(0.88))
                 .clipShape(Capsule())
-                .shadow(color: Color(hex: "2563EB").opacity(0.4), radius: 8)
+                .overlay(
+                    Capsule().stroke(Color(hex: "38BDF8").opacity(0.4), lineWidth: 1)
+                )
+                .shadow(color: Color.black.opacity(0.4), radius: 8, y: 3)
                 
                 // 2. Action Prompt
                 Text("TIUP LILIN BERSAMA-SAMA!")
-                    .font(.system(size: isPad ? 26 : 16, weight: .black, design: .rounded))
+                    .font(.system(size: isPad ? 24 : 15.5, weight: .black, design: .rounded))
                     .foregroundColor(.white)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 24)
                     .shadow(color: .black.opacity(0.8), radius: 6, y: 3)
                 
-                // 3. Hero Circular Button with Birthday Cake
-                Button(action: {
-                    let generator = UIImpactFeedbackGenerator(style: .medium)
-                    generator.impactOccurred()
-                    registerBoost(0.25)
-                }) {
-                    ZStack {
-                        Circle()
-                            .stroke(Color(hex: "F59E0B"), lineWidth: isPad ? 6 : 4)
-                            .scaleEffect(flameFlicker ? 1.08 : 0.98)
-                            .opacity(flameFlicker ? 0.9 : 0.4)
-                            .animation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true), value: flameFlicker)
+                // 3. Hero Visual Display (Pure Microphone, Non-Touch)
+                ZStack {
+                    Circle()
+                        .stroke(progress >= 1.0 ? Color.green : Color(hex: "F59E0B"), lineWidth: isPad ? 6 : 4)
+                        .scaleEffect(flameFlicker ? 1.08 : 0.98)
+                        .opacity(flameFlicker ? 0.9 : 0.4)
+                        .animation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true), value: flameFlicker)
+                    
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color(hex: "1E293B").opacity(0.92),
+                                    Color(hex: "0F172A").opacity(0.96)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .overlay(
+                            Circle().stroke(Color(hex: "F59E0B").opacity(0.4), lineWidth: 1.5)
+                        )
+                        .shadow(color: (progress >= 1.0 ? Color.green : Color(hex: "F59E0B")).opacity(0.5), radius: isPad ? 20 : 14)
+                    
+                    VStack(spacing: 8) {
+                        Image(systemName: progress >= 1.0 ? "sparkles" : (audioMonitor.normalizedVolume > 0.18 ? "wind" : "flame.fill"))
+                            .font(.system(size: isPad ? 52 : 34))
+                            .foregroundColor(progress >= 1.0 ? .green : (audioMonitor.normalizedVolume > 0.18 ? Color(hex: "60A5FA") : Color(hex: "F59E0B")))
+                            .scaleEffect(flameFlicker ? 1.10 : 0.95)
+                            .animation(.spring(response: 0.35, dampingFraction: 0.6).repeatForever(autoreverses: true), value: flameFlicker)
                         
-                        Circle()
-                            .fill(Color(hex: "155DFC"))
-                            .shadow(color: Color(hex: "F59E0B").opacity(0.5), radius: isPad ? 24 : 16)
-                        
-                        VStack(spacing: 4) {
-                            Text("🎂")
-                                .font(.system(size: isPad ? 72 : 48))
-                                .scaleEffect(flameFlicker ? 1.10 : 0.95)
-                                .animation(.spring(response: 0.35, dampingFraction: 0.6).repeatForever(autoreverses: true), value: flameFlicker)
-                            
-                            Text("Tiup Lilin")
-                                .font(.system(size: isPad ? 13 : 9, weight: .bold, design: .rounded))
-                                .foregroundColor(Color(hex: "FEF3C7"))
-                        }
+                        Text(audioMonitor.normalizedVolume > 0.18 ? "Meniup..." : "Tiup Lilin")
+                            .font(.system(size: isPad ? 13 : 9, weight: .bold, design: .rounded))
+                            .foregroundColor(Color(hex: "FEF3C7"))
                     }
-                    .frame(width: isPad ? 190 : 135, height: isPad ? 190 : 135)
                 }
-                .buttonStyle(ScaleBounceButtonStyle())
-                .padding(.vertical, isPad ? 6 : 2)
+                .frame(width: isPad ? 180 : 130, height: isPad ? 180 : 130)
+                .padding(.vertical, isPad ? 4 : 2)
                 
                 // 4. Progress Feedback
-                VStack(spacing: isPad ? 8 : 5) {
+                VStack(spacing: isPad ? 7 : 4) {
                     Text(progress > 0.6 ? "HUUFFF... LILIN PADAM!" : "LETSGOOO...!!!")
-                        .font(.system(size: isPad ? 22 : 14, weight: .black, design: .rounded))
+                        .font(.system(size: isPad ? 20 : 13.5, weight: .black, design: .rounded))
                         .foregroundColor(Color(hex: "FCD34D"))
                         .tracking(0.6)
                         .shadow(color: .black.opacity(0.8), radius: 4)
                     
                     GeometryReader { geo in
                         ZStack(alignment: .leading) {
-                            Capsule().fill(Color(hex: "111827").opacity(0.85))
+                            Capsule().fill(Color(hex: "0B0F19").opacity(0.85))
                             Capsule()
                                 .fill(LinearGradient(colors: [Color(hex: "F59E0B"), Color(hex: "10B981")], startPoint: .leading, endPoint: .trailing))
                                 .frame(width: max(0, geo.size.width * min(1.0, progress)))
                                 .animation(.easeOut(duration: 0.15), value: progress)
                         }
                     }
-                    .frame(width: isPad ? 280 : 190, height: isPad ? 12 : 8)
+                    .frame(width: isPad ? 280 : 190, height: isPad ? 10 : 7)
                 }
                 
                 // 5. Helper Pill
                 HStack(spacing: 6) {
                     Image(systemName: "wind")
-                        .font(.system(size: isPad ? 13 : 9, weight: .bold))
+                        .font(.system(size: isPad ? 12 : 9, weight: .bold))
                         .foregroundColor(Color(hex: "FCD34D"))
-                    Text("Kakek & Cucu tiup santai ke arah mikrofon sampai api lilin padam")
-                        .font(.system(size: isPad ? 13 : 9.5, weight: .semibold))
+                    Text("Tiup santai ke arah mikrofon sampai 3 lilin padam (\(Int(progress * 100))%)")
+                        .font(.system(size: isPad ? 12 : 9, weight: .semibold))
                 }
                 .foregroundColor(.white)
-                .padding(.horizontal, isPad ? 20 : 14)
+                .padding(.horizontal, isPad ? 18 : 12)
                 .padding(.vertical, isPad ? 6 : 4)
-                .background(Color(hex: "111827").opacity(0.85))
+                .background(Color(hex: "0B0F19").opacity(0.88))
                 .clipShape(Capsule())
+                .overlay(
+                    Capsule().stroke(Color.white.opacity(0.12), lineWidth: 1)
+                )
                 .padding(.top, isPad ? 4 : 2)
                 
                 Spacer()
@@ -154,10 +167,12 @@ struct BlowCandleChallengeView: View {
         timerTask = Task { @MainActor in
             while timeRemaining > 0 && !isFinished {
                 let vol = audioMonitor.normalizedVolume
-                if vol > 0.08 {
-                    registerBoost(vol * 0.30)
+                // Blowing creates turbulent acoustic energy on the mic
+                if vol > 0.18 {
+                    registerBoost(min(0.045, (vol - 0.14) * 0.28))
+                } else if progress > 0 {
+                    progress = max(0, progress - 0.008)
                 }
-                registerBoost(0.02)
                 
                 do {
                     try await Task.sleep(nanoseconds: 100_000_000)
@@ -207,13 +222,5 @@ struct BlowCandleChallengeView: View {
     private func cleanup() {
         timerTask?.cancel()
         audioMonitor.stopMonitoring()
-    }
-}
-
-private struct ScaleBounceButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.92 : 1.0)
-            .animation(.spring(response: 0.25, dampingFraction: 0.6), value: configuration.isPressed)
     }
 }

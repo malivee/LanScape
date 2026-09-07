@@ -7,7 +7,6 @@ import SwiftUI
 
 enum MiniGameSensorType: Equatable {
     case audioClap
-    case audioScream
     case audioVoice
     case visionHands
     case visionMotion
@@ -16,25 +15,20 @@ enum MiniGameSensorType: Equatable {
 }
 
 enum MiniGameID: String, CaseIterable, Identifiable, Equatable {
-    // 4 Existing Core Games
+    // 3 Existing Core Games (screamMeter removed)
     case handClap = "hand_clap"
     case fastTap = "fast_tap"
-    case screamMeter = "scream_meter"
     case fastMove = "fast_move"
     
-    // 16 New Cooperative Games
+    // 12 Additional Cooperative Games (Total: 15 Highly-Polished Games)
     case sayILoveYou = "say_i_love_you"
     case fanSmoke = "fan_smoke"
     case waveHello = "wave_hello"
     case doubleThumbsUp = "double_thumbs_up"
-    case halfHeart = "half_heart"
     case batteryHug = "battery_hug"
     case gentleHeadPat = "gentle_head_pat"
-    case cheekToCheek = "cheek_to_cheek"
-    case puffCheeks = "puff_cheeks"
     case fishLips = "fish_lips"
     case mouthOpen = "mouth_open"
-    case peekABoo = "peek_a_boo"
     case blowCandle = "blow_candle"
     case laughOutLoud = "laugh_out_loud"
     case sleepyPose = "sleepy_pose"
@@ -47,6 +41,7 @@ struct MiniGameMetadata: Equatable, Identifiable {
     let id: MiniGameID
     let title: String
     let icon: String
+    let sfSymbol: String
     let tutorialInstruction: String
     let tutorialTip: String
     let actionPrompt: String
@@ -63,6 +58,7 @@ struct MiniGameCatalog {
             id: .handClap,
             title: "Tepuk Tangan Bersama",
             icon: "👏",
+            sfSymbol: "hands.clap.fill",
             tutorialInstruction: "Kakek & Cucu kompak tepuk tangan bersama di depan kamera!",
             tutorialTip: "Tepuk tangan dengan ceria sampai meteran penuh!",
             actionPrompt: "AYO TEPUK TANGAN BERSAMA!",
@@ -76,6 +72,7 @@ struct MiniGameCatalog {
             id: .fastTap,
             title: "Sentuh Target Layar",
             icon: "✋",
+            sfSymbol: "target",
             tutorialInstruction: "Kakek & Cucu sentuh tombol bercahaya di layar!",
             tutorialTip: "Cukup sentuh tombol biru di tengah layar bersama-sama!",
             actionPrompt: "AYO SENTUH TOMBOL SEKARANG!",
@@ -84,24 +81,12 @@ struct MiniGameCatalog {
             sensorType: .touchFallback,
             durationSeconds: 10
         ),
-        // 3. Teriak Sekeras-Kerasnya
-        .screamMeter: MiniGameMetadata(
-            id: .screamMeter,
-            title: "Teriak Sekeras-Kerasnya",
-            icon: "📢",
-            tutorialInstruction: "Kompak bersorak 'HOREEE!' bersama sampai meteran suara penuh!",
-            tutorialTip: "Suara sorakan kakek dan cucu akan mengisi meteran!",
-            actionPrompt: "BERSORAK 'HOREEE' BERSAMA!",
-            cheerText: "SERUUU BANGET!",
-            fallbackButtonText: "Tekan & Tahan",
-            sensorType: .audioScream,
-            durationSeconds: 10
-        ),
         // 4. Goyang Badan Santai
         .fastMove: MiniGameMetadata(
             id: .fastMove,
             title: "Goyang Badan Santai",
             icon: "🏃",
+            sfSymbol: "figure.walk.motion",
             tutorialInstruction: "Kakek & Cucu kompak gerakkan badan atau lambaikan tangan!",
             tutorialTip: "Goyang badan santai tanpa perlu terburu-buru!",
             actionPrompt: "AYO GOYANG BADAN SANTAI!",
@@ -115,6 +100,7 @@ struct MiniGameCatalog {
             id: .sayILoveYou,
             title: "Katakan 'I Love You!'",
             icon: "❤️",
+            sfSymbol: "heart.fill",
             tutorialInstruction: "Kakek & Cucu ucapkan 'I Love You!' atau 'Aku Sayang Kamu!' bersama!",
             tutorialTip: "Suara hangat kalian akan memunculkan hujan hati di layar!",
             actionPrompt: "UCAPKAN 'I LOVE YOU' SEKARANG!",
@@ -128,6 +114,7 @@ struct MiniGameCatalog {
             id: .fanSmoke,
             title: "Kipas Sate / Buang Asap!",
             icon: "🍢",
+            sfSymbol: "wind",
             tutorialInstruction: "Kompak gerakkan tangan naik-turun seperti mengipasi asap sate!",
             tutorialTip: "Kipas asap tebal di layar sampai satenya matang lezat!",
             actionPrompt: "AYO KIPAS-KIPAS TANGAN NAIK TURUN!",
@@ -141,6 +128,7 @@ struct MiniGameCatalog {
             id: .waveHello,
             title: "Lambaikan Tangan Ceria",
             icon: "👋",
+            sfSymbol: "hand.wave.fill",
             tutorialInstruction: "Kakek & Cucu lambaikan tangan bersama menyapa kamera 'Halo!'",
             tutorialTip: "Bintang-bintang berkilauan akan mengikuti lambaian tangan kalian!",
             actionPrompt: "AYO LAMBAIKAN TANGAN KE KAMERA!",
@@ -154,6 +142,7 @@ struct MiniGameCatalog {
             id: .doubleThumbsUp,
             title: "Dua Jempol Kompak",
             icon: "👍",
+            sfSymbol: "hand.thumbsup.fill",
             tutorialInstruction: "Kakek & Cucu kompak acungkan jempol mantap ke kamera!",
             tutorialTip: "Acungkan jempol ke depan kamera sampai kembang api emas meletup!",
             actionPrompt: "ACUNGKAN JEMPOL MANTAP!",
@@ -162,24 +151,12 @@ struct MiniGameCatalog {
             sensorType: .visionHands,
             durationSeconds: 10
         ),
-        // 9. Cinta Berdua (Half Heart)
-        .halfHeart: MiniGameMetadata(
-            id: .halfHeart,
-            title: "Cinta Berdua",
-            icon: "🫶",
-            tutorialInstruction: "Cucu buat setengah hati dengan tangan, kakek melengkapinya di kamera!",
-            tutorialTip: "Satukan tangan di tengah layar sampai hati cinta terbentuk utuh!",
-            actionPrompt: "SATUKAN SETENGAH HATI TANGAN!",
-            cheerText: "HATI MENYATU SEMPURNA!",
-            fallbackButtonText: "Satukan Hati",
-            sensorType: .visionHands,
-            durationSeconds: 12
-        ),
         // 10. Pelukan Cas Baterai
         .batteryHug: MiniGameMetadata(
             id: .batteryHug,
             title: "Pelukan Cas Baterai",
             icon: "🔋",
+            sfSymbol: "battery.100.bolt",
             tutorialInstruction: "Kakek & Cucu saling merangkul bahu menghadap kamera!",
             tutorialTip: "Pelukan hangat kalian akan mengecas baterai cinta sampai 100%!",
             actionPrompt: "RANGKUL BAHU SEKARANG!",
@@ -193,6 +170,7 @@ struct MiniGameCatalog {
             id: .gentleHeadPat,
             title: "Elus Kepala Sayang",
             icon: "👧",
+            sfSymbol: "hand.raised.fingers.spread.fill",
             tutorialInstruction: "Kakek/Nenek letakkan tangan di atas kepala cucu dengan santai!",
             tutorialTip: "Bunga-bunga virtual akan bermekaran merespons elusan sayang!",
             actionPrompt: "ELUS KEPALA DENGAN LEMBUT!",
@@ -201,37 +179,12 @@ struct MiniGameCatalog {
             sensorType: .visionHands,
             durationSeconds: 10
         ),
-        // 12. Sandar Bahu / Pipi
-        .cheekToCheek: MiniGameMetadata(
-            id: .cheekToCheek,
-            title: "Sandar Bahu / Pipi",
-            icon: "🫂",
-            tutorialInstruction: "Kakek & Cucu memiringkan kepala saling bersandar santai ke kamera!",
-            tutorialTip: "Bingkai foto antik yang indah akan muncul membingkai wajah kalian!",
-            actionPrompt: "SANDARKAN KEPALA BERSAMA!",
-            cheerText: "FOTO SANGAT HANGAT!",
-            fallbackButtonText: "Bersandar",
-            sensorType: .visionFace,
-            durationSeconds: 10
-        ),
-        // 13. Pipi Bakpao Kompak
-        .puffCheeks: MiniGameMetadata(
-            id: .puffCheeks,
-            title: "Pipi Bakpao Kompak",
-            icon: "🐡",
-            tutorialInstruction: "Kakek & Cucu kembungkan pipi sebesar mungkin ke arah kamera!",
-            tutorialTip: "Kembungkan pipi sampai meteran udara penuh dan meletup lucu!",
-            actionPrompt: "KEMBUNGKAN PIPI SEBESAR MUNGKIN!",
-            cheerText: "LUCU BANGETTT!",
-            fallbackButtonText: "Kembungkan Pipi",
-            sensorType: .visionFace,
-            durationSeconds: 10
-        ),
         // 14. Monyong Bibir Ikan
         .fishLips: MiniGameMetadata(
             id: .fishLips,
             title: "Monyong Bibir Ikan",
             icon: "🐠",
+            sfSymbol: "mouth.fill",
             tutorialInstruction: "Kakek & Cucu kompak memonyongkan bibir santai ke kamera!",
             tutorialTip: "Gelembung-gelembung air kartun lucu akan keluar dari mulut!",
             actionPrompt: "AYO MONYONGKAN BIBIR BERSAMA!",
@@ -245,6 +198,7 @@ struct MiniGameCatalog {
             id: .mouthOpen,
             title: "Buka Mulut Kagum 'O'",
             icon: "😮",
+            sfSymbol: "face.smiling.inverse",
             tutorialInstruction: "Buka mulut bersama membentuk huruf 'O' seolah melihat kembang api!",
             tutorialTip: "Kembang api warna-warni yang meriah akan meluncur di layar!",
             actionPrompt: "BUKA MULUT 'WAAAH' SEKARANG!",
@@ -253,24 +207,12 @@ struct MiniGameCatalog {
             sensorType: .visionFace,
             durationSeconds: 10
         ),
-        // 16. Cilukba Bahagia!
-        .peekABoo: MiniGameMetadata(
-            id: .peekABoo,
-            title: "Cilukba Bahagia!",
-            icon: "🫣",
-            tutorialInstruction: "Tutup wajah dengan kedua telapak tangan lalu buka: 'CILUK... BAA!'",
-            tutorialTip: "Buka telapak tangan bersamaan sambil tersenyum lebar!",
-            actionPrompt: "TUTUP LALU BUKA: CILUK... BAA!",
-            cheerText: "CILUKK... BAA!",
-            fallbackButtonText: "Cilukba",
-            sensorType: .visionHands,
-            durationSeconds: 10
-        ),
         // 17. Tiup Lilin Ulang Tahun
         .blowCandle: MiniGameMetadata(
             id: .blowCandle,
             title: "Tiup Lilin Ulang Tahun",
             icon: "🎂",
+            sfSymbol: "flame.fill",
             tutorialInstruction: "Kakek & Cucu tiup santai ke arah mikrofon sampai api lilin padam!",
             tutorialTip: "Tiup mikrofon seperti meniup lilin kue ulang tahun!",
             actionPrompt: "TIUP LILIN BERSAMA-SAMA!",
@@ -284,6 +226,7 @@ struct MiniGameCatalog {
             id: .laughOutLoud,
             title: "Tawa Ceria 'Hahaha!'",
             icon: "😆",
+            sfSymbol: "face.smiling.fill",
             tutorialInstruction: "Kompak tertawa ceria bersama 'Hahaha!' di depan kamera!",
             tutorialTip: "Suara tawa kalian akan memecahkan gelembung sabun raksasa di layar!",
             actionPrompt: "TERTAWA 'HAHAHA' BERSAMA!",
@@ -297,6 +240,7 @@ struct MiniGameCatalog {
             id: .sleepyPose,
             title: "Pose Bobo Nyenyak",
             icon: "😴",
+            sfSymbol: "moon.zzz.fill",
             tutorialInstruction: "Satukan kedua telapak tangan di samping pipi sambil memejamkan mata!",
             tutorialTip: "Bulan sabit dan animasi 'Zzzz' lucu akan melayang di atas kalian!",
             actionPrompt: "TEMPEL TANGAN DI PIPI: 'ZZZZ'!",
@@ -310,6 +254,7 @@ struct MiniGameCatalog {
             id: .gentleHighFive,
             title: "Tosss Kompak!",
             icon: "✋",
+            sfSymbol: "hand.raised.fill",
             tutorialInstruction: "Kakek & Cucu angkat telapak tangan terbuka berdampingan ke kamera!",
             tutorialTip: "Angkat tangan santai ke depan kamera untuk tos virtual bersama!",
             actionPrompt: "ANGKAT TANGAN BERSAMA BUAT TOSS!",
