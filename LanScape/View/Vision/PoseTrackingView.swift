@@ -65,7 +65,7 @@ struct PoseTrackingView: View {
     private let totalMovements: Int = 5
 
     @State
-    private var captureState: PoseCaptureState = .countdown(number: 5)
+    private var captureState: PoseCaptureState = .showingPosePreview(secondsRemaining: 3)
 
     @State
     private var capturedPhotos: [UIImage] = []
@@ -112,8 +112,7 @@ struct PoseTrackingView: View {
                 .clipped()
                 .ignoresSafeArea()
 
-
-                // 2.5 Live Face Penalty Overlay (renders stickers over faces when penalty is active)
+                // 2. Live Face Penalty Overlay
                 FacePenaltyLiveOverlay(penaltyService: penaltyService, geometry: geometry)
 
                 // 3. Header & Mini Badge
@@ -218,20 +217,14 @@ struct PoseTrackingView: View {
             CustomizePhotoView(
                 photos: capturedPhotos
             ) { editedPhotos in
-
-                // Receive the edited 5 photos
                 capturedPhotos = editedPhotos
-
-                // Close editor
                 showCustomizePhotoView = false
 
-                // Then open CompletionView
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                     showCompletionView = true
                 }
             }
         }
-
         .fullScreenCover(isPresented: $showCompletionView) {
             CompletionView(
                 durationSeconds: sessionDuration > 0 ? sessionDuration : 180,
@@ -250,7 +243,8 @@ struct PoseTrackingView: View {
                     )
                 }
             )
-        }    }
+        }
+    }
 
     // =========================================================
     // MARK: - State Overlays
@@ -304,7 +298,6 @@ struct PoseTrackingView: View {
             VStack {
                 Spacer()
 
-                // Circular glowing countdown badge
                 ZStack {
                     Circle()
                         .fill(
@@ -391,48 +384,32 @@ struct PoseTrackingView: View {
             HandClapChallengeView(
                 audioMonitor: audioMonitor,
                 visionHandTracker: visionHandTracker,
-                onSuccess: {
-                    handleChallengeSuccess()
-                },
-                onFailure: {
-                    handleChallengeFailure()
-                }
+                onSuccess: { handleChallengeSuccess() },
+                onFailure: { handleChallengeFailure() }
             )
             .transition(.opacity)
 
         case .fastTap:
             FastTapChallengeView(
                 visionHandTracker: visionHandTracker,
-                onSuccess: {
-                    handleChallengeSuccess()
-                },
-                onFailure: {
-                    handleChallengeFailure()
-                }
+                onSuccess: { handleChallengeSuccess() },
+                onFailure: { handleChallengeFailure() }
             )
             .transition(.opacity)
 
         case .screamMeter:
             ScreamMeterChallengeView(
                 audioMonitor: audioMonitor,
-                onSuccess: {
-                    handleChallengeSuccess()
-                },
-                onFailure: {
-                    handleChallengeFailure()
-                }
+                onSuccess: { handleChallengeSuccess() },
+                onFailure: { handleChallengeFailure() }
             )
             .transition(.opacity)
 
         case .fastMove:
             FastMoveChallengeView(
                 motionService: motionService,
-                onSuccess: {
-                    handleChallengeSuccess()
-                },
-                onFailure: {
-                    handleChallengeFailure()
-                }
+                onSuccess: { handleChallengeSuccess() },
+                onFailure: { handleChallengeFailure() }
             )
             .transition(.opacity)
 
@@ -586,7 +563,6 @@ struct PoseTrackingView: View {
         
         VStack(spacing: isPad ? 12 : 6) {
             HStack {
-                // Pause / Exit button
                 Button {
                     musicService.stop()
                     activeTimerTask?.cancel()
@@ -618,7 +594,6 @@ struct PoseTrackingView: View {
                     .frame(width: btnSize, height: btnSize)
             }
 
-            // Progress Bar
             GeometryReader { geometry in
                 let spacing: CGFloat = isPad ? 8 : 4
                 let totalWidth = geometry.size.width
@@ -641,7 +616,6 @@ struct PoseTrackingView: View {
         .padding(.bottom, isPad ? 18 : 8)
     }
 
-
     // =========================================================
     // MARK: - Flow & Timers
     // =========================================================
@@ -650,7 +624,22 @@ struct PoseTrackingView: View {
         activeTimerTask?.cancel()
 
         activeTimerTask = Task { @MainActor in
-            // Countdown 5, 4, 3, 2, 1 (starts immediately without startup delay)
+            // 1. Tampilkan kartu pose besar selama 3 detik
+            for previewSec in (1...3).reversed() {
+                guard !Task.isCancelled else { return }
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    captureState = .showingPosePreview(secondsRemaining: previewSec)
+                }
+                do {
+                    try await Task.sleep(nanoseconds: 1_000_000_000)
+                } catch {
+                    return
+                }
+            }
+
+            guard !Task.isCancelled else { return }
+
+            // 2. Hitung mundur 5, 4, 3, 2, 1
             for num in (1...5).reversed() {
                 guard !Task.isCancelled else { return }
                 withAnimation(.spring(response: 0.35, dampingFraction: 0.65)) {
@@ -665,7 +654,7 @@ struct PoseTrackingView: View {
 
             guard !Task.isCancelled else { return }
 
-            // 3. Trigger Flash Shutter & Capture Photo (strictly awaited)
+            // 3. Ambil foto
             await triggerCapture()
         }
     }
@@ -674,26 +663,21 @@ struct PoseTrackingView: View {
     private func triggerCapture() async {
         guard !Task.isCancelled else { return }
 
-        // Flash animation
         withAnimation(.easeIn(duration: 0.08)) {
             shutterFlashOpacity = 0.95
         }
 
-        // Await actual photo capture asynchronously
         let capturedImage = await cameraService.capturePhoto()
         guard !Task.isCancelled else { return }
 
-        // If penalty is active, bake penalty stickers onto this captured photo!
         let baseImage = capturedImage ?? UIImage(named: self.currentPoseImageName)
         if let image = baseImage {
             let finalImage = penaltyService.isPenaltyActive ? await penaltyService.bakePenaltyOntoImageAsync(image) : image
             self.capturedPhotos.append(finalImage)
         }
 
-        // Clear active penalty now that it has been applied to this photo
         penaltyService.clearPenalty()
 
-        // Fade out flash
         do {
             try await Task.sleep(nanoseconds: 120_000_000)
         } catch { return }
@@ -705,7 +689,6 @@ struct PoseTrackingView: View {
             captureState = .photoCaptured
         }
 
-        // Show photo captured confirmation badge briefly
         do {
             try await Task.sleep(nanoseconds: 800_000_000)
         } catch { return }
@@ -722,7 +705,6 @@ struct PoseTrackingView: View {
             let gameIndex = (movementNumber - 1) % max(1, sessionMiniGames.count)
             let selectedGame = sessionMiniGames.indices.contains(gameIndex) ? sessionMiniGames[gameIndex] : (MiniGameCatalog.allGames[.handClap] ?? MiniGameCatalog.selectRandomChallenges(count: 1)[0])
             
-            // Duck background music volume for audio-based games so voice/laughter is easily detected
             if selectedGame.sensorType == .audioVoice || selectedGame.sensorType == .audioScream || selectedGame.sensorType == .audioClap || selectedGame.id == .mouthOpen {
                 musicService.setVolume(0.25)
             }
@@ -730,14 +712,9 @@ struct PoseTrackingView: View {
             withAnimation(.easeInOut(duration: 0.3)) {
                 captureState = .miniGameTutorial(game: selectedGame)
             }
-        }  else {
-            // All 5 photos captured!
+        } else {
             musicService.setVolume(0.75)
-
-            sessionDuration = Date().timeIntervalSince(sessionStartTime ?? Date()
-            )
-
-            // Open photo editor BEFORE CompletionView
+            sessionDuration = Date().timeIntervalSince(sessionStartTime ?? Date())
             showCustomizePhotoView = true
         }
     }
@@ -752,7 +729,6 @@ struct PoseTrackingView: View {
                 captureState = .challengeSuccess
             }
 
-            // Celebratory display: 2 seconds
             do {
                 try await Task.sleep(nanoseconds: 2_000_000_000)
             } catch { return }
@@ -777,7 +753,6 @@ struct PoseTrackingView: View {
                 captureState = .challengeFailure(penalty: penalty)
             }
 
-            // Penalty notification display: 2.4 seconds
             do {
                 try await Task.sleep(nanoseconds: 2_400_000_000)
             } catch { return }
@@ -791,7 +766,6 @@ struct PoseTrackingView: View {
     private func advanceToNextPose() {
         guard !Task.isCancelled else { return }
         
-        // Restore music volume to full energetic level
         musicService.setVolume(0.75)
 
         if movementNumber < totalMovements {
@@ -800,7 +774,6 @@ struct PoseTrackingView: View {
             }
             startCurrentPoseCycle()
         } else {
-            // Sequence completed
             sessionDuration = Date().timeIntervalSince(sessionStartTime ?? Date())
             showCustomizePhotoView = true
         }
@@ -862,7 +835,6 @@ struct PoseTrackingView: View {
             sessionMiniGames = MiniGameCatalog.selectRandomChallenges(count: 4)
             
             Task { @MainActor in
-                // Snappy loading presentation so camera hardware stabilizes and transitions gracefully
                 try? await Task.sleep(nanoseconds: 350_000_000)
                 guard !Task.isCancelled else { return }
                 withAnimation(.easeOut(duration: 0.30)) {

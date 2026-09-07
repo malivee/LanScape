@@ -90,6 +90,7 @@ struct MiniPoseThumbnailBadge: View {
         let isSmall = width < 120
         
         ZStack(alignment: .topLeading) {
+            // Background Card
             RoundedRectangle(cornerRadius: isSmall ? 12 : 20)
                 .fill(Color.white.opacity(0.92))
                 .overlay(
@@ -98,11 +99,14 @@ struct MiniPoseThumbnailBadge: View {
                 )
                 .shadow(color: Color.black.opacity(0.18), radius: isSmall ? 5 : 10, x: 0, y: isSmall ? 2 : 4)
             
+            // Image centered within the frame
             Image(imageName)
                 .resizable()
                 .scaledToFit()
-                .padding(isSmall ? 4 : 8)
+                .frame(maxWidth: .infinity, maxHeight: .infinity) // Memaksa gambar di tengah
+                .padding(isSmall ? 6 : 10)
             
+            // Badge Label "Target" di pojok kiri atas
             Text("Target")
                 .font(.system(size: isSmall ? 8 : 11, weight: .heavy, design: .rounded))
                 .foregroundColor(.white)
@@ -131,4 +135,3 @@ struct MiniPoseThumbnailBadge: View {
         }
     }
 }
-
