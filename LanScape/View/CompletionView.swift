@@ -631,55 +631,6 @@ struct CompletionView: View {
     }
 }
 
-// MARK: - Photo Strip View
-
-private struct PhotoStripView: View {
-
-    let image: UIImage?
-
-    var body: some View {
-
-        ZStack {
-
-            Color.white
-
-            if let image {
-
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFit()
-                    .padding(10)
-
-            } else {
-
-                VStack(spacing: 10) {
-
-                    Image(systemName: "photo")
-                        .font(.system(size: 36))
-
-                    Text("Foto")
-                        .font(.system(size: 18))
-                }
-                .foregroundStyle(.secondary)
-            }
-        }
-        .clipShape(Rectangle())
-        .overlay(
-            Rectangle()
-                .stroke(
-                    Color.white,
-                    lineWidth: 2
-                )
-        )
-        .shadow(
-            color: .black.opacity(0.14),
-            radius: 7,
-            x: 0,
-            y: 4
-        )
-    }
-}
-
 // MARK: - Share Popover
 
 private struct SharePopover: View {

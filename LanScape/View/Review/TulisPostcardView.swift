@@ -39,7 +39,6 @@ struct TulisPostcardView: View {
     @State private var localVideoURL: URL?
     @State private var showShareSheet = false
 
-
     let collageImages: [UIImage]
 
     // MARK: - Error
@@ -50,7 +49,6 @@ struct TulisPostcardView: View {
     init(images: [UIImage]) {
         self.collageImages = Array(images.prefix(5))
     }
-    
     
     var body: some View {
         GeometryReader { geometry in
@@ -133,10 +131,9 @@ struct TulisPostcardView: View {
                         spacing: 44
                     ) {
 
-                        PhotoColumn(images: collageImages)
-                            .frame(
-                                width: geometry.size.width * 0.235
-                            )
+                        // MARK: Photo Strip Replacement
+                        PhotoStripView(images: collageImages)
+                            .frame(width: geometry.size.width * 0.235)
 
                         VStack(spacing: 38) {
 
@@ -261,8 +258,6 @@ struct TulisPostcardView: View {
             HelpView()
         }
         .sheet(isPresented: $showShareSheet, onDismiss: {
-            // Keep the file until the share sheet has finished.
-            // It is in the app temporary directory and can be cleaned by iOS.
             localVideoURL = nil
             dismiss()
         }) {
@@ -351,7 +346,6 @@ struct TulisPostcardView: View {
                     collageImages: images
                 )
 
-                // Video stays LOCAL ONLY. Nothing is uploaded to CloudKit.
                 await MainActor.run {
                     sendingStatus = "Video selesai dibuat"
                     localVideoURL = media.videoURL
@@ -388,53 +382,6 @@ struct ShareSheet: UIViewControllerRepresentable {
         _ uiViewController: UIActivityViewController,
         context: Context
     ) {}
-}
-
-// MARK: - Photo Column
-
-struct PhotoColumn: View {
-
-    let images: [UIImage]
-
-    var body: some View {
-        VStack(spacing: 10) {
-            ForEach(0..<5, id: \.self) { index in
-                let image = index < images.count ? images[index] : UIImage()
-
-                Group {
-                    if image.size.width > 0 && image.size.height > 0 {
-                        Image(uiImage: image)
-                            .resizable()
-                            .scaledToFill()
-                    } else {
-                        RoundedRectangle(cornerRadius: 20, style: .continuous)
-                            .fill(Color.gray.opacity(0.22))
-                            .overlay {
-                                Image(systemName: "photo")
-                                    .font(.system(size: 32))
-                                    .foregroundStyle(.gray)
-                            }
-                    }
-                }
-                .frame(maxWidth: .infinity)
-                .aspectRatio(1.43, contentMode: .fit)
-                .clipShape(
-                    RoundedRectangle(
-                        cornerRadius: 20,
-                        style: .continuous
-                    )
-                )
-            }
-        }
-        .padding(26)
-        .background(Color.white)
-        .clipShape(
-            RoundedRectangle(
-                cornerRadius: 24,
-                style: .continuous
-            )
-        )
-    }
 }
 
 // MARK: - Postcard Writing Area
@@ -862,5 +809,14 @@ extension UIDevice {
 // MARK: - Preview
 
 #Preview {
-    TulisPostcardView(images: [UIImage(named: "BoleChudiyanimg") ?? UIImage(), UIImage(named: "BoleChudiyanimg") ?? UIImage(), UIImage(named: "BoleChudiyanimg") ?? UIImage(), UIImage(named: "BoleChudiyanimg") ?? UIImage(), UIImage(named: "BoleChudiyanimg") ?? UIImage()])
+    TulisPostcardView(images: [
+        UIImage(named: "BoleChudiyanimg") ?? UIImage(),
+        UIImage(named: "BoleChudiyanimg") ?? UIImage(),
+        UIImage(named: "BoleChudiyanimg") ?? UIImage(),
+        UIImage(named: "BoleChudiyanimg") ?? UIImage(),
+        UIImage(named: "BoleChudiyanimg") ?? UIImage()
+    ])
 }
+
+// MARK: - Photo Strip View
+
