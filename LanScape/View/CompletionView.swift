@@ -1,15 +1,3 @@
-//
-//  CompletionView.swift
-//  stamppal
-//
-//  Completion screen:
-//  - 5 customized photos
-//  - photo strip on the left
-//  - Share popover matching the reference
-//  - postcard -> TulisPostcardView
-//  - photo -> native share sheet with 6 images
-//
-
 import SwiftUI
 import SwiftData
 import UIKit
@@ -26,6 +14,9 @@ struct CompletionView: View {
 
     let durationSeconds: TimeInterval
     let capturedPhotos: [UIImage]
+    
+    /// Set `true` saat dibuka dari GalleryView
+    var isReadOnly: Bool = false
 
     var onRestart: (() -> Void)? = nil
     var onSelectMusic: (() -> Void)? = nil
@@ -82,59 +73,52 @@ struct CompletionView: View {
             let height = geometry.size.height
             let isPad = UIDevice.current.userInterfaceIdiom == .pad || width >= 900
 
-            // Everything is calculated from the available landscape size.
-            // This prevents the title/buttons from being pushed outside the screen.
             let horizontalPadding: CGFloat = isPad ? 42 : 24
             let titleHeight: CGFloat = isPad ? 70 : 54
             let bottomButtonHeight: CGFloat = isPad ? 72 : 58
             let bottomAreaHeight: CGFloat = isPad ? 105 : 82
 
-            let contentTop =
-                max(
-                    isPad ? 135 : 100,
-                    titleHeight + 42
-                )
+            let contentTop = max(
+                isPad ? 135 : 100,
+                titleHeight + 42
+            )
 
-            let contentBottom =
-                height - bottomAreaHeight - 18
+            let contentBottom = height - bottomAreaHeight - 18
 
-            let photoAreaHeight =
-                max(
-                    300,
-                    min(
-                        680,
-                        contentBottom - contentTop
-                    )
-                )
-
-            let stripWidth =
+            let photoAreaHeight = max(
+                300,
                 min(
-                    isPad ? 265 : 190,
-                    width * 0.22
+                    680,
+                    contentBottom - contentTop
                 )
+            )
+
+            let stripWidth = min(
+                isPad ? 265 : 190,
+                width * 0.22
+            )
 
             let gridGap: CGFloat = isPad ? 24 : 14
 
-            let availableGridWidth =
-                width
+            let availableGridWidth = width
                 - (horizontalPadding * 2)
                 - stripWidth
                 - gridGap
 
-            let cellWidth =
-                max(
-                    130,
-                    min(
-                        isPad ? 390 : 300,
-                        (availableGridWidth - gridGap) / 2
-                    )
+            let cellWidth = max(
+                130,
+                min(
+                    isPad ? 390 : 300,
+                    (availableGridWidth - gridGap) / 2
                 )
+            )
 
-            let cellHeight =
-                max(
-                    95,
-                    (photoAreaHeight - (gridGap * 2)) / 3
-                )
+            let cellHeight = max(
+                95,
+                (photoAreaHeight - (gridGap * 2)) / 3
+            )
+
+            let shareButtonWidth: CGFloat = isReadOnly ? (isPad ? 928 : 776) : (isPad ? 300 : 250)
 
             ZStack {
 
@@ -142,16 +126,8 @@ struct CompletionView: View {
 
                 LinearGradient(
                     colors: [
-                        Color(
-                            red: 0.84,
-                            green: 0.92,
-                            blue: 1.00
-                        ),
-                        Color(
-                            red: 0.73,
-                            green: 0.86,
-                            blue: 1.00
-                        )
+                        Color(red: 0.84, green: 0.92, blue: 1.00),
+                        Color(red: 0.73, green: 0.86, blue: 1.00)
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
@@ -159,9 +135,6 @@ struct CompletionView: View {
                 .ignoresSafeArea()
 
                 // MARK: Outside-tap layer
-                // IMPORTANT: This must be BEHIND the content.
-                // If it is placed after the VStack, it can intercept
-                // taps intended for the two SharePopover buttons.
                 if showShareMenu {
                     Color.clear
                         .ignoresSafeArea()
@@ -177,26 +150,36 @@ struct CompletionView: View {
 
                 VStack(spacing: 0) {
 
-                    // TITLE
-                    Text("Tersimpan di galeri!")
-                        .font(
-                            .system(
-                                size: isPad ? 42 : 32,
-                                weight: .bold
-                            )
-                        )
-                        .foregroundStyle(.black)
-                        .frame(
-                            height: titleHeight,
-                            alignment: .top
-                        )
-                        .padding(.top, isPad ? 32 : 22)
+                    // TOP NAVIGATION BAR
+                    ZStack {
+                        if isReadOnly {
+                            HStack {
+                                Button {
+                                    dismiss()
+                                } label: {
+                                    Image(systemName: "xmark")
+                                        .font(.system(size: isPad ? 22 : 18, weight: .bold))
+                                        .foregroundStyle(.black)
+                                        .frame(width: isPad ? 52 : 42, height: isPad ? 52 : 42)
+                                        .background(Circle().fill(.white.opacity(0.6)))
+                                }
+                                .buttonStyle(.plain)
+
+                                Spacer()
+                            }
+                            .padding(.horizontal, horizontalPadding)
+                        }
+
+                        // TITLE
+                        Text("Tersimpan di galeri!")
+                            .font(.system(size: isPad ? 42 : 32, weight: .bold))
+                            .foregroundStyle(.black)
+                    }
+                    .frame(height: titleHeight, alignment: .center)
+                    .padding(.top, isPad ? 32 : 22)
 
                     // PHOTO AREA
-                    HStack(
-                        alignment: .top,
-                        spacing: gridGap
-                    ) {
+                    HStack(alignment: .top, spacing: gridGap) {
 
                         // LEFT PHOTO STRIP
                         Button {
@@ -205,60 +188,29 @@ struct CompletionView: View {
                                 showGallery = true
                             }
                         } label: {
-                            PhotoStripView(
-                                image: postcardImage
-                            )
+                            PhotoStripView(image: postcardImage)
                         }
                         .buttonStyle(.plain)
-                        .frame(
-                            width: stripWidth,
-                            height: photoAreaHeight
-                        )
+                        .frame(width: stripWidth, height: photoAreaHeight)
 
                         // RIGHT: 5 PHOTOS
                         VStack(spacing: gridGap) {
 
                             HStack(spacing: gridGap) {
-                                completionPhoto(
-                                    index: 0,
-                                    width: cellWidth,
-                                    height: cellHeight
-                                )
-
-                                completionPhoto(
-                                    index: 1,
-                                    width: cellWidth,
-                                    height: cellHeight
-                                )
+                                completionPhoto(index: 0, width: cellWidth, height: cellHeight)
+                                completionPhoto(index: 1, width: cellWidth, height: cellHeight)
                             }
 
                             HStack(spacing: gridGap) {
-                                completionPhoto(
-                                    index: 2,
-                                    width: cellWidth,
-                                    height: cellHeight
-                                )
-
-                                completionPhoto(
-                                    index: 3,
-                                    width: cellWidth,
-                                    height: cellHeight
-                                )
+                                completionPhoto(index: 2, width: cellWidth, height: cellHeight)
+                                completionPhoto(index: 3, width: cellWidth, height: cellHeight)
                             }
 
                             HStack(spacing: gridGap) {
-                                completionPhoto(
-                                    index: 4,
-                                    width: cellWidth,
-                                    height: cellHeight
-                                )
+                                completionPhoto(index: 4, width: cellWidth, height: cellHeight)
 
-                                // Empty sixth slot.
                                 Color.clear
-                                    .frame(
-                                        width: cellWidth,
-                                        height: cellHeight
-                                    )
+                                    .frame(width: cellWidth, height: cellHeight)
                             }
                         }
                         .frame(
@@ -267,122 +219,90 @@ struct CompletionView: View {
                             alignment: .top
                         )
                     }
-                    .frame(
-                        maxWidth: .infinity,
-                        alignment: .top
-                    )
+                    .frame(maxWidth: .infinity, alignment: .top)
                     .padding(.horizontal, horizontalPadding)
 
                     Spacer(minLength: 0)
 
-                    // BOTTOM BUTTONS
+                    // BOTTOM BUTTONS AREA
                     HStack(spacing: isPad ? 28 : 18) {
 
-                        CompletionButton(
-                            title: "Pose Ulang",
-                            icon: "arrow.counterclockwise",
-                            width: isPad ? 300 : 250,
-                            height: bottomButtonHeight
-                        ) {
-                            showShareMenu = false
-
-                            if let onRestart {
-                                onRestart()
-                            } else {
-                                dismiss()
-                            }
-                        }
-
-                        CompletionButton(
-                            title: "Menu Utama",
-                            icon: "house.fill",
-                            width: isPad ? 300 : 250,
-                            height: bottomButtonHeight
-                        ) {
-                            showShareMenu = false
-
-                            if let onMainMenu {
-                                onMainMenu()
-                            } else {
-                                dismiss()
-                            }
-                        }
-
-                        // SHARE BUTTON + POPOVER
-                        ZStack(alignment: .bottom) {
-
+                        if !isReadOnly {
                             CompletionButton(
-                                title: "Share",
-                                icon: "square.and.arrow.up",
-                                isPrimary: true,
+                                title: "Pose Ulang",
+                                icon: "arrow.counterclockwise",
                                 width: isPad ? 300 : 250,
                                 height: bottomButtonHeight
                             ) {
-                                withAnimation(
-                                    .easeOut(duration: 0.18)
-                                ) {
-                                    showShareMenu.toggle()
+                                showShareMenu = false
+                                if let onRestart {
+                                    onRestart()
+                                } else {
+                                    dismiss()
                                 }
                             }
 
-                            if showShareMenu {
+                            CompletionButton(
+                                title: "Menu Utama",
+                                icon: "house.fill",
+                                width: isPad ? 300 : 250,
+                                height: bottomButtonHeight
+                            ) {
+                                showShareMenu = false
+                                if let onMainMenu {
+                                    onMainMenu()
+                                } else {
+                                    dismiss()
+                                }
+                            }
+                        }
 
+                        // SHARE BUTTON + OVERLAY POPOVER
+                        CompletionButton(
+                            title: "Share",
+                            icon: "square.and.arrow.up",
+                            isPrimary: true,
+                            width: shareButtonWidth,
+                            height: bottomButtonHeight
+                        ) {
+                            withAnimation(.easeOut(duration: 0.18)) {
+                                showShareMenu.toggle()
+                            }
+                        }
+                        .overlay(alignment: .bottom) {
+                            if showShareMenu {
                                 SharePopover(
                                     onPostcard: {
-                                        // Close menu first.
                                         showShareMenu = false
-
-                                        // Then present postcard.
                                         DispatchQueue.main.async {
                                             showPostcard = true
                                         }
                                     },
                                     onPhotos: {
-                                        // Close menu first.
                                         showShareMenu = false
-
-                                        guard !sixShareItems.isEmpty else {
-                                            return
-                                        }
-
-                                        // Present after the popover has disappeared.
+                                        guard !sixShareItems.isEmpty else { return }
                                         DispatchQueue.main.async {
                                             showShareSheet = true
                                         }
                                     }
                                 )
-                                .offset(
-                                    y: -(bottomButtonHeight + 14)
-                                )
+                                .frame(width: 370)
+                                .offset(y: -(bottomButtonHeight + 14))
                                 .transition(
-                                    .opacity
-                                        .combined(
-                                            with: .scale(
-                                                scale: 0.94,
-                                                anchor: .bottom
-                                            )
-                                        )
+                                    .opacity.combined(
+                                        with: .scale(scale: 0.94, anchor: .bottom)
+                                    )
                                 )
                                 .zIndex(1000)
                             }
                         }
                     }
-                    .frame(
-                        height: bottomAreaHeight,
-                        alignment: .bottom
-                    )
+                    .frame(height: bottomAreaHeight, alignment: .bottom)
                     .padding(.bottom, isPad ? 26 : 18)
                 }
-                .frame(
-                    width: width,
-                    height: height
-                )
-
+                .frame(width: width, height: height)
             }
-            .frame(
-                width: width,
-                height: height
-            )
+            .frame(width: width, height: height)
         }
         .ignoresSafeArea()
         .onAppear {
@@ -391,9 +311,7 @@ struct CompletionView: View {
 
         // MARK: Gallery
 
-        .fullScreenCover(
-            isPresented: $showGallery
-        ) {
+        .fullScreenCover(isPresented: $showGallery) {
             CompletionGalleryView(
                 images: fivePhotos,
                 selectedIndex: $galleryIndex,
@@ -403,28 +321,18 @@ struct CompletionView: View {
 
         // MARK: Share 6 photos
 
-        .sheet(
-            isPresented: $showShareSheet
-        ) {
-            ShareSheetController(
-                items: sixShareItems
-            )
-            .presentationDetents([.medium, .large])
+        .sheet(isPresented: $showShareSheet) {
+            ShareSheetController(items: sixShareItems)
+                .presentationDetents([.medium, .large])
         }
 
         // MARK: Postcard
 
-        .fullScreenCover(
-            isPresented: $showPostcard
-        ) {
+        .fullScreenCover(isPresented: $showPostcard) {
             if let postcardImage {
-
                 TulisPostcardView(images: fivePhotos)
-
             } else {
-
-                Color.white
-                    .ignoresSafeArea()
+                Color.white.ignoresSafeArea()
             }
         }
     }
@@ -439,19 +347,14 @@ struct CompletionView: View {
     ) -> some View {
 
         if fivePhotos.indices.contains(index) {
-
             Button {
                 galleryIndex = index
                 showGallery = true
             } label: {
-
                 Image(uiImage: fivePhotos[index])
                     .resizable()
                     .scaledToFill()
-                    .frame(
-                        width: width,
-                        height: height
-                    )
+                    .frame(width: width, height: height)
                     .clipped()
                     .background(Color.white)
                     .overlay {
@@ -469,28 +372,17 @@ struct CompletionView: View {
                     )
             }
             .buttonStyle(.plain)
-
         } else {
-
             Color.clear
-                .frame(
-                    width: width,
-                    height: height
-                )
+                .frame(width: width, height: height)
         }
     }
 
     // MARK: - Gallery Save
 
     private func saveGalleryIfNeeded() {
-
-        guard !didSaveGallery else {
-            return
-        }
-
-        guard !fivePhotos.isEmpty else {
-            return
-        }
+        guard !isReadOnly, !didSaveGallery else { return }
+        guard !fivePhotos.isEmpty else { return }
 
         didSaveGallery = true
 
@@ -503,13 +395,8 @@ struct CompletionView: View {
 
     // MARK: - Photo Strip
 
-    private func makePhotoStrip(
-        from images: [UIImage]
-    ) -> UIImage? {
-
-        guard !images.isEmpty else {
-            return nil
-        }
+    private func makePhotoStrip(from images: [UIImage]) -> UIImage? {
+        guard !images.isEmpty else { return nil }
 
         let width: CGFloat = 700
         let imageWidth: CGFloat = 545
@@ -519,86 +406,42 @@ struct CompletionView: View {
         let gap: CGFloat = 11
         let bottomPadding: CGFloat = 70
 
-        let height =
-            topPadding
+        let height = topPadding
             + CGFloat(images.count) * imageHeight
             + CGFloat(max(0, images.count - 1)) * gap
             + bottomPadding
 
         let renderer = UIGraphicsImageRenderer(
-            size: CGSize(
-                width: width,
-                height: height
-            )
+            size: CGSize(width: width, height: height)
         )
 
         return renderer.image { context in
-
             UIColor.white.setFill()
-
-            context.cgContext.fill(
-                CGRect(
-                    x: 0,
-                    y: 0,
-                    width: width,
-                    height: height
-                )
-            )
+            context.cgContext.fill(CGRect(x: 0, y: 0, width: width, height: height))
 
             for (index, image) in images.enumerated() {
+                let y = topPadding + CGFloat(index) * (imageHeight + gap)
+                let target = CGRect(x: leftPadding, y: y, width: imageWidth, height: imageHeight)
 
-                let y =
-                    topPadding
-                    + CGFloat(index) * (imageHeight + gap)
-
-                let target = CGRect(
-                    x: leftPadding,
-                    y: y,
-                    width: imageWidth,
-                    height: imageHeight
-                )
-
-                let imageAspect =
-                    image.size.width /
-                    max(image.size.height, 1)
-
-                let targetAspect =
-                    target.width / target.height
+                let imageAspect = image.size.width / max(image.size.height, 1)
+                let targetAspect = target.width / target.height
 
                 var drawRect = target
 
                 if imageAspect > targetAspect {
-
                     let h = target.height
                     let w = h * imageAspect
-
-                    drawRect = CGRect(
-                        x: target.midX - w / 2,
-                        y: target.minY,
-                        width: w,
-                        height: h
-                    )
-
+                    drawRect = CGRect(x: target.midX - w / 2, y: target.minY, width: w, height: h)
                 } else {
-
                     let w = target.width
                     let h = w / imageAspect
-
-                    drawRect = CGRect(
-                        x: target.minX,
-                        y: target.midY - h / 2,
-                        width: w,
-                        height: h
-                    )
+                    drawRect = CGRect(x: target.minX, y: target.midY - h / 2, width: w, height: h)
                 }
 
                 context.cgContext.saveGState()
-
                 context.cgContext.addRect(target)
                 context.cgContext.clip()
-
                 image.draw(in: drawRect)
-
                 context.cgContext.restoreGState()
             }
 
@@ -606,27 +449,14 @@ struct CompletionView: View {
             formatter.locale = Locale(identifier: "id_ID")
             formatter.dateFormat = "d/M/yyyy 'pada' HH:mm"
 
-            let text = formatter.string(
-                from: Date()
-            )
-
+            let text = formatter.string(from: Date())
             let attributes: [NSAttributedString.Key: Any] = [
-                .font: UIFont.italicSystemFont(
-                    ofSize: 25
-                ),
+                .font: UIFont.italicSystemFont(ofSize: 25),
                 .foregroundColor: UIColor.black
             ]
 
-            NSAttributedString(
-                string: text,
-                attributes: attributes
-            )
-            .draw(
-                at: CGPoint(
-                    x: leftPadding,
-                    y: height - bottomPadding + 8
-                )
-            )
+            NSAttributedString(string: text, attributes: attributes)
+                .draw(at: CGPoint(x: leftPadding, y: height - bottomPadding + 8))
         }
     }
 }
@@ -639,40 +469,21 @@ private struct SharePopover: View {
     let onPhotos: () -> Void
 
     var body: some View {
-
         VStack(spacing: 0) {
-
             Button(action: onPostcard) {
-
                 HStack(spacing: 14) {
-
                     Image(systemName: "eyeglasses")
-                        .font(
-                            .system(
-                                size: 25,
-                                weight: .regular
-                            )
-                        )
-                        .frame(
-                            width: 34
-                        )
+                        .font(.system(size: 25, weight: .regular))
+                        .frame(width: 34)
 
                     Text("Bagikan sebagai postcard")
-                        .font(
-                            .system(
-                                size: 20,
-                                weight: .regular
-                            )
-                        )
+                        .font(.system(size: 20, weight: .regular))
 
                     Spacer()
                 }
                 .foregroundStyle(.black)
                 .padding(.horizontal, 20)
-                .frame(
-                    width: 370,
-                    height: 66
-                )
+                .frame(maxWidth: .infinity, minHeight: 66)
             }
             .buttonStyle(.plain)
 
@@ -680,45 +491,25 @@ private struct SharePopover: View {
                 .padding(.horizontal, 18)
 
             Button(action: onPhotos) {
-
                 HStack(spacing: 14) {
-
                     Image(systemName: "book")
-                        .font(
-                            .system(
-                                size: 25,
-                                weight: .regular
-                            )
-                        )
-                        .frame(
-                            width: 34
-                        )
+                        .font(.system(size: 25, weight: .regular))
+                        .frame(width: 34)
 
                     Text("Bagikan sebagai foto")
-                        .font(
-                            .system(
-                                size: 20,
-                                weight: .regular
-                            )
-                        )
+                        .font(.system(size: 20, weight: .regular))
 
                     Spacer()
                 }
                 .foregroundStyle(.black)
                 .padding(.horizontal, 20)
-                .frame(
-                    width: 370,
-                    height: 66
-                )
+                .frame(maxWidth: .infinity, minHeight: 66)
             }
             .buttonStyle(.plain)
         }
         .background(
-            RoundedRectangle(
-                cornerRadius: 26,
-                style: .continuous
-            )
-            .fill(Color.white)
+            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                .fill(Color.white)
         )
         .shadow(
             color: .black.opacity(0.22),
@@ -743,60 +534,28 @@ private struct CompletionButton: View {
     let action: () -> Void
 
     var body: some View {
-
         Button(action: action) {
-
             HStack(spacing: 10) {
-
                 Image(systemName: icon)
-                    .font(
-                        .system(
-                            size: height * 0.43,
-                            weight: .bold
-                        )
-                    )
+                    .font(.system(size: height * 0.43, weight: .bold))
 
                 Text(title)
-                    .font(
-                        .system(
-                            size: height * 0.34,
-                            weight: .bold
-                        )
-                    )
+                    .font(.system(size: height * 0.34, weight: .bold))
             }
             .foregroundStyle(.white)
-            .frame(
-                width: width,
-                height: height
-            )
+            .frame(width: width, height: height)
             .background {
-
                 if isPrimary {
-
                     LinearGradient(
                         colors: [
-                            Color(
-                                red: 0.51,
-                                green: 0.55,
-                                blue: 1.0
-                            ),
-                            Color(
-                                red: 0.10,
-                                green: 0.45,
-                                blue: 1.0
-                            )
+                            Color(red: 0.51, green: 0.55, blue: 1.0),
+                            Color(red: 0.10, green: 0.45, blue: 1.0)
                         ],
                         startPoint: .top,
                         endPoint: .bottom
                     )
-
                 } else {
-
-                    Color(
-                        red: 0.20,
-                        green: 0.39,
-                        blue: 0.70
-                    )
+                    Color(red: 0.20, green: 0.39, blue: 0.70)
                 }
             }
             .clipShape(Capsule())
@@ -824,17 +583,13 @@ private struct ShareSheetController: UIViewControllerRepresentable {
 
     let items: [Any]
 
-    func makeUIViewController(
-        context: Context
-    ) -> UIActivityViewController {
-
+    func makeUIViewController(context: Context) -> UIActivityViewController {
         let controller = UIActivityViewController(
             activityItems: items,
             applicationActivities: nil
         )
 
         if let popover = controller.popoverPresentationController {
-
             popover.sourceView = controller.view
             popover.sourceRect = CGRect(
                 x: controller.view.bounds.midX,
@@ -848,10 +603,7 @@ private struct ShareSheetController: UIViewControllerRepresentable {
         return controller
     }
 
-    func updateUIViewController(
-        _ uiViewController: UIActivityViewController,
-        context: Context
-    ) {}
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
 // MARK: - Gallery
@@ -864,21 +616,11 @@ private struct CompletionGalleryView: View {
     @Binding var isPresented: Bool
 
     var body: some View {
-
         ZStack {
+            Color.black.ignoresSafeArea()
 
-            Color.black
-                .ignoresSafeArea()
-
-            TabView(
-                selection: $selectedIndex
-            ) {
-
-                ForEach(
-                    images.indices,
-                    id: \.self
-                ) { index in
-
+            TabView(selection: $selectedIndex) {
+                ForEach(images.indices, id: \.self) { index in
                     Image(uiImage: images[index])
                         .resizable()
                         .scaledToFit()
@@ -886,51 +628,25 @@ private struct CompletionGalleryView: View {
                         .padding(30)
                 }
             }
-            .tabViewStyle(
-                .page(indexDisplayMode: .automatic)
-            )
+            .tabViewStyle(.page(indexDisplayMode: .automatic))
 
             VStack {
-
                 HStack {
-
                     Spacer()
 
                     Button {
-
                         isPresented = false
-
                     } label: {
-
                         Image(systemName: "xmark")
-                            .font(
-                                .system(
-                                    size: 20,
-                                    weight: .bold
-                                )
-                            )
+                            .font(.system(size: 20, weight: .bold))
                             .foregroundStyle(.white)
-                            .frame(
-                                width: 48,
-                                height: 48
-                            )
-                            .background(
-                                Circle()
-                                    .fill(
-                                        Color.black.opacity(0.55)
-                                    )
-                            )
+                            .frame(width: 48, height: 48)
+                            .background(Circle().fill(Color.black.opacity(0.55)))
                     }
                     .buttonStyle(.plain)
                 }
-                .padding(
-                    .trailing,
-                    24
-                )
-                .padding(
-                    .top,
-                    20
-                )
+                .padding(.trailing, 24)
+                .padding(.top, 20)
 
                 Spacer()
             }
@@ -942,12 +658,11 @@ private struct CompletionGalleryView: View {
 #Preview("Completion Landscape") {
     CompletionView(
         durationSeconds: 180,
-        capturedPhotos: []
+        capturedPhotos: [],
+        isReadOnly: true
     )
     .modelContainer(
-        for: [
-            GallerySession.self
-        ],
+        for: [GallerySession.self],
         inMemory: true
     )
 }
