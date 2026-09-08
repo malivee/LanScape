@@ -541,138 +541,27 @@ struct SelectMusicView: View {
                         spacing: isPad ? 16 : 8
                     ) {
 
-                        // Pose 1
+                        ForEach(1...5, id: \.self) { index in
+                            let poseImage = music.poseImageName(for: index)
+                            let title = poseTitle(for: index)
 
-                        MovementItemCard(
-                            imageName: "pose 1",
-                            title: "Pose Pertama",
-                            imageHeight: isPad
-                                ? 140
-                                : 65,
-                            titleFontSize: isPad
-                                ? 22
-                                : 13
-                        ) {
-
-                            withAnimation(
-                                .spring(
-                                    response: 0.35,
-                                    dampingFraction: 0.75
-                                )
+                            MovementItemCard(
+                                imageName: poseImage,
+                                title: title,
+                                imageHeight: isPad ? 140 : 65,
+                                titleFontSize: isPad ? 22 : 13
                             ) {
-
-                                previewPoseItem = (
-                                    "pose 1",
-                                    "Pose Pertama - Pose Fusion"
-                                )
-                            }
-                        }
-
-                        // Pose 2
-
-                        MovementItemCard(
-                            imageName: "pose2",
-                            title: "Pose Kedua",
-                            imageHeight: isPad
-                                ? 140
-                                : 65,
-                            titleFontSize: isPad
-                                ? 22
-                                : 13
-                        ) {
-
-                            withAnimation(
-                                .spring(
-                                    response: 0.35,
-                                    dampingFraction: 0.75
-                                )
-                            ) {
-
-                                previewPoseItem = (
-                                    "pose2",
-                                    "Pose Kedua"
-                                )
-                            }
-                        }
-
-                        // Pose 3
-
-                        MovementItemCard(
-                            imageName: "pose3",
-                            title: "Pose Ketiga",
-                            imageHeight: isPad
-                                ? 140
-                                : 65,
-                            titleFontSize: isPad
-                                ? 22
-                                : 13
-                        ) {
-
-                            withAnimation(
-                                .spring(
-                                    response: 0.35,
-                                    dampingFraction: 0.75
-                                )
-                            ) {
-
-                                previewPoseItem = (
-                                    "pose3",
-                                    "Pose Ketiga"
-                                )
-                            }
-                        }
-
-                        // Pose 4
-
-                        MovementItemCard(
-                            imageName: "pose4",
-                            title: "Pose Keempat",
-                            imageHeight: isPad
-                                ? 140
-                                : 65,
-                            titleFontSize: isPad
-                                ? 22
-                                : 13
-                        ) {
-
-                            withAnimation(
-                                .spring(
-                                    response: 0.35,
-                                    dampingFraction: 0.75
-                                )
-                            ) {
-
-                                previewPoseItem = (
-                                    "pose4",
-                                    "Pose Keempat"
-                                )
-                            }
-                        }
-
-                        // Pose 5
-
-                        MovementItemCard(
-                            imageName: "pose5",
-                            title: "Pose Kelima",
-                            imageHeight: isPad
-                                ? 140
-                                : 65,
-                            titleFontSize: isPad
-                                ? 22
-                                : 13
-                        ) {
-
-                            withAnimation(
-                                .spring(
-                                    response: 0.35,
-                                    dampingFraction: 0.75
-                                )
-                            ) {
-
-                                previewPoseItem = (
-                                    "pose5",
-                                    "Pose Kelima"
-                                )
+                                withAnimation(
+                                    .spring(
+                                        response: 0.35,
+                                        dampingFraction: 0.75
+                                    )
+                                ) {
+                                    previewPoseItem = (
+                                        poseImage,
+                                        "\(title) - \(music.title)"
+                                    )
+                                }
                             }
                         }
 
@@ -798,6 +687,19 @@ struct SelectMusicView: View {
         )
 
         return Double(-distance)
+    }
+
+    // MARK: - Pose Title Helper
+
+    private func poseTitle(for index: Int) -> String {
+        switch index {
+        case 1: return "Pose Pertama"
+        case 2: return "Pose Kedua"
+        case 3: return "Pose Ketiga"
+        case 4: return "Pose Keempat"
+        case 5: return "Pose Kelima"
+        default: return "Pose \(index)"
+        }
     }
 
     // MARK: - Horizontal Padding

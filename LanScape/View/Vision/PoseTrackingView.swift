@@ -750,7 +750,7 @@ struct PoseTrackingView: View {
         sessionStartTime = Date()
         sessionMiniGames = MiniGameCatalog.selectRandomChallenges(count: 4)
         
-        let songAsset = selectedMusic?.assetName ?? MusicData.sample.first?.assetName ?? "JarangPulang.mp3"
+        let songAsset = selectedMusic?.assetName ?? MusicData.sample.first?.assetName ?? "JarangPulang"
         musicService.play(assetName: songAsset, isLooping: true, volume: 0.75)
         
         isSessionLoading = true
@@ -784,7 +784,7 @@ struct PoseTrackingView: View {
             }
         }
 
-        let songAsset = selectedMusic?.assetName ?? MusicData.sample.first?.assetName ?? "JarangPulang.mp3"
+        let songAsset = selectedMusic?.assetName ?? MusicData.sample.first?.assetName ?? "JarangPulang"
         musicService.play(assetName: songAsset, isLooping: true, volume: 0.75)
 
         if !hasInitialized {
@@ -844,6 +844,9 @@ struct PoseTrackingView: View {
     }
 
     private var currentPoseSubTitle: String {
+        if let music = selectedMusic {
+            return "Gerakan \(movementNumber) • \(music.title)"
+        }
         switch movementNumber {
         case 1: return "Pose Fusion"
         default: return "Gerakan \(movementNumber)"
@@ -851,6 +854,9 @@ struct PoseTrackingView: View {
     }
 
     private var currentPoseImageName: String {
+        if let music = selectedMusic {
+            return music.poseImageName(for: movementNumber)
+        }
         switch movementNumber {
         case 1: return "pose 1"
         case 2: return "pose2"

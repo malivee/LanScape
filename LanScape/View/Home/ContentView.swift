@@ -10,7 +10,6 @@ import SwiftUI
 struct ContentView: View {
     @State private var navigateToSelectMusic = false
     @State private var navigateToGallery = false
-    @State private var showHelp = false
     
     var body: some View {
         NavigationStack {
@@ -45,28 +44,7 @@ struct ContentView: View {
                         .blur(radius: isPad ? 80 : 50)
                         .offset(y: isPad ? 60 : 30)
                     
-                    // Top Bar Button: Help
-                    VStack {
-                        HStack(spacing: isPad ? 14 : 10) {
-                            Spacer()
-                            
-                            Button {
-                                showHelp = true
-                            } label: {
-                                Image(systemName: "questionmark")
-                                    .font(.system(size: isPad ? 18 : 14, weight: .bold))
-                                    .foregroundStyle(.darkBlue)
-                                    .frame(width: isPad ? 42 : 36, height: isPad ? 42 : 36)
-                                    .background(Color.white.opacity(0.92))
-                                    .clipShape(Circle())
-                                    .shadow(color: .black.opacity(0.12), radius: 4, y: 2)
-                            }
-                        }
-                        .padding(.trailing, isPad ? 48 : 32)
-                        .padding(.top, isPad ? 24 : 14)
-                        
-                        Spacer()
-                    }
+
                     
                     // Main Centered Content: Logo & Action Buttons
                     VStack(spacing: 0) {
@@ -122,9 +100,7 @@ struct ContentView: View {
             .navigationDestination(isPresented: $navigateToGallery) {
                 GalleryView()
             }
-            .fullScreenCover(isPresented: $showHelp) {
-                TutorialGuideView()
-            }
+
             .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("PopToRoot"))) { _ in
                 navigateToSelectMusic = false
                 navigateToGallery = false
