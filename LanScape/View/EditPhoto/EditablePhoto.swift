@@ -340,7 +340,7 @@ struct CustomizePhotoView: View {
             "🦋",
             "⭐️",
             "⚡️",
-            "🦋",
+            "🥽",
             "🧢",
             "🎩"
         ]

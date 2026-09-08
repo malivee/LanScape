@@ -1,7 +1,6 @@
 import SwiftUI
 
 struct SelectMusicView: View {
-
     @Environment(\.dismiss) private var dismiss
 
     // MARK: - State
@@ -27,9 +26,7 @@ struct SelectMusicView: View {
     // MARK: - Body
 
     var body: some View {
-
         GeometryReader { geometry in
-
             let isPad = UIDevice.isIPad || geometry.size.height > 550
 
             let panelWidth = isPad
@@ -44,11 +41,9 @@ struct SelectMusicView: View {
                 : geometry.size.width - panelWidth
 
             ZStack {
-
                 // MARK: Main Content
 
                 HStack(spacing: 0) {
-
                     musicSelectionView(
                         totalWidth: mainWidth,
                         totalHeight: geometry.size.height,
@@ -59,7 +54,6 @@ struct SelectMusicView: View {
                     // Movement panel ONLY appears
                     // after tapping a music card.
                     if let music = selectedMusic {
-
                         movementSequencePanel(
                             for: music,
                             isPad: isPad
@@ -79,18 +73,12 @@ struct SelectMusicView: View {
                 // or movement panel.
 
                 if showBackButton {
-
                     VStack {
-
                         HStack {
-
                             Button {
-
                                 musicService.stop()
                                 dismiss()
-
                             } label: {
-
                                 Image(
                                     systemName: "chevron.left"
                                 )
@@ -140,7 +128,6 @@ struct SelectMusicView: View {
                 // MARK: Pose Preview
 
                 if let item = previewPoseItem {
-
                     posePreviewModal(
                         item: item,
                         isPad: isPad
@@ -150,7 +137,6 @@ struct SelectMusicView: View {
                 // MARK: Loading Overlay
 
                 if isStartingSession {
-
                     GameLoadingView(
                         title: "Menyiapkan Panggung...",
                         subtitle: "Pastikan seluruh tubuh kalian terlihat di kamera ya!"
@@ -160,7 +146,6 @@ struct SelectMusicView: View {
                 }
             }
         }
-
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
 
@@ -169,7 +154,6 @@ struct SelectMusicView: View {
         .fullScreenCover(
             isPresented: $navigateToPoseTracking
         ) {
-
             PoseTrackingView(
                 selectedMusic: selectedMusic ?? musicItems.first
             )
@@ -180,7 +164,6 @@ struct SelectMusicView: View {
         .onChange(
             of: navigateToPoseTracking
         ) { _, isPresented in
-
             if !isPresented {
                 isStartingSession = false
             }
@@ -189,13 +172,11 @@ struct SelectMusicView: View {
         // MARK: Page Start
 
         .onAppear {
-
             // Back button appears as soon as
             // this page starts.
             withAnimation(
                 .easeOut(duration: 0.2)
             ) {
-
                 showBackButton = true
             }
 
@@ -205,7 +186,6 @@ struct SelectMusicView: View {
         // MARK: Page Disappear
 
         .onDisappear {
-
             if !navigateToPoseTracking {
                 musicService.stop()
             }
@@ -221,13 +201,11 @@ struct SelectMusicView: View {
         totalHeight: CGFloat,
         isPad: Bool
     ) -> some View {
-
         let cardW: CGFloat = isPad ? 330 : 200
         let cardH: CGFloat = isPad ? 390 : 210
         let carouselH: CGFloat = isPad ? 420 : 230
 
         return ZStack {
-
             // MARK: Background
 
             Color.white
@@ -262,7 +240,6 @@ struct SelectMusicView: View {
             VStack(
                 spacing: isPad ? 30 : 8
             ) {
-
                 // IMPORTANT:
                 // No Spacer before the title.
                 // This keeps the title at the top.
@@ -270,7 +247,6 @@ struct SelectMusicView: View {
                 VStack(
                     spacing: isPad ? 6 : 2
                 ) {
-
                     Text("Yuk, pilih lagu!")
                         .font(
                             .system(
@@ -338,25 +314,20 @@ struct SelectMusicView: View {
         cardH: CGFloat,
         carouselH: CGFloat
     ) -> some View {
-
         ScrollViewReader { proxy in
-
             ScrollView(
                 .horizontal,
                 showsIndicators: false
             ) {
-
                 LazyHStack(
                     spacing: cardSpacing
                 ) {
-
                     ForEach(
                         Array(
                             musicItems.enumerated()
                         ),
                         id: \.element.id
                     ) { index, music in
-
                         let isSelected =
                             carouselIndex == index
 
@@ -369,60 +340,43 @@ struct SelectMusicView: View {
                             cardHeight: cardH
                         )
                         .id(index)
-
                         .scaleEffect(
                             isSelected
                                 ? 1.0
                                 : 0.88
                         )
-
                         .frame(
                             width: isSelected
                                 ? cardW
                                 : cardW * 0.85,
                             height: cardH
                         )
-
                         .zIndex(
                             cardZIndex(
                                 for: index,
                                 isSelected: isSelected
                             )
                         )
-
                         .offset(
                             y: isSelected
                                 ? 0
                                 : (cardH < 300 ? 10 : 20)
                         )
-
                         .animation(
                             .easeInOut(
                                 duration: 0.25
                             ),
                             value: isSelected
                         )
-
                         .contentShape(
                             RoundedRectangle(
                                 cornerRadius: 18
                             )
                         )
-
-                        // MARK: Tap Music
-
                         .onTapGesture {
-
-                            withAnimation(.easeInOut(duration: 0.35))
-                            {
-
-                                // Move carousel.
+                            withAnimation(.easeInOut(duration: 0.35)) {
                                 carouselIndex = index
-
-                                // Open movement panel.
-                                selectMusic(
-                                    at: index
-                                )
+                                selectMusic(at: index)
                             }
                         }
                     }
@@ -436,33 +390,30 @@ struct SelectMusicView: View {
                     )
                 )
             }
-
-            // Only tracks carousel position.
-            // Swiping does NOT open movement panel.
-
             .scrollPosition(
                 id: $carouselIndex,
                 anchor: .center
             )
-
             .scrollTargetBehavior(
                 .viewAligned(
                     anchor: .center
                 )
             )
-
             .frame(height: carouselH)
-
-            // MARK: Initial Position
-
             .onAppear {
-
                 DispatchQueue.main.async {
-
                     proxy.scrollTo(
-                        0,
+                        carouselIndex ?? 0,
                         anchor: .center
                     )
+                }
+            }
+            // FIX: Re-center and update highlight layout when panel opens/closes
+            .onChange(of: selectedMusic) { _, newValue in
+                if newValue != nil, let index = carouselIndex {
+                    withAnimation(.easeInOut(duration: 0.35)) {
+                        proxy.scrollTo(index, anchor: .center)
+                    }
                 }
             }
         }
@@ -475,21 +426,17 @@ struct SelectMusicView: View {
         for music: MusicData,
         isPad: Bool
     ) -> some View {
-
         VStack(
             alignment: .leading,
             spacing: isPad ? 18 : 8
         ) {
-
             // MARK: Header
 
             HStack {
-
                 VStack(
                     alignment: .leading,
                     spacing: 2
                 ) {
-
                     Text(music.title)
                         .font(
                             .system(
@@ -515,11 +462,9 @@ struct SelectMusicView: View {
                 Spacer()
 
                 CloseIconButton {
-
                     withAnimation(
                         .easeInOut
                     ) {
-
                         selectedMusic = nil
                     }
                 }
@@ -531,16 +476,13 @@ struct SelectMusicView: View {
             // MARK: Movement List
 
             ZStack(alignment: .bottom) {
-
                 ScrollView(
                     .vertical,
                     showsIndicators: false
                 ) {
-
                     VStack(
                         spacing: isPad ? 16 : 8
                     ) {
-
                         // Pose 1
 
                         MovementItemCard(
@@ -553,14 +495,12 @@ struct SelectMusicView: View {
                                 ? 22
                                 : 13
                         ) {
-
                             withAnimation(
                                 .spring(
                                     response: 0.35,
                                     dampingFraction: 0.75
                                 )
                             ) {
-
                                 previewPoseItem = (
                                     "pose 1",
                                     "Pose Pertama - Pose Fusion"
@@ -580,14 +520,12 @@ struct SelectMusicView: View {
                                 ? 22
                                 : 13
                         ) {
-
                             withAnimation(
                                 .spring(
                                     response: 0.35,
                                     dampingFraction: 0.75
                                 )
                             ) {
-
                                 previewPoseItem = (
                                     "pose2",
                                     "Pose Kedua"
@@ -607,14 +545,12 @@ struct SelectMusicView: View {
                                 ? 22
                                 : 13
                         ) {
-
                             withAnimation(
                                 .spring(
                                     response: 0.35,
                                     dampingFraction: 0.75
                                 )
                             ) {
-
                                 previewPoseItem = (
                                     "pose3",
                                     "Pose Ketiga"
@@ -634,14 +570,12 @@ struct SelectMusicView: View {
                                 ? 22
                                 : 13
                         ) {
-
                             withAnimation(
                                 .spring(
                                     response: 0.35,
                                     dampingFraction: 0.75
                                 )
                             ) {
-
                                 previewPoseItem = (
                                     "pose4",
                                     "Pose Keempat"
@@ -661,14 +595,12 @@ struct SelectMusicView: View {
                                 ? 22
                                 : 13
                         ) {
-
                             withAnimation(
                                 .spring(
                                     response: 0.35,
                                     dampingFraction: 0.75
                                 )
                             ) {
-
                                 previewPoseItem = (
                                     "pose5",
                                     "Pose Kelima"
@@ -694,20 +626,17 @@ struct SelectMusicView: View {
                         : 15,
                     fontWeight: .bold
                 ) {
-
                     withAnimation(
                         .easeInOut(
                             duration: 0.15
                         )
                     ) {
-
                         isStartingSession = true
                     }
 
                     DispatchQueue.main.asyncAfter(
                         deadline: .now() + 0.12
                     ) {
-
                         navigateToPoseTracking = true
                     }
                 }
@@ -756,7 +685,6 @@ struct SelectMusicView: View {
     // MARK: - Select Music
 
     private func selectMusic(at index: Int) {
-
         guard musicItems.indices.contains(index) else {
             return
         }
@@ -766,7 +694,6 @@ struct SelectMusicView: View {
         withAnimation(
             .easeInOut
         ) {
-
             selectedMusic = music
         }
 
@@ -785,7 +712,6 @@ struct SelectMusicView: View {
         for index: Int,
         isSelected: Bool
     ) -> Double {
-
         guard !isSelected else {
             return 100
         }
@@ -806,7 +732,6 @@ struct SelectMusicView: View {
         availableWidth: CGFloat,
         cardWidth: CGFloat
     ) -> CGFloat {
-
         max(
             0,
             (availableWidth - cardWidth) / 2
@@ -823,15 +748,11 @@ struct SelectMusicView: View {
         ),
         isPad: Bool
     ) -> some View {
-
         ZStack {
-
             Color.black.opacity(0.65)
                 .ignoresSafeArea()
                 .onTapGesture {
-
                     withAnimation {
-
                         previewPoseItem = nil
                     }
                 }
@@ -841,16 +762,13 @@ struct SelectMusicView: View {
                     ? 14
                     : 8
             ) {
-
                 // MARK: Modal Header
 
                 HStack {
-
                     VStack(
                         alignment: .leading,
                         spacing: 2
                     ) {
-
                         Text(
                             "CONTOH GAYA POSE"
                         )
@@ -885,9 +803,7 @@ struct SelectMusicView: View {
                     Spacer()
 
                     CloseIconButton {
-
                         withAnimation {
-
                             previewPoseItem = nil
                         }
                     }

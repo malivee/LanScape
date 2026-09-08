@@ -189,14 +189,14 @@ struct CompletionView: View {
                     // PHOTO AREA
                     HStack(alignment: .top, spacing: gridGap) {
 
-                        // LEFT PHOTO STRIP
+                        // LEFT PHOTO STRIP - Utilizing the Dynamic Array Initializer
                         Button {
                             if !fivePhotos.isEmpty {
                                 galleryIndex = 0
                                 showGallery = true
                             }
                         } label: {
-                            PhotoStripView(image: postcardImage)
+                            PhotoStripView(images: fivePhotos)
                         }
                         .buttonStyle(.plain)
                         .frame(width: stripWidth, height: photoAreaHeight)
@@ -601,7 +601,7 @@ private struct CompletionButton: View {
                     )
             )
             .shadow(
-                color: isPrimary ? Color(hex: "2563EB").opacity(0.4) : Color.black.opacity(0.2),
+                color: isPrimary ? Color(red: 0.15, green: 0.39, blue: 0.92).opacity(0.4) : Color.black.opacity(0.2),
                 radius: 8,
                 x: 0,
                 y: 4
@@ -687,16 +687,4 @@ private struct CompletionGalleryView: View {
         }
         .ignoresSafeArea()
     }
-}
-
-#Preview("Completion Landscape") {
-    CompletionView(
-        durationSeconds: 180,
-        capturedPhotos: [],
-        isReadOnly: true
-    )
-    .modelContainer(
-        for: [GallerySession.self],
-        inMemory: true
-    )
 }
