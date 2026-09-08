@@ -2,47 +2,47 @@ import SwiftUI
 
 struct SelectMusicView: View {
     @Environment(\.dismiss) private var dismiss
-
+    
     // MARK: - State
-
+    
     @State private var selectedMusic: MusicData? = nil
-
+    
     // Controls carousel position only.
     // Does NOT open the movement panel.
     @State private var carouselIndex: Int? = 0
-
+    
     @State private var navigateToPoseTracking = false
     @State private var isStartingSession = false
     @State private var previewPoseItem: (imageName: String, title: String)? = nil
-
+    
     // Back button appears independently from the content.
     @State private var showBackButton = false
-
+    
     @ObservedObject private var musicService = BackgroundMusicService.shared
-
+    
     private let musicItems = MusicData.sample
     private let cardSpacing: CGFloat = 20
-
+    
     // MARK: - Body
-
+    
     var body: some View {
         GeometryReader { geometry in
             let isPad = UIDevice.isIPad || geometry.size.height > 550
-
+            
             let panelWidth = isPad
-                ? geometry.size.width * 0.30
-                : min(
-                    CGFloat(340),
-                    geometry.size.width * 0.38
-                )
-
+            ? geometry.size.width * 0.30
+            : min(
+                CGFloat(340),
+                geometry.size.width * 0.38
+            )
+            
             let mainWidth = selectedMusic == nil
-                ? geometry.size.width
-                : geometry.size.width - panelWidth
-
+            ? geometry.size.width
+            : geometry.size.width - panelWidth
+            
             ZStack {
                 // MARK: Main Content
-
+                
                 HStack(spacing: 0) {
                     musicSelectionView(
                         totalWidth: mainWidth,
@@ -50,7 +50,7 @@ struct SelectMusicView: View {
                         isPad: isPad
                     )
                     .frame(width: mainWidth)
-
+                    
                     // Movement panel ONLY appears
                     // after tapping a music card.
                     if let music = selectedMusic {
@@ -65,13 +65,13 @@ struct SelectMusicView: View {
                     }
                 }
                 .ignoresSafeArea(edges: .bottom)
-
+                
                 // MARK: Back Button
                 //
                 // This is outside musicSelectionView,
                 // so it does not wait for the carousel
                 // or movement panel.
-
+                
                 if showBackButton {
                     VStack {
                         HStack {
@@ -103,7 +103,7 @@ struct SelectMusicView: View {
                                     y: 2
                                 )
                             }
-
+                            
                             Spacer()
                         }
                         .padding(
@@ -114,7 +114,7 @@ struct SelectMusicView: View {
                             .top,
                             isPad ? 16 : 12
                         )
-
+                        
                         Spacer()
                     }
                     .transition(
@@ -124,18 +124,18 @@ struct SelectMusicView: View {
                     )
                     .zIndex(50)
                 }
-
+                
                 // MARK: Pose Preview
-
+                
                 if let item = previewPoseItem {
                     posePreviewModal(
                         item: item,
                         isPad: isPad
                     )
                 }
-
+                
                 // MARK: Loading Overlay
-
+                
                 if isStartingSession {
                     GameLoadingView(
                         title: "Menyiapkan Panggung...",
@@ -148,9 +148,9 @@ struct SelectMusicView: View {
         }
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
-
+        
         // MARK: Pose Tracking
-
+        
         .fullScreenCover(
             isPresented: $navigateToPoseTracking
         ) {
@@ -158,9 +158,9 @@ struct SelectMusicView: View {
                 selectedMusic: selectedMusic ?? musicItems.first
             )
         }
-
+        
         // MARK: Navigation State
-
+        
         .onChange(
             of: navigateToPoseTracking
         ) { _, isPresented in
@@ -168,9 +168,9 @@ struct SelectMusicView: View {
                 isStartingSession = false
             }
         }
-
+        
         // MARK: Page Start
-
+        
         .onAppear {
             // Back button appears as soon as
             // this page starts.
@@ -179,23 +179,23 @@ struct SelectMusicView: View {
             ) {
                 showBackButton = true
             }
-
+            
             CameraService.shared.warmUp()
         }
-
+        
         // MARK: Page Disappear
-
+        
         .onDisappear {
             if !navigateToPoseTracking {
                 musicService.stop()
             }
-
+            
             showBackButton = false
         }
     }
-
+    
     // MARK: - Music Selection View
-
+    
     private func musicSelectionView(
         totalWidth: CGFloat,
         totalHeight: CGFloat,
@@ -204,12 +204,12 @@ struct SelectMusicView: View {
         let cardW: CGFloat = isPad ? 330 : 200
         let cardH: CGFloat = isPad ? 390 : 210
         let carouselH: CGFloat = isPad ? 420 : 230
-
+        
         return ZStack {
             // MARK: Background
-
+            
             Color.white
-
+            
             Ellipse()
                 .fill(
                     RadialGradient(
@@ -234,16 +234,16 @@ struct SelectMusicView: View {
                     y: isPad ? 80 : 40
                 )
                 .allowsHitTesting(false)
-
+            
             // MARK: Content
-
+            
             VStack(
                 spacing: isPad ? 30 : 8
             ) {
                 // IMPORTANT:
                 // No Spacer before the title.
                 // This keeps the title at the top.
-
+                
                 VStack(
                     spacing: isPad ? 6 : 2
                 ) {
@@ -255,7 +255,7 @@ struct SelectMusicView: View {
                             )
                         )
                         .foregroundStyle(.black)
-
+                    
                     Text(
                         "Pilih musik favoritmu dan dengarkan cuplikannya!"
                     )
@@ -268,18 +268,18 @@ struct SelectMusicView: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                 }
-
+                
                 // MARK: Music Carousel
-
+                
                 musicCarousel(
                     availableWidth: totalWidth,
                     cardW: cardW,
                     cardH: cardH,
                     carouselH: carouselH
                 )
-
+                
                 // MARK: Page Indicator
-
+                
                 DotPageIndicator(
                     totalPages: musicItems.count,
                     currentPage: carouselIndex ?? 0
@@ -287,27 +287,27 @@ struct SelectMusicView: View {
                 .scaleEffect(
                     isPad ? 1.0 : 0.85
                 )
-
+                
                 Spacer()
             }
-
+            
             // Push the whole content slightly below
             // the Back button without centering it.
-
+            
             .padding(
                 .top,
                 isPad ? 80 : 50
             )
-
+            
             .padding(
                 .bottom,
                 isPad ? 16 : 6
             )
         }
     }
-
+    
     // MARK: - Music Carousel
-
+    
     private func musicCarousel(
         availableWidth: CGFloat,
         cardW: CGFloat,
@@ -328,55 +328,31 @@ struct SelectMusicView: View {
                         ),
                         id: \.element.id
                     ) { index, music in
-                        let isSelected =
-                            carouselIndex == index
-
+                        let isSelected = carouselIndex == index
+                        
                         MusicCarouselCard(
                             music: music,
                             isSelected: isSelected,
-                            cardWidth: isSelected
-                                ? cardW
-                                : cardW * 0.85,
+                            cardWidth: isSelected ? cardW : cardW * 0.85,
                             cardHeight: cardH
                         )
                         .id(index)
-                        .scaleEffect(
-                            isSelected
-                                ? 1.0
-                                : 0.88
-                        )
+                        .scaleEffect(isSelected ? 1.0 : 0.88)
                         .frame(
-                            width: isSelected
-                                ? cardW
-                                : cardW * 0.85,
+                            width: isSelected ? cardW : cardW * 0.85,
                             height: cardH
                         )
-                        .zIndex(
-                            cardZIndex(
-                                for: index,
-                                isSelected: isSelected
-                            )
-                        )
-                        .offset(
-                            y: isSelected
-                                ? 0
-                                : (cardH < 300 ? 10 : 20)
-                        )
-                        .animation(
-                            .easeInOut(
-                                duration: 0.25
-                            ),
-                            value: isSelected
-                        )
-                        .contentShape(
-                            RoundedRectangle(
-                                cornerRadius: 18
-                            )
-                        )
+                        .zIndex(cardZIndex(for: index, isSelected: isSelected))
+                        .offset(y: isSelected ? 0 : (cardH < 300 ? 10 : 20))
+                        .animation(.easeInOut(duration: 0.25), value: isSelected)
+                        .contentShape(RoundedRectangle(cornerRadius: 18))
                         .onTapGesture {
                             withAnimation(.easeInOut(duration: 0.35)) {
                                 carouselIndex = index
                                 selectMusic(at: index)
+                                
+                                // Instantly command the scroll proxy to center the tapped card
+                                proxy.scrollTo(index, anchor: .center)
                             }
                         }
                     }
@@ -390,37 +366,41 @@ struct SelectMusicView: View {
                     )
                 )
             }
-            .scrollPosition(
-                id: $carouselIndex,
-                anchor: .center
-            )
-            .scrollTargetBehavior(
-                .viewAligned(
-                    anchor: .center
-                )
-            )
+            .scrollPosition(id: $carouselIndex, anchor: .center)
+            .scrollTargetBehavior(.viewAligned(anchor: .center))
             .frame(height: carouselH)
             .onAppear {
                 DispatchQueue.main.async {
-                    proxy.scrollTo(
-                        carouselIndex ?? 0,
-                        anchor: .center
-                    )
+                    proxy.scrollTo(carouselIndex ?? 0, anchor: .center)
                 }
             }
-            // FIX: Re-center and update highlight layout when panel opens/closes
+            // When swiping cards, sync the selection and re-center smoothly
+            .onChange(of: carouselIndex) { _, newIndex in
+                if let newIndex = newIndex, musicItems.indices.contains(newIndex) {
+                    let currentMusic = musicItems[newIndex]
+                    if selectedMusic?.id != currentMusic.id {
+                        withAnimation(.easeInOut(duration: 0.35)) {
+                            selectMusic(at: newIndex)
+                            proxy.scrollTo(newIndex, anchor: .center)
+                        }
+                    }
+                }
+            }
+            // When the movement panel opens/closes, recalculate and re-center the active card
             .onChange(of: selectedMusic) { _, newValue in
                 if newValue != nil, let index = carouselIndex {
-                    withAnimation(.easeInOut(duration: 0.35)) {
-                        proxy.scrollTo(index, anchor: .center)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                        withAnimation(.easeInOut(duration: 0.35)) {
+                            proxy.scrollTo(index, anchor: .center)
+                        }
                     }
                 }
             }
         }
     }
-
+    
     // MARK: - Movement Sequence Panel
-
+    
     @ViewBuilder
     private func movementSequencePanel(
         for music: MusicData,
@@ -431,7 +411,7 @@ struct SelectMusicView: View {
             spacing: isPad ? 18 : 8
         ) {
             // MARK: Header
-
+            
             HStack {
                 VStack(
                     alignment: .leading,
@@ -446,7 +426,7 @@ struct SelectMusicView: View {
                         )
                         .foregroundColor(.white)
                         .lineLimit(1)
-
+                    
                     Text("5 Gerakan Pose")
                         .font(
                             .system(
@@ -458,9 +438,9 @@ struct SelectMusicView: View {
                             .white.opacity(0.8)
                         )
                 }
-
+                
                 Spacer()
-
+                
                 CloseIconButton {
                     withAnimation(
                         .easeInOut
@@ -472,9 +452,9 @@ struct SelectMusicView: View {
                     isPad ? 1.0 : 0.85
                 )
             }
-
+            
             // MARK: Movement List
-
+            
             ZStack(alignment: .bottom) {
                 ScrollView(
                     .vertical,
@@ -483,11 +463,11 @@ struct SelectMusicView: View {
                     VStack(
                         spacing: isPad ? 16 : 8
                     ) {
-
+                        
                         ForEach(1...5, id: \.self) { index in
                             let poseImage = music.poseImageName(for: index)
                             let title = poseTitle(for: index)
-
+                            
                             MovementItemCard(
                                 imageName: poseImage,
                                 title: title,
@@ -507,23 +487,23 @@ struct SelectMusicView: View {
                                 }
                             }
                         }
-
+                        
                         Spacer()
                             .frame(
                                 height: isPad
-                                    ? 70
-                                    : 54
+                                ? 70
+                                : 54
                             )
                     }
                 }
-
+                
                 // MARK: Start Button
-
+                
                 GradientStartButton(
                     title: "Mulai Bergerak",
                     fontSize: isPad
-                        ? 20
-                        : 15,
+                    ? 20
+                    : 15,
                     fontWeight: .bold
                 ) {
                     withAnimation(
@@ -533,7 +513,7 @@ struct SelectMusicView: View {
                     ) {
                         isStartingSession = true
                     }
-
+                    
                     DispatchQueue.main.asyncAfter(
                         deadline: .now() + 0.12
                     ) {
@@ -543,71 +523,71 @@ struct SelectMusicView: View {
                 .padding(.bottom, 6)
                 .frame(
                     maxWidth: isPad
-                        ? 260
-                        : .infinity
+                    ? 260
+                    : .infinity
                 )
                 .frame(
                     height: isPad
-                        ? 56
-                        : 44
+                    ? 56
+                    : 44
                 )
             }
             .frame(maxHeight: .infinity)
         }
-
+        
         .padding(
             isPad ? 16 : 10
         )
-
+        
         .background(
             Color.darkBlue
         )
-
+        
         .clipShape(
             .rect(
                 cornerRadius: isPad
-                    ? 20
-                    : 16
+                ? 20
+                : 16
             )
         )
-
+        
         .padding(
             .vertical,
             isPad ? 10 : 6
         )
-
+        
         .padding(
             .trailing,
             isPad ? 10 : 6
         )
     }
-
+    
     // MARK: - Select Music
-
+    
     private func selectMusic(at index: Int) {
         guard musicItems.indices.contains(index) else {
             return
         }
-
+        
         let music = musicItems[index]
-
+        
         withAnimation(
             .easeInOut
         ) {
             selectedMusic = music
         }
-
+        
         // Start music preview.
-
+        
         musicService.play(
             assetName: music.assetName,
             isLooping: true,
             volume: 0.85
         )
     }
-
+    
     // MARK: - Card Z Index
-
+    
     private func cardZIndex(
         for index: Int,
         isSelected: Bool
@@ -615,19 +595,19 @@ struct SelectMusicView: View {
         guard !isSelected else {
             return 100
         }
-
+        
         let currentIndex =
-            carouselIndex ?? 0
-
+        carouselIndex ?? 0
+        
         let distance = abs(
             index - currentIndex
         )
-
+        
         return Double(-distance)
     }
-
+    
     // MARK: - Pose Title Helper
-
+    
     private func poseTitle(for index: Int) -> String {
         switch index {
         case 1: return "Pose Pertama"
@@ -638,9 +618,9 @@ struct SelectMusicView: View {
         default: return "Pose \(index)"
         }
     }
-
+    
     // MARK: - Horizontal Padding
-
+    
     private func horizontalPadding(
         availableWidth: CGFloat,
         cardWidth: CGFloat
@@ -650,9 +630,9 @@ struct SelectMusicView: View {
             (availableWidth - cardWidth) / 2
         )
     }
-
+    
     // MARK: - Pose Preview Modal
-
+    
     @ViewBuilder
     private func posePreviewModal(
         item: (
@@ -669,14 +649,14 @@ struct SelectMusicView: View {
                         previewPoseItem = nil
                     }
                 }
-
+            
             VStack(
                 spacing: isPad
-                    ? 14
-                    : 8
+                ? 14
+                : 8
             ) {
                 // MARK: Modal Header
-
+                
                 HStack {
                     VStack(
                         alignment: .leading,
@@ -688,8 +668,8 @@ struct SelectMusicView: View {
                         .font(
                             .system(
                                 size: isPad
-                                    ? 14
-                                    : 10,
+                                ? 14
+                                : 10,
                                 weight: .black,
                                 design: .rounded
                             )
@@ -697,13 +677,13 @@ struct SelectMusicView: View {
                         .foregroundColor(
                             Color.orange
                         )
-
+                        
                         Text(item.title)
                             .font(
                                 .system(
                                     size: isPad
-                                        ? 24
-                                        : 16,
+                                    ? 24
+                                    : 16,
                                     weight: .bold,
                                     design: .rounded
                                 )
@@ -712,9 +692,9 @@ struct SelectMusicView: View {
                                 Color.darkBlue
                             )
                     }
-
+                    
                     Spacer()
-
+                    
                     CloseIconButton {
                         withAnimation {
                             previewPoseItem = nil
@@ -722,30 +702,30 @@ struct SelectMusicView: View {
                     }
                     .scaleEffect(
                         isPad
-                            ? 1.0
-                            : 0.8
+                        ? 1.0
+                        : 0.8
                     )
                 }
-
+                
                 .padding(
                     .horizontal,
                     isPad ? 20 : 12
                 )
-
+                
                 .padding(
                     .top,
                     isPad ? 16 : 10
                 )
-
+                
                 // MARK: Pose Image
-
+                
                 Image(item.imageName)
                     .resizable()
                     .scaledToFit()
                     .frame(
                         maxHeight: isPad
-                            ? 380
-                            : 190
+                        ? 380
+                        : 190
                     )
                     .padding(
                         .horizontal,
@@ -756,18 +736,18 @@ struct SelectMusicView: View {
                         isPad ? 16 : 10
                     )
             }
-
+            
             .frame(
                 maxWidth: isPad
-                    ? 520
-                    : 340
+                ? 520
+                : 340
             )
-
+            
             .background(
                 RoundedRectangle(
                     cornerRadius: isPad
-                        ? 24
-                        : 16
+                    ? 24
+                    : 16
                 )
                 .fill(Color.white)
                 .shadow(
@@ -777,15 +757,15 @@ struct SelectMusicView: View {
                     y: 8
                 )
             )
-
+            
             .padding(
                 .horizontal,
                 20
             )
         }
-
+        
         .zIndex(100)
-
+        
         .transition(
             .opacity.combined(
                 with: .scale(
