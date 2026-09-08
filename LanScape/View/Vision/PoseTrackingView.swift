@@ -65,7 +65,7 @@ struct PoseTrackingView: View {
     private let totalMovements: Int = 5
 
     @State
-    private var captureState: PoseCaptureState = .showingPosePreview(secondsRemaining: 3)
+    private var captureState: PoseCaptureState = .showingPosePreview(secondsRemaining: 8)
 
     @State
     private var capturedPhotos: [UIImage] = []
@@ -585,7 +585,7 @@ struct PoseTrackingView: View {
 
         activeTimerTask = Task { @MainActor in
             // 1. Tampilkan kartu pose besar selama 3 detik
-            for previewSec in (1...3).reversed() {
+            for previewSec in (1...8).reversed() {
                 guard !Task.isCancelled else { return }
                 withAnimation(.easeInOut(duration: 0.25)) {
                     captureState = .showingPosePreview(secondsRemaining: previewSec)

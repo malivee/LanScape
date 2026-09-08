@@ -693,3 +693,7 @@ private struct CompletionGalleryView: View {
         .ignoresSafeArea()
     }
 }
+
+#Preview {
+    CompletionView(durationSeconds: 0, capturedPhotos: [])
+}
