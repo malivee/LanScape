@@ -655,11 +655,16 @@ private struct CompletionGalleryView: View {
 
             TabView(selection: $selectedIndex) {
                 ForEach(images.indices, id: \.self) { index in
-                    Image(uiImage: images[index])
-                        .resizable()
-                        .scaledToFit()
-                        .tag(index)
-                        .padding(30)
+                    ZStack {
+                        Color.clear
+                        
+                        Image(uiImage: images[index])
+                            .resizable()
+                            .scaledToFit()
+                            .padding(30)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity) // Forces full centering per page
+                    .tag(index)
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: .automatic))
