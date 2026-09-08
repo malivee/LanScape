@@ -297,10 +297,7 @@ struct CustomizePhotoView: View {
 
             stickerGrid(isPad: isPad)
 
-            Divider()
-                .padding(.vertical, isPad ? 5 : 2)
-
-            Spacer()
+           
         }
         .padding(isPad ? 20 : 10)
         .background(
@@ -321,13 +318,13 @@ struct CustomizePhotoView: View {
             )
         )
         .padding(.leading, isPad ? 40 : 16)
+        .padding(.bottom, isPad ? 40 : 40)
     }
 
     // MARK: - Stickers
 
     private func stickerGrid(isPad: Bool) -> some View {
-
-        let stickers = [
+        let stickers: [String] = [
             "🌸",
             "👑",
             "❤️",
@@ -344,47 +341,17 @@ struct CustomizePhotoView: View {
             "🧢",
             "🎩"
         ]
-
-        let columns = isPad
-            ? [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]
-            : [GridItem(.flexible()), GridItem(.flexible())]
-
-        return LazyVGrid(
-            columns: columns,
-            spacing: isPad ? 10 : 6
-        ) {
-
-            ForEach(
-                Array(stickers.enumerated()),
-                id: \.offset
-            ) { index, sticker in
-
+        
+        return LazyVGrid(columns: [GridItem(.adaptive(minimum: 44))], spacing: 12) {
+            ForEach(Array(stickers.enumerated()), id: \.offset) { index, sticker in
                 Button {
-
-                    addSticker(sticker)
-
                 } label: {
-
                     Text(sticker)
-                        .font(.system(size: isPad ? 32 : 20))
-                        .frame(
-                            maxWidth: .infinity,
-                            minHeight: isPad ? 54 : 34
-                        )
-                        .background(
-                            RoundedRectangle(
-                                cornerRadius: isPad ? 8 : 6
-                            )
-                            .fill(
-                                Color.blue.opacity(0.12)
-                            )
-                        )
+                        .font(.system(size: 32))
                 }
-                .buttonStyle(.plain)
             }
         }
     }
-
     // MARK: - Photo Area
 
     private func photoArea(isPad: Bool) -> some View {
@@ -1008,175 +975,77 @@ struct EditableSticker: View {
     let isSelected: Bool
     var onDelete: (() -> Void)? = nil
 
-    @State private var dragStart:
-        CGPoint?
-
-    @State private var scaleStart:
-        CGFloat?
-
-    @State private var rotationStart:
-        Angle?
+    @State private var dragStart: CGPoint?
+    @State private var scaleStart: CGFloat?
+    @State private var rotationStart: Angle?
 
     var body: some View {
-
         GeometryReader { geometry in
+            let posX = geometry.size.width * sticker.position.x
+            let posY = geometry.size.height * sticker.position.y
+            let baseSize = min(geometry.size.width, geometry.size.height) * 0.08
 
             Text(sticker.emoji)
-                .font(
-                    .system(
-                        size:
-                            min(
-                                geometry.size.width,
-                                geometry.size.height
-                            ) * 0.08
-                    )
-                )
+                .font(.system(size: baseSize))
                 .frame(width: 80, height: 80)
                 .contentShape(Rectangle())
-                .scaleEffect(
-                    sticker.scale
-                )
-                .rotationEffect(
-                    sticker.rotation
-                )
-                .position(
-                    x:
-                        geometry.size.width *
-                        sticker.position.x,
-
-                    y:
-                        geometry.size.height *
-                        sticker.position.y
-                )
+                .scaleEffect(sticker.scale)
+                .rotationEffect(sticker.rotation)
+                .position(x: posX, y: posY)
                 .overlay {
-                    if isSelected {
-                        Circle()
-                            .stroke(Color.blue, lineWidth: 2)
-                            .frame(width: 80, height: 80)
-                            .position(
-                                x: geometry.size.width * sticker.position.x,
-                                y: geometry.size.height * sticker.position.y
-                            )
-
-                        Button {
-                            onDelete?()
-                        } label: {
-                            Image(systemName: "xmark")
-                                .font(.system(size: 12, weight: .bold))
-                                .foregroundStyle(.white)
-                                .frame(width: 28, height: 28)
-                                .background(Circle().fill(Color.red))
-                                .shadow(color: .black.opacity(0.2), radius: 4, y: 2)
-                        }
-                        .buttonStyle(.plain)
-                        .position(
-                            x: geometry.size.width * sticker.position.x + 34,
-                            y: geometry.size.height * sticker.position.y - 34
-                        )
-                    }
+                    selectedOverlay(posX: posX, posY: posY)
                 }
-                .gesture(
-
-                    DragGesture()
-                        .onChanged { value in
-
-                            if dragStart == nil {
-
-                                dragStart =
-                                    sticker.position
-                            }
-
-                            guard
-                                let start =
-                                    dragStart
-                            else {
-                                return
-                            }
-
-                            let dx =
-                                value.translation.width /
-                                geometry.size.width
-
-                            let dy =
-                                value.translation.height /
-                                geometry.size.height
-
-                            sticker.position =
-                                CGPoint(
-                                    x:
-                                        min(
-                                            max(
-                                                start.x + dx,
-                                                0.05
-                                            ),
-                                            0.95
-                                        ),
-
-                                    y:
-                                        min(
-                                            max(
-                                                start.y + dy,
-                                                0.05
-                                            ),
-                                            0.95
-                                        )
-                                )
-                        }
-                        .onEnded { _ in
-
-                            dragStart = nil
-                        }
-                )
-                .simultaneousGesture(
-
-                    MagnificationGesture()
-                        .onChanged { value in
-
-                            if scaleStart == nil {
-
-                                scaleStart =
-                                    sticker.scale
-                            }
-
-                            sticker.scale =
-                                min(
-                                    max(
-                                        (scaleStart ?? 1)
-                                        * value,
-                                        0.3
-                                    ),
-                                    4.0
-                                )
-                        }
-                        .onEnded { _ in
-
-                            scaleStart = nil
-                        }
-                )
-                .simultaneousGesture(
-
-                    RotationGesture()
-                        .onChanged { value in
-
-                            if rotationStart == nil {
-
-                                rotationStart =
-                                    sticker.rotation
-                            }
-
-                            sticker.rotation =
-                                (rotationStart ?? .zero)
-                                + value
-                        }
-                        .onEnded { _ in
-
-                            rotationStart = nil
-                        }
-                )
+                .gesture(stickerDragGesture(geometry: geometry))
         }
     }
-}
 
+    @ViewBuilder
+    private func selectedOverlay(posX: CGFloat, posY: CGFloat) -> some View {
+        if isSelected {
+            ZStack {
+                Circle()
+                    .stroke(Color.blue, lineWidth: 2)
+                    .frame(width: 80, height: 80)
+                    .position(x: posX, y: posY)
+
+                Button {
+                    onDelete?()
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 28, height: 28)
+                        .background(Circle().fill(Color.red))
+                        .shadow(color: .black.opacity(0.2), radius: 4, y: 2)
+                }
+                .buttonStyle(.plain)
+                .position(x: posX + 34, y: posY - 34)
+            }
+        }
+    }
+
+    private func stickerDragGesture(geometry: GeometryProxy) -> some Gesture {
+        DragGesture()
+            .onChanged { value in
+                if dragStart == nil {
+                    dragStart = sticker.position
+                }
+
+                guard let start = dragStart else { return }
+
+                let newX = start.x + (value.translation.width / geometry.size.width)
+                let newY = start.y + (value.translation.height / geometry.size.height)
+
+                sticker.position = CGPoint(
+                    x: min(max(newX, 0.0), 1.0),
+                    y: min(max(newY, 0.0), 1.0)
+                )
+            }
+            .onEnded { _ in
+                dragStart = nil
+            }
+    }
+}
 // MARK: - Editable Image Layer
 
 struct EditableImageLayer: View {
@@ -1369,4 +1238,15 @@ extension Notification.Name {
         Notification.Name(
             "showPencilKitTools"
         )
+}
+
+
+#Preview {
+    CustomizePhotoView(photos: [
+        UIImage(named: "Goldenimg") ?? UIImage(),
+        UIImage(named: "Goldenimg") ?? UIImage(),
+        UIImage(named: "Goldenimg") ?? UIImage(),
+        UIImage(named: "Goldenimg") ?? UIImage(),
+        UIImage(named: "Goldenimg") ?? UIImage(),
+    ])
 }
