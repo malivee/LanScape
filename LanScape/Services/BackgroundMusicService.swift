@@ -26,17 +26,21 @@ final class BackgroundMusicService: ObservableObject {
     }
     
     func preloadAllSongs() {
-        let assetNames = ["JarangPulang.mp3", "BubbleGum", "Golden", "Happy", "BoleChudiyan"]
+        let assetNames = ["JarangPulang", "Golden", "Happy", "ILoveYou", "BoleChudiyan"]
         
         Task.detached(priority: .utility) { [weak self] in
             for name in assetNames {
-                guard let dataAsset = NSDataAsset(name: name) else { continue }
+                let cleanName = name.replacingOccurrences(of: ".mp3", with: "")
+                guard let dataAsset = NSDataAsset(name: name) ?? NSDataAsset(name: cleanName) else { continue }
                 if let player = try? AVAudioPlayer(data: dataAsset.data) {
                     player.prepareToPlay()
                     await MainActor.run {
                         guard let self = self else { return }
                         if self.playerCache[name] == nil {
                             self.playerCache[name] = player
+                        }
+                        if self.playerCache[cleanName] == nil {
+                            self.playerCache[cleanName] = player
                         }
                     }
                 }
@@ -60,8 +64,10 @@ final class BackgroundMusicService: ObservableObject {
     }
     
     func play(assetName: String, isLooping: Bool = true, volume: Float = 0.8) {
+        let cleanName = assetName.replacingOccurrences(of: ".mp3", with: "")
+        
         // If already playing this exact asset, just update volume if needed and return
-        if currentlyPlayingAssetName == assetName && isPlaying {
+        if (currentlyPlayingAssetName == assetName || currentlyPlayingAssetName == cleanName) && isPlaying {
             audioPlayer?.volume = volume
             return
         }
@@ -69,7 +75,7 @@ final class BackgroundMusicService: ObservableObject {
         currentLoadTask?.cancel()
         
         // Fast path: cached player
-        if let cachedPlayer = playerCache[assetName] {
+        if let cachedPlayer = playerCache[assetName] ?? playerCache[cleanName] {
             stop()
             cachedPlayer.currentTime = 0
             cachedPlayer.numberOfLoops = isLooping ? -1 : 0
@@ -84,8 +90,8 @@ final class BackgroundMusicService: ObservableObject {
         
         // Asynchronous load to eliminate any UI freeze
         currentLoadTask = Task.detached(priority: .userInitiated) { [weak self] in
-            guard let dataAsset = NSDataAsset(name: assetName) else {
-                print("⚠️ BackgroundMusicService: Cannot find NSDataAsset named '\(assetName)'")
+            guard let dataAsset = NSDataAsset(name: assetName) ?? NSDataAsset(name: cleanName) else {
+                print("⚠️ BackgroundMusicService: Cannot find NSDataAsset named '\(assetName)' or '\(cleanName)'")
                 return
             }
             
@@ -104,6 +110,7 @@ final class BackgroundMusicService: ObservableObject {
                     self.stop()
                     player.play()
                     self.playerCache[assetName] = player
+                    self.playerCache[cleanName] = player
                     self.audioPlayer = player
                     self.currentlyPlayingAssetName = assetName
                     self.isPlaying = true

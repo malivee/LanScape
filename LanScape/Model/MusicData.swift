@@ -10,6 +10,7 @@ struct MusicData: Identifiable, Equatable {
     var coverImageName: String?
     var coverColors: [Color]
     var coverIcon: String
+    var poseImages: [String]
     
     init(
         id: UUID = UUID(),
@@ -17,10 +18,11 @@ struct MusicData: Identifiable, Equatable {
         artist: String = "",
         assetName: String,
         duration: String = "30s",
-        moves: String = "4",
+        moves: String = "5",
         coverImageName: String? = nil,
         coverColors: [Color] = [Color.blue, Color.cyan],
-        coverIcon: String = "music.note"
+        coverIcon: String = "music.note",
+        poseImages: [String] = []
     ) {
         self.id = id
         self.title = title
@@ -31,6 +33,15 @@ struct MusicData: Identifiable, Equatable {
         self.coverImageName = coverImageName
         self.coverColors = coverColors
         self.coverIcon = coverIcon
+        self.poseImages = poseImages
+    }
+    
+    func poseImageName(for movementNumber: Int) -> String {
+        guard !poseImages.isEmpty else {
+            return "pose\(movementNumber)"
+        }
+        let index = max(0, min(movementNumber - 1, poseImages.count - 1))
+        return poseImages[index]
     }
 }
 
@@ -39,22 +50,19 @@ extension MusicData {
         MusicData(
             title: "Jarang Pulang",
             artist: "Lagu Populer",
-            assetName: "JarangPulang.mp3",
+            assetName: "JarangPulang",
             duration: "30s",
             moves: "5",
-            coverImageName: "Jarang Pulang",
+            coverImageName: "JarangPulangimg",
             coverColors: [Color(hex: "1E4BA3"), Color(hex: "00D2FF")],
-            coverIcon: "house.fill"
-        ),
-        MusicData(
-            title: "Bubble Gum",
-            artist: "NewJeans",
-            assetName: "BubbleGum",
-            duration: "35s",
-            moves: "5",
-            coverImageName: "BubbleGumimg",
-            coverColors: [Color(hex: "FF758C"), Color(hex: "FF7EB3")],
-            coverIcon: "bubbles.and.sparkles.fill"
+            coverIcon: "house.fill",
+            poseImages: [
+                "JarangPulang1",
+                "JarangPulang2",
+                "JarangPulang3",
+                "JarangPulang4",
+                "JarangPulang5"
+            ]
         ),
         MusicData(
             title: "Golden",
@@ -64,7 +72,14 @@ extension MusicData {
             moves: "5",
             coverImageName: "Goldenimg",
             coverColors: [Color(hex: "F7971E"), Color(hex: "FFD200")],
-            coverIcon: "sparkles"
+            coverIcon: "sparkles",
+            poseImages: [
+                "golden1",
+                "golden2",
+                "golden3",
+                "golden4",
+                "golden5"
+            ]
         ),
         MusicData(
             title: "Yang Penting Hepi",
@@ -74,7 +89,14 @@ extension MusicData {
             moves: "5",
             coverImageName: "Happyimg",
             coverColors: [Color(hex: "00B09B"), Color(hex: "96C93D")],
-            coverIcon: "face.smiling.fill"
+            coverIcon: "face.smiling.fill",
+            poseImages: [
+                "YangPentingHappy1",
+                "YangPentingHappy2",
+                "YangPentingHappy3",
+                "YangPentingHappy4",
+                "YangPentingHappy5"
+            ]
         ),
         MusicData(
             title: "Bole Chudiyan",
@@ -84,7 +106,31 @@ extension MusicData {
             moves: "5",
             coverImageName: "BoleChudiyanimg",
             coverColors: [Color(hex: "EB3349"), Color(hex: "F45C43")],
-            coverIcon: "music.note"
+            coverIcon: "music.note",
+            poseImages: [
+                "BoleChudiyan1",
+                "BoleChudiyan2",
+                "BoleChudiyan3",
+                "BoleChudiyan4",
+                "BoleChudiyan5"
+            ]
+        ),
+        MusicData(
+            title: "I Love You",
+            artist: "NPD",
+            assetName: "ILoveYou",
+            duration: "35s",
+            moves: "5",
+            coverImageName: "ILoveYouimg",
+            coverColors: [Color(hex: "FF758C"), Color(hex: "FF7EB3")],
+            coverIcon: "heart.fill",
+            poseImages: [
+                "ILoveYou1",
+                "ILoveYou2",
+                "ILoveYou3",
+                "ILoveYou4",
+                "ILoveYou5"
+            ]
         )
     ]
 }

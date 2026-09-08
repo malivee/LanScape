@@ -27,6 +27,12 @@ final class AppPreloadService {
         // 3. Preload all Pose & UI images and warm up Vision models in background
         DispatchQueue.global(qos: .userInitiated).async {
             let assetNames = [
+                "BoleChudiyan1", "BoleChudiyan2", "BoleChudiyan3", "BoleChudiyan4", "BoleChudiyan5",
+                "Golden1", "Golden2", "Golden3", "Golden4", "Golden5",
+                "ILoveYou1", "ILoveYou2", "ILoveYou3", "ILoveYou4", "ILoveYou5",
+                "JarangPulang1", "JarangPulang2", "JarangPulang3", "JarangPulang4", "JarangPulang5",
+                "YangPentingHappy1", "YangPentingHappy2", "YangPentingHappy3", "YangPentingHappy4", "YangPentingHappy5",
+                "BoleChudiyanimg", "Goldenimg", "Happyimg", "ILoveYouimg", "JarangPulangimg",
                 "pose 1", "pose2", "pose3", "pose4", "pose5",
                 "logoApp", "markHaechan", "tutorial", "standingGuide",
                 "sittingGuide", "fusion 550x500"

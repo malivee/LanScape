@@ -51,7 +51,7 @@ enum PostcardMediaError: LocalizedError {
             return "Dibutuhkan lima gambar."
 
         case .invalidCollageImage:
-            return "Kelima gambar BubbleGum harus tersedia."
+            return "Kelima gambar harus tersedia."
 
         case .invalidPostcardImage:
             return "Gambar postcard tidak valid."
